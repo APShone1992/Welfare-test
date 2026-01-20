@@ -1,1188 +1,270 @@
 
 {
-  "global_intents": {
-    "wellbeing_support": {
-      "route_to": "wellbeing_support",
-      "phrases": [
-        "wellbeing help",
-        "mental health support",
-        "need someone to talk to",
-        "i'm stressed",
-        "not coping",
-        "feeling low",
-        "i'm struggling"
+  "nodes": [
+    {
+      "id": "support_overview",
+      "answers": [
+        "I can help with wellbeing, HR (leave/policy), financial support, adjustments, and contacting welfare."
       ],
-      "misspellings": ["welbeing", "wellbin", "mentel", "well being"],
-      "keywords": ["wellbeing", "mental", "stress", "overwhelmed", "talk to someone", "counselling"]
+      "phrases": ["help", "what can you do", "support", "menu"],
+      "misspellings": ["hlp", "suport", "hep"],
+      "keywords": { "general": ["help", "support", "menu"] },
+      "linked_nodes": ["wellbeing_support", "financial_support", "hr_leave", "workplace_adjustments", "contact_information", "opening_times"],
+      "links": [
+        { "label": "Help hub", "url": "https://intranet.company.com/help" }
+      ]
     },
-    "financial_support": {
-      "route_to": "financial_support",
-      "phrases": [
-        "financial help",
-        "hardship support",
-        "money worries",
-        "help with bills",
-        "emergency funds"
+    {
+      "id": "wellbeing_support",
+      "answers": [
+        "We offer wellbeing appointments, guidance, and confidential support."
       ],
-      "misspellings": ["financal", "hardhip", "mony"],
-      "keywords": ["money", "bills", "debt", "hardship", "budget"]
+      "phrases": ["wellbeing", "mental health", "talk to someone"],
+      "misspellings": ["welbeing", "wellbin", "mentel"],
+      "keywords": { "wellbeing": ["support", "stress", "anxious", "talk"] },
+      "linked_nodes": ["book_appointment", "mh_resources", "crisis_support", "contact_information"],
+      "links": [
+        { "label": "Wellbeing hub", "url": "https://intranet.company.com/wellbeing" }
+      ]
     },
-    "hr_leave": {
-      "route_to": "hr_leave",
+    {
+      "id": "book_appointment",
+      "answers": [
+        "Would you like an online or in‑person appointment?"
+      ],
+      "phrases": ["book appointment", "appointment", "book meeting"],
+      "misspellings": ["apointment", "appointmnt"],
+      "keywords": { "wellbeing": ["appointment", "book"] },
+      "linked_nodes": ["appointment_online", "appointment_inperson", "appointment_times"],
+      "links": [
+        { "label": "Book now", "url": "https://intranet.company.com/wellbeing/book" }
+      ]
+    },
+    {
+      "id": "appointment_online",
+      "answers": [
+        "Online appointments are available Mon–Fri. We’ll send a Teams link."
+      ],
+      "phrases": ["online appointment", "virtual", "teams"],
+      "misspellings": ["onlne", "on-line"],
+      "keywords": { "online": ["teams", "virtual"] },
+      "linked_nodes": ["appointment_confirmed", "appointment_times"],
+      "links": [
+        { "label": "Online booking", "url": "https://intranet.company.com/wellbeing/book?mode=online" }
+      ]
+    },
+    {
+      "id": "appointment_inperson",
+      "answers": [
+        "In‑person appointments are at the welfare office."
+      ],
+      "phrases": ["in person", "face to face", "come in"],
+      "misspellings": ["inpersn"],
+      "keywords": { "inperson": ["office", "visit"] },
+      "linked_nodes": ["appointment_confirmed", "appointment_times"],
+      "links": [
+        { "label": "In‑person booking", "url": "https://intranet.company.com/wellbeing/book?mode=inperson" },
+        { "label": "Find office", "url": "https://intranet.company.com/locations/welfare-office" }
+      ]
+    },
+    {
+      "id": "appointment_times",
+      "answers": [
+        "Appointments: Monday–Friday, 9:00–16:00."
+      ],
+      "phrases": ["appointment times", "availability", "when can i book"],
+      "misspellings": ["apointment times", "availablity"],
+      "keywords": { "time": ["times", "availability"] },
+      "linked_nodes": ["book_appointment"],
+      "links": [
+        { "label": "Check availability", "url": "https://intranet.company.com/wellbeing/availability" }
+      ]
+    },
+    {
+      "id": "appointment_confirmed",
+      "answers": [
+        "Your appointment is booked. A confirmation email will follow."
+      ],
+      "phrases": ["confirmed", "booked", "ok thanks"],
+      "misspellings": ["confrmd", "cnfirm"],
+      "keywords": { "confirm": ["email"] },
+      "linked_nodes": ["wellbeing_support"],
+      "links": [
+        { "label": "Manage booking", "url": "https://intranet.company.com/wellbeing/manage" }
+      ]
+    },
+    {
+      "id": "financial_support",
+      "answers": [
+        "We can help with financial wellbeing, hardship support, and emergency assistance."
+      ],
+      "phrases": ["financial support", "money worries", "help with bills"],
+      "misspellings": ["financal", "finacial suport"],
+      "keywords": { "financial": ["money", "bills", "debt", "hardship"] },
+      "linked_nodes": ["apply_financial_support", "required_documents", "contact_information"],
+      "links": [
+        { "label": "Financial help", "url": "https://intranet.company.com/financial" }
+      ]
+    },
+    {
+      "id": "apply_financial_support",
+      "answers": [
+        "Apply via the internal financial support form. I can guide you if needed."
+      ],
+      "phrases": ["apply financial support", "apply for help", "financial form"],
+      "misspellings": ["aply", "aplly"],
+      "keywords": { "financial": ["apply", "form"] },
+      "linked_nodes": ["required_documents"],
+      "links": [
+        { "label": "Apply now", "url": "https://intranet.company.com/financial/apply" },
+        { "label": "Form", "url": "https://company.com/financial-form" }
+      ]
+    },
+    {
+      "id": "hr_leave",
+      "answers": [
+        "I can help with annual leave, sick leave, and reporting sickness."
+      ],
       "phrases": ["time off", "annual leave", "sick leave", "report sickness"],
-      "misspellings": ["leev", "sik", "annuel"],
-      "keywords": ["leave", "sickness", "holiday", "policy"]
+      "misspellings": ["leev", "sic", "annuel"],
+      "keywords": { "hr": ["leave", "sickness", "holiday", "policy"] },
+      "linked_nodes": ["leave_policy", "request_leave"],
+      "links": [
+        { "label": "Leave hub", "url": "https://intranet.company.com/hr/leave" }
+      ]
     },
-    "workplace_adjustments": {
-      "route_to": "workplace_adjustments",
-      "phrases": [
-        "reasonable adjustments",
-        "workplace adjustments",
-        "equipment request",
-        "ergonomic support"
+    {
+      "id": "required_documents",
+      "answers": [
+        "You may need ID, recent payslips, and any relevant evidence."
       ],
+      "phrases": ["what documents", "required documents", "what do i need"],
+      "misspellings": ["documnts", "reqired docs"],
+      "keywords": { "documents": ["evidence", "payslip", "id"] },
+      "linked_nodes": ["apply_financial_support", "hr_leave"],
+      "links": [
+        { "label": "Document checklist", "url": "https://intranet.company.com/docs/checklist" }
+      ]
+    },
+    {
+      "id": "workplace_adjustments",
+      "answers": [
+        "We support ergonomic equipment, flexible hours, and reasonable adjustments."
+      ],
+      "phrases": ["workplace adjustments", "reasonable adjustments", "equipment request"],
       "misspellings": ["adjusments", "adjustmnts"],
-      "keywords": ["adjustment", "equipment", "chair", "desk", "access"]
+      "keywords": { "adjustments": ["equipment", "chair", "desk", "hours", "ergonomic"] },
+      "linked_nodes": ["required_documents"],
+      "links": [
+        { "label": "Adjustments", "url": "https://intranet.company.com/adjustments" }
+      ]
     },
-    "contact_welfare": {
-      "route_to": "contact_welfare",
-      "phrases": [
-        "talk to welfare",
-        "speak to someone",
-        "contact welfare",
-        "call welfare",
-        "email welfare"
+    {
+      "id": "policy_overview",
+      "answers": [
+        "We have policies on HR, wellbeing, adjustments, leave, and conduct."
       ],
-      "misspellings": ["contct", "speek", "fone"],
-      "keywords": ["contact", "phone", "email", "speak", "call"]
+      "phrases": ["policy", "policies", "policy help"],
+      "misspellings": ["polciy", "polcy"],
+      "keywords": { "policy": ["overview", "guidance"] },
+      "linked_nodes": ["leave_policy"],
+      "links": [
+        { "label": "Policy library", "url": "https://intranet.company.com/policies" }
+      ]
     },
-    "crisis_support": {
-      "route_to": "crisis_support",
-      "phrases": ["i need help now", "i'm not safe", "urgent help", "emergency"],
-      "misspellings": ["crsis", "urgernt"],
-      "keywords": ["crisis", "urgent", "danger", "unsafe", "emergency"]
+    {
+      "id": "leave_policy",
+      "answers": [
+        "The leave policy covers annual leave, sick leave, and welfare leave."
+      ],
+      "phrases": ["leave policy", "holiday policy", "sickness policy"],
+      "misspellings": ["leav policy", "polciy"],
+      "keywords": { "hr": ["policy", "leave"] },
+      "linked_nodes": ["request_leave"],
+      "links": [
+        { "label": "Leave policy", "url": "https://intranet.company.com/policies/leave" }
+      ]
+    },
+    {
+      "id": "request_leave",
+      "answers": [
+        "Submit leave requests via the HR portal."
+      ],
+      "phrases": ["request leave", "book time off", "apply for leave"],
+      "misspellings": ["rqst leave", "aply for leave"],
+      "keywords": { "hr": ["leave", "request", "portal"] },
+      "linked_nodes": ["hr_leave"],
+      "links": [
+        { "label": "HR portal", "url": "https://intranet.company.com/hr/portal" }
+      ]
+    },
+    {
+      "id": "mh_resources",
+      "answers": [
+        "Here are quick resources on stress, resilience, and self‑care."
+      ],
+      "phrases": ["resources", "self help", "mental health resources"],
+      "misspellings": ["resorces", "self-helf"],
+      "keywords": { "wellbeing": ["resources", "guide"] },
+      "linked_nodes": ["wellbeing_support"],
+      "links": [
+        { "label": "Wellbeing resources", "url": "https://intranet.company.com/wellbeing/resources" }
+      ]
+    },
+    {
+      "id": "contact_information",
+      "answers": [
+        "Welfare phone: 01234 567890. Email: welfare@company.com."
+      ],
+      "phrases": ["contact info", "contact welfare", "email welfare", "phone welfare"],
+      "misspellings": ["contct info", "emal welfare", "fone"],
+      "keywords": { "contact": ["phone", "email", "speak", "call"] },
+      "linked_nodes": [],
+      "links": [
+        { "label": "Contact directory", "url": "https://intranet.company.com/contacts" },
+        { "label": "Email welfare", "url": "mailto:welfare@company.com" },
+        { "label": "Call welfare", "url": "tel:+441234567890" }
+      ]
+    },
+    {
+      "id": "opening_times",
+      "answers": [
+        "Office hours: Mon–Fri 9:00–17:00. Appointments: 9:00–16:00."
+      ],
+      "phrases": ["opening times", "hours", "when are you open"],
+      "misspellings": ["oppening times"],
+      "keywords": { "info": ["hours", "opening"] },
+      "linked_nodes": [],
+      "links": [
+        { "label": "Calendar & holidays", "url": "https://intranet.company.com/calendar" }
+      ]
+    },
+    {
+      "id": "crisis_support",
+      "answers": [
+        "If you are in immediate danger, contact emergency services. I can also connect you to welfare urgently."
+      ],
+      "phrases": ["urgent", "emergency", "i need help now", "i'm not safe"],
+      "misspellings": ["urgernt", "crsis"],
+      "keywords": { "crisis": ["urgent", "danger", "unsafe", "emergency"] },
+      "linked_nodes": ["contact_information"],
+      "links": [
+        { "label": "Urgent help", "url": "https://intranet.company.com/wellbeing/urgent" }
+      ]
+    },
+    {
+      "id": "fallback_no_match",
+      "answers": [
+        "I’m not sure what you mean. Try a few words like ‘wellbeing’, ‘leave’, or ‘money’, or open the help menu."
+      ],
+      "phrases": ["?", "not sure", "help me"],
+      "misspellings": ["confusd", "hep me"],
+      "keywords": { "fallback": ["help", "menu"] },
+      "linked_nodes": ["support_overview"],
+      "links": [
+        { "label": "Help menu", "url": "https://intranet.company.com/help" }
+      ]
     }
-  },
-  "nodes": []
+  ]
 }
-
-[
-  {
-    "id": "wellbeing_support",
-    "answers": [
-      "We offer wellbeing appointments, mental‑health guidance, and confidential support.",
-      "You can speak with a welfare officer 1‑to‑1 and access self‑help resources."
-    ],
-    "phrases": [
-      "wellbeing help",
-      "mental health support",
-      "i need to talk to someone",
-      "i feel stressed",
-      "not coping",
-      "feeling low",
-      "i'm struggling",
-      "help with mental health",
-      "well being support",
-      "support my wellbeing"
-    ],
-    "misspellings": ["welbeing", "wellbin", "mentel", "well-being"],
-    "keywords": { "wellbeing": ["stress", "overwhelmed", "anxious", "talk"], "crisis": ["urgent", "unsafe"] },
-    "linked_nodes": ["book_appointment", "mh_resources", "wellbeing_workshop", "financial_support", "crisis_support", "contact_welfare"]
-  },
-  {
-    "id": "book_appointment",
-    "answers": [
-      "We can arrange a confidential welfare appointment for you.",
-      "Would you prefer an online session or to come into the office?"
-    ],
-    "phrases": [
-      "book appointment",
-      "book wellbeing",
-      "i need an appointment",
-      "i want to book",
-      "can i book a meeting",
-      "talk to someone",
-      "speak to someone"
-    ],
-    "misspellings": ["apointment", "appointmnt", "appoinment"],
-    "keywords": { "wellbeing": ["appointment"], "contact": ["speak", "talk"] },
-    "linked_nodes": ["appointment_online", "appointment_inperson", "appointment_times", "contact_welfare", "wellbeing_support"]
-  },
-  {
-    "id": "appointment_online",
-    "answers": [
-      "Online appointments are available Mon–Fri. We’ll send a Teams link.",
-      "Great — I’ll book an online session and email the details."
-    ],
-    "phrases": ["online appointment", "virtual appointment", "teams meeting", "online is fine", "do it online"],
-    "misspellings": ["onlne", "on-line"],
-    "keywords": { "contact": ["email", "link"], "wellbeing": ["appointment"] },
-    "linked_nodes": ["appointment_confirmed", "appointment_times", "contact_welfare", "wellbeing_support"]
-  },
-  {
-    "id": "appointment_inperson",
-    "answers": [
-      "In‑person appointments are held at the welfare office.",
-      "Shall I confirm an in‑person booking for you?"
-    ],
-    "phrases": ["in person", "face to face", "come in", "meet physically", "inperson"],
-    "misspellings": ["in-persn", "inpersn"],
-    "keywords": { "hr": ["office"], "wellbeing": ["appointment"] },
-    "linked_nodes": ["appointment_confirmed", "appointment_times", "wellbeing_support"]
-  },
-  {
-    "id": "appointment_times",
-    "answers": [
-      "Appointments are available Monday–Friday between 9am and 4pm.",
-      "Morning or afternoon usually works — what do you prefer?"
-    ],
-    "phrases": ["what times", "available times", "when can i book", "appointment times", "availability"],
-    "misspellings": ["tmes", "availablity", "apointment times"],
-    "keywords": { "contact": ["confirm", "book"], "wellbeing": ["appointment"] },
-    "linked_nodes": ["appointment_confirmed", "book_appointment"]
-  },
-  {
-    "id": "appointment_confirmed",
-    "answers": [
-      "Your appointment is booked. A welfare officer will contact you shortly.",
-      "Booked — look out for your confirmation email."
-    ],
-    "phrases": ["confirm", "confirmed", "ok thanks", "great", "booked"],
-    "misspellings": ["confrmd", "cnfirm", "confrmed"],
-    "keywords": { "contact": ["email", "phone"] },
-    "linked_nodes": ["contact_welfare", "mh_resources", "wellbeing_workshop"]
-  },
-  {
-    "id": "mh_resources",
-    "answers": [
-      "Here are mental‑health resources on stress, resilience, and self‑care.",
-      "I can also send a digital resource pack if you’d like."
-    ],
-    "phrases": ["resources", "mental health resources", "wellbeing resources", "guides", "self help", "materials"],
-    "misspellings": ["resorces", "resourcs", "self-helf"],
-    "keywords": { "wellbeing": ["guide", "materials", "resource"] },
-    "linked_nodes": ["wellbeing_workshop", "book_appointment", "wellbeing_support"]
-  },
-  {
-    "id": "wellbeing_workshop",
-    "answers": [
-      "Workshops run weekly and cover stress, resilience, and emotional wellbeing.",
-      "Say 'sign me up' and I’ll register you and send confirmation."
-    ],
-    "phrases": ["workshop", "join workshop", "group session", "wellbeing workshop", "sign up workshop"],
-    "misspellings": ["wrkshop", "workshp"],
-    "keywords": { "wellbeing": ["workshop", "session", "group"] },
-    "linked_nodes": ["book_appointment", "wellbeing_support", "contact_welfare"]
-  },
-  {
-    "id": "crisis_support",
-    "answers": [
-      "If you are in immediate danger, contact emergency services. I can also connect you to the welfare team now.",
-      "You're not alone — urgent support is available."
-    ],
-    "phrases": ["urgent", "emergency", "i need help now", "i'm not safe", "crisis"],
-    "misspellings": ["urgernt", "crsis", "emergncy"],
-    "keywords": { "crisis": ["urgent", "danger", "unsafe", "emergency"] },
-    "linked_nodes": ["contact_welfare", "wellbeing_support", "financial_support"]
-  },
-  {
-    "id": "contact_welfare",
-    "answers": [
-      "You can contact the welfare team by phone or email.",
-      "Would you like the phone number or email?"
-    ],
-    "phrases": ["contact welfare", "speak to welfare", "talk to someone", "call welfare", "email welfare"],
-    "misspellings": ["contct welfare", "speek to welfare", "fone welfare"],
-    "keywords": { "contact": ["phone", "email", "speak", "call"] },
-    "linked_nodes": ["give_phone", "give_email", "book_appointment"]
-  },
-  {
-    "id": "give_phone",
-    "answers": [
-      "Call the welfare team on: 01234 567890",
-      "Phone: 01234 567890"
-    ],
-    "phrases": ["phone", "phone number", "call welfare", "ring them"],
-    "misspellings": ["fone", "phne", "numbr"],
-    "keywords": { "contact": ["phone", "call", "number"] },
-    "linked_nodes": ["give_email", "book_appointment", "contact_welfare"]
-  },
-  {
-    "id": "give_email",
-    "answers": [
-      "Email the welfare team: welfare@company.com",
-      "You can email: welfare@company.com"
-    ],
-    "phrases": ["email", "email address", "email welfare", "send email"],
-    "misspellings": ["emal", "emial", "emaill"],
-    "keywords": { "contact": ["email", "address"] },
-    "linked_nodes": ["give_phone", "book_appointment", "contact_welfare"]
-  },
-  {
-    "id": "financial_support",
-    "answers": [
-      "We can help with financial wellbeing, hardship support, and emergency assistance.",
-      "If you’d like, I can share the application form and required documents."
-    ],
-    "phrases": ["financial help", "money worries", "hardship support", "help with bills", "financial support"],
-    "misspellings": ["financal", "hardhip", "mony", "finacial suport"],
-    "keywords": { "financial": ["money", "bills", "debt", "hardship", "budget"] },
-    "linked_nodes": ["apply_financial_support", "hardship_info", "contact_welfare", "wellbeing_support", "required_documents"]
-  },
-  {
-    "id": "hardship_info",
-    "answers": [
-      "Hardship support is available for urgent financial difficulty.",
-      "I can guide you through eligibility and how to apply."
-    ],
-    "phrases": ["hardship info", "emergency funds", "urgent money help", "hardship support details"],
-    "misspellings": ["hardhip", "emergncy funds"],
-    "keywords": { "financial": ["hardship", "emergency", "grant"] },
-    "linked_nodes": ["apply_financial_support", "contact_welfare", "financial_support"]
-  },
-  {
-    "id": "apply_financial_support",
-    "answers": [
-      "You can apply via the internal financial support form. I can also help you complete it.",
-      "Tell me if you want the form link or help with documents."
-    ],
-    "phrases": ["apply financial support", "apply for help", "form for financial help", "how do i apply"],
-    "misspellings": ["aply", "financi suport", "aplly"],
-    "keywords": { "financial": ["apply", "form", "documents"] },
-    "linked_nodes": ["form_support", "required_documents", "contact_welfare"]
-  },
-  {
-    "id": "form_support",
-    "answers": [
-      "Open the financial form: https://company.com/financial-form — I can guide you through it.",
-      "We’ll cover your details, situation, and any supporting evidence."
-    ],
-    "phrases": ["help with form", "form help", "guide me", "support with application"],
-    "misspellings": ["frm help", "gide me", "aplication help"],
-    "keywords": { "financial": ["form", "documents", "apply"] },
-    "linked_nodes": ["required_documents", "financial_support", "contact_welfare"]
-  },
-  {
-    "id": "required_documents",
-    "answers": [
-      "You may need proof of financial need, ID, and recent payslips. For adjustments, medical evidence may help.",
-      "If you’re unsure what to upload, I can check with you now."
-    ],
-    "phrases": ["what documents", "required documents", "what do i need", "evidence needed"],
-    "misspellings": ["documnts", "reqired docs", "docments"],
-    "keywords": { "financial": ["payslip", "bank", "evidence"], "adjustments": ["medical", "OH"] },
-    "linked_nodes": ["apply_financial_support", "workplace_adjustments", "contact_welfare"]
-  },
-  {
-    "id": "hr_leave",
-    "answers": [
-      "I can help with annual leave, sick leave, and reporting sickness.",
-      "Would you like the policy or help submitting a request?"
-    ],
-    "phrases": ["time off", "annual leave", "sick leave", "report sickness", "leave help"],
-    "misspellings": ["leev", "sic", "annuel", "sik leave"],
-    "keywords": { "hr": ["leave", "sick", "policy", "request"] },
-    "linked_nodes": ["leave_policy", "request_leave", "hr_portal_help", "contact_welfare"]
-  },
-  {
-    "id": "leave_policy",
-    "answers": [
-      "The leave policy covers annual leave, sick leave, and welfare leave.",
-      "I can help you find the right section or submit a request."
-    ],
-    "phrases": ["leave policy", "policy for leave", "sickness policy", "holiday policy"],
-    "misspellings": ["polcy", "leav policy", "polciy"],
-    "keywords": { "hr": ["policy", "leave", "sick", "holiday"] },
-    "linked_nodes": ["request_leave", "hr_leave", "contact_welfare"]
-  },
-  {
-    "id": "request_leave",
-    "answers": [
-      "Submit leave requests via the HR portal. I can help if you can’t access it.",
-      "Tell me if you want portal help or policy info."
-    ],
-    "phrases": ["request leave", "book time off", "i need time off", "apply for leave"],
-    "misspellings": ["rqst leave", "tiem off", "aply for leave"],
-    "keywords": { "hr": ["leave", "request", "portal"] },
-    "linked_nodes": ["hr_portal_help", "leave_policy", "contact_welfare"]
-  },
-  {
-    "id": "hr_portal_help",
-    "answers": [
-      "Log in with your staff credentials. If you have trouble, I can help troubleshoot.",
-      "Shall we check your access or reset your password?"
-    ],
-    "phrases": ["hr portal", "cant access portal", "portal help", "hr system issue"],
-    "misspellings": ["portl", "prtla", "poratl"],
-    "keywords": { "hr": ["portal", "access"], "contact": ["support"] },
-    "linked_nodes": ["hr_leave", "contact_welfare"]
-  },
-  {
-    "id": "workplace_adjustments",
-    "answers": [
-      "We support ergonomic equipment, flexible hours, and reasonable adjustments.",
-      "I can help you request adjustments or connect you to Occupational Health."
-    ],
-    "phrases": ["workplace adjustments", "reasonable adjustments", "equipment request", "ergonomic support"],
-    "misspellings": ["adjusments", "adjustmnts", "erganomic"],
-    "keywords": { "adjustments": ["equipment", "chair", "hours", "ergonomic", "reasonable"] },
-    "linked_nodes": ["adjustment_request", "required_documents", "contact_oh", "contact_welfare"]
-  },
-  {
-    "id": "adjustment_request",
-    "answers": [
-      "Adjustment requests can be made via HR; medical evidence may help.",
-      "Would you like help contacting Occupational Health or reviewing documents?"
-    ],
-    "phrases": ["request adjustment", "ask for adjustments", "i need adjustments", "reasonable adjustment form"],
-    "misspellings": ["rqst adjust", "adjsmnt request"],
-    "keywords": { "adjustments": ["request", "evidence", "form"] },
-    "linked_nodes": ["required_documents", "contact_oh", "workplace_adjustments", "contact_welfare"]
-  },
-  {
-    "id": "contact_oh",
-    "answers": [
-      "Occupational Health can assess needs and recommend adjustments.",
-      "I can share the OH email if you want."
-    ],
-    "phrases": ["contact oh", "occupational health", "oh support", "speak to oh"],
-    "misspellings": ["ocupational", "ocup health", "oc health"],
-    "keywords": { "adjustments": ["OH", "occupational", "assessment"] },
-    "linked_nodes": ["give_oh_email", "workplace_adjustments", "adjustment_request"]
-  },
-  {
-    "id": "give_oh_email",
-    "answers": [
-      "You can contact Occupational Health at: oh@company.com",
-      "Email OH at: oh@company.com for assessments and recommendations."
-    ],
-    "phrases": ["oh email", "email oh", "contact occupational health", "oh address"],
-    "misspellings": ["emal oh", "oh mail", "oh e-mail"],
-    "keywords": { "contact": ["email", "address"], "adjustments": ["OH"] },
-    "linked_nodes": ["workplace_adjustments", "adjustment_request", "contact_welfare"]
-  }
-]
-
-[
-  {
-    "id": "tech_issue",
-    "answers": [
-      "I can help with IT issues like login problems, MFA, and portal access.",
-      "Shall we try a password reset or check your system status?"
-    ],
-    "phrases": ["it issue", "tech issue", "cant log in", "portal not working", "system problem"],
-    "misspellings": ["tec ishue", "cant login", "protal not working"],
-    "keywords": { "contact": ["IT", "support"], "hr": ["portal", "access"] },
-    "linked_nodes": ["login_help", "password_reset", "mfa_help", "system_status", "browser_cache_help", "give_it_contact"]
-  },
-  {
-    "id": "login_help",
-    "answers": [
-      "Let’s fix your login. We can reset your password or check your MFA.",
-      "First step: try a password reset. If that fails, I’ll escalate."
-    ],
-    "phrases": ["login help", "cant log in", "sign in problem", "login broken"],
-    "misspellings": ["logn help", "cant loggin", "sing in problem"],
-    "keywords": { "contact": ["IT"], "hr": ["portal"] },
-    "linked_nodes": ["password_reset", "account_locked", "mfa_help", "give_it_contact", "tech_issue"]
-  },
-  {
-    "id": "password_reset",
-    "answers": [
-      "Reset your password at https://reset.company.com and try again.",
-      "Use the reset portal; if you still can’t sign in, we’ll escalate."
-    ],
-    "phrases": ["reset password", "forgot password", "password reset", "lost password"],
-    "misspellings": ["pasword reset", "forgt password", "resit password"],
-    "keywords": { "contact": ["IT", "reset"] },
-    "linked_nodes": ["login_help", "give_it_contact", "tech_issue", "hr_portal_help"]
-  },
-  {
-    "id": "give_it_contact",
-    "answers": [
-      "Contact IT support at: it@company.com",
-      "Email IT: it@company.com for technical assistance."
-    ],
-    "phrases": ["it contact", "email it", "contact it", "it help email"],
-    "misspellings": ["it contct", "emal it", "it emial"],
-    "keywords": { "contact": ["email", "IT", "support"] },
-    "linked_nodes": ["tech_issue", "password_reset", "login_help"]
-  },
-  {
-    "id": "mfa_help",
-    "answers": [
-      "Having MFA trouble? Check your authenticator app time sync or try an SMS code.",
-      "We can re-register your MFA device if needed."
-    ],
-    "phrases": ["mfa help", "authenticator issue", "2fa problem", "code not working"],
-    "misspellings": ["mfa halp", "authenicator issue", "2fa problm"],
-    "keywords": { "contact": ["IT"], "hr": ["portal"] },
-    "linked_nodes": ["login_help", "give_it_contact", "tech_issue"]
-  },
-  {
-    "id": "account_locked",
-    "answers": [
-      "Your account may be locked after multiple failed attempts. We can unlock it.",
-      "I can guide you through unlocking or escalate to IT."
-    ],
-    "phrases": ["account locked", "locked out", "my account is locked"],
-    "misspellings": ["acount locked", "lockd out"],
-    "keywords": { "contact": ["IT"], "hr": ["portal"] },
-    "linked_nodes": ["unlock_steps", "give_it_contact", "login_help"]
-  },
-  {
-    "id": "unlock_steps",
-    "answers": [
-      "To unlock: wait 15 minutes or request an unlock via the IT portal; then try again.",
-      "If urgent, email IT and ask for an immediate unlock."
-    ],
-    "phrases": ["unlock account", "how to unlock", "unlock steps"],
-    "misspellings": ["unlok account", "unlck steps"],
-    "keywords": { "contact": ["IT", "unlock"] },
-    "linked_nodes": ["login_help", "give_it_contact", "tech_issue"]
-  },
-  {
-    "id": "system_status",
-    "answers": [
-      "If multiple people are affected, it may be a system outage. Try again in a few minutes.",
-      "We can check service status or clear cache and retry."
-    ],
-    "phrases": ["system status", "service down", "is portal down", "outage"],
-    "misspellings": ["ststem status", "serivce down", "outge"],
-    "keywords": { "contact": ["IT"], "hr": ["portal"] },
-    "linked_nodes": ["browser_cache_help", "tech_issue", "give_it_contact"]
-  },
-  {
-    "id": "browser_cache_help",
-    "answers": [
-      "Try: clear cache, close/reopen browser, or use an incognito window, then log in again.",
-      "Switch browsers (Edge/Chrome) and retry the portal."
-    ],
-    "phrases": ["clear cache", "browser issue", "site not loading", "hr portal blank"],
-    "misspellings": ["brwoser issue", "cash clear", "poratl blank"],
-    "keywords": { "hr": ["portal"], "contact": ["IT"] },
-    "linked_nodes": ["tech_issue", "hr_portal_help", "system_status"]
-  },
-  {
-    "id": "report_concern",
-    "answers": [
-      "You can report a workplace concern confidentially to HR or welfare.",
-      "Tell me if this is about conduct, safety, bullying/harassment, or something else."
-    ],
-    "phrases": ["report concern", "raise concern", "complaint at work", "report an issue"],
-    "misspellings": ["reprot concern", "compliant at work"],
-    "keywords": { "hr": ["concern", "report"], "contact": ["HR", "welfare"] },
-    "linked_nodes": ["grievance_support", "dignity_at_work", "bullying_harassment", "contact_welfare"]
-  },
-  {
-    "id": "grievance_support",
-    "answers": [
-      "A formal grievance can be raised if informal resolution isn’t suitable.",
-      "I can guide you through the process and paperwork."
-    ],
-    "phrases": ["grievance", "raise grievance", "formal complaint"],
-    "misspellings": ["grivance", "grievence"],
-    "keywords": { "hr": ["grievance", "formal", "complaint"] },
-    "linked_nodes": ["report_concern", "hr_portal_help", "contact_welfare"]
-  },
-  {
-    "id": "dignity_at_work",
-    "answers": [
-      "Dignity at Work covers respectful behaviour, equality, and inclusion.",
-      "If you’ve experienced inappropriate behaviour, we can advise next steps."
-    ],
-    "phrases": ["dignity at work", "respect at work", "equality at work"],
-    "misspellings": ["dignity @ work", "dignitty at work"],
-    "keywords": { "hr": ["dignity", "behaviour", "policy"] },
-    "linked_nodes": ["bullying_harassment", "report_concern", "contact_welfare"]
-  },
-  {
-    "id": "bullying_harassment",
-    "answers": [
-      "Bullying/harassment should be reported. We’ll support you through the process.",
-      "We can discuss informal resolution or a formal complaint."
-    ],
-    "phrases": ["bullying", "harassment", "being bullied", "workplace bullying"],
-    "misspellings": ["bulying", "harasment"],
-    "keywords": { "hr": ["bullying", "harassment", "report"] },
-    "linked_nodes": ["report_concern", "grievance_support", "contact_welfare"]
-  },
-  {
-    "id": "whistleblowing_info",
-    "answers": [
-      "Whistleblowing concerns can be raised confidentially under the policy.",
-      "I can signpost how to report safely and appropriately."
-    ],
-    "phrases": ["whistleblowing", "whistle blower", "report wrongdoing"],
-    "misspellings": ["whisleblowing", "whistleblowng"],
-    "keywords": { "hr": ["whistleblowing", "policy", "report"] },
-    "linked_nodes": ["report_concern", "contact_welfare"]
-  },
-  {
-    "id": "performance_support",
-    "answers": [
-      "We can support with performance concerns, objectives, and development plans.",
-      "Coaching, training, and wellbeing support are available."
-    ],
-    "phrases": ["performance support", "help with performance", "objectives help"],
-    "misspellings": ["perfomance support", "performnce help"],
-    "keywords": { "hr": ["performance", "development"], "wellbeing": ["support"] },
-    "linked_nodes": ["wellbeing_support", "hr_leave", "contact_welfare"]
-  },
-  {
-    "id": "return_to_work",
-    "answers": [
-      "A Return to Work conversation supports your transition back after absence.",
-      "We can discuss phased return, adjustments, and support."
-    ],
-    "phrases": ["return to work", "phased return", "coming back to work"],
-    "misspellings": ["retun to work", "phazed return"],
-    "keywords": { "hr": ["absence", "return"], "adjustments": ["phased", "support"] },
-    "linked_nodes": ["fit_note_info", "workplace_adjustments", "wellbeing_support"]
-  },
-  {
-    "id": "fit_note_info",
-    "answers": [
-      "A fit note from your GP may be required for certain sickness durations.",
-      "We can review when a fit note is needed and what it should include."
-    ],
-    "phrases": ["fit note", "sick note", "doctor note"],
-    "misspellings": ["fitnote", "sik note"],
-    "keywords": { "hr": ["sickness", "fit note", "absence"] },
-    "linked_nodes": ["return_to_work", "hr_leave", "contact_welfare"]
-  },
-  {
-    "id": "occupational_health_referral",
-    "answers": [
-      "An Occupational Health referral can assess your needs and recommend adjustments.",
-      "I can help arrange a referral if appropriate."
-    ],
-    "phrases": ["oh referral", "occupational health referral", "refer to oh"],
-    "misspellings": ["oc health referal", "occupational referal"],
-    "keywords": { "adjustments": ["OH", "assessment"], "hr": ["referral"] },
-    "linked_nodes": ["contact_oh", "give_oh_email", "workplace_adjustments"]
-  },
-  {
-    "id": "flexible_working_info",
-    "answers": [
-      "Flexible working may include adjusted hours, location, or pattern of work.",
-      "We can explore informal and formal options."
-    ],
-    "phrases": ["flexible working", "work from home request", "change hours"],
-    "misspellings": ["flexable working", "work frm home"],
-    "keywords": { "hr": ["flexible working", "policy"], "adjustments": ["hours"] },
-    "linked_nodes": ["flexible_working_apply", "workplace_adjustments", "contact_welfare"]
-  },
-  {
-    "id": "flexible_working_apply",
-    "answers": [
-      "Formal flexible working requests are submitted via HR, with rationale and impact.",
-      "I can signpost the form and guidance."
-    ],
-    "phrases": ["apply flexible working", "flex working form", "request flexible working"],
-    "misspellings": ["aply flex working", "flexable work form"],
-    "keywords": { "hr": ["flexible", "request", "form"] },
-    "linked_nodes": ["hr_portal_help", "flexible_working_info", "workplace_adjustments"]
-  },
-  {
-    "id": "parental_leave_info",
-    "answers": [
-      "Parental leave (including maternity, paternity, adoption, shared parental) has specific eligibility and notice periods.",
-      "I can help you find the right policy and next steps."
-    ],
-    "phrases": ["parental leave", "leave for parents", "shared parental leave"],
-    "misspellings": ["parentl leave", "parantal leave"],
-    "keywords": { "hr": ["parental", "policy", "leave"] },
-    "linked_nodes": ["maternity_paternity", "leave_policy", "request_leave"]
-  },
-  {
-    "id": "maternity_paternity",
-    "answers": [
-      "Maternity and paternity leave details include pay, duration, and notification requirements.",
-      "We can review timelines and forms together."
-    ],
-    "phrases": ["maternity", "paternity", "mat leave", "pat leave"],
-    "misspellings": ["maternaty", "paternaty", "mat leev"],
-    "keywords": { "hr": ["maternity", "paternity", "policy"] },
-    "linked_nodes": ["parental_leave_info", "leave_policy", "request_leave"]
-  },
-  {
-    "id": "bereavement_leave_info",
-    "answers": [
-      "Bereavement leave may be available; we’ll handle your request sensitively.",
-      "I can explain the process and how to submit a request."
-    ],
-    "phrases": ["bereavement leave", "compassionate leave", "time off bereavement"],
-    "misspellings": ["bereavment leave", "compasionate leave"],
-    "keywords": { "hr": ["bereavement", "compassionate", "leave", "policy"] },
-    "linked_nodes": ["request_leave", "leave_policy", "wellbeing_support"]
-  },
-  {
-    "id": "pay_and_pensions_info",
-    "answers": [
-      "For pay and pensions queries, I can signpost policy and contacts.",
-      "Tell me if this is about payslips, deductions, or pension options."
-    ],
-    "phrases": ["pay and pensions", "pension info", "pay query", "salary question"],
-    "misspellings": ["pensons info", "salery question"],
-    "keywords": { "hr": ["pay", "pension", "salary"] },
-    "linked_nodes": ["payslip_help", "contact_welfare", "hr_portal_help"]
-  },
-  {
-    "id": "payslip_help",
-    "answers": [
-      "For payslip questions (tax code, deductions, overtime), we can review together.",
-      "If needed, I’ll signpost to payroll."
-    ],
-    "phrases": ["payslip help", "pay slip query", "deductions question", "tax code issue"],
-    "misspellings": ["payslp help", "pay slip querry"],
-    "keywords": { "hr": ["pay", "payslip", "payroll"] },
-    "linked_nodes": ["pay_and_pensions_info", "contact_welfare", "hr_portal_help"]
-  }
-]
-
-[
-  {
-    "id": "expenses_support",
-    "answers": [
-      "I can help with travel and expense guidance, including how to claim work-related costs.",
-      "Let me know if you need the form, policy details, or help submitting a claim."
-    ],
-    "phrases": ["expenses", "how to claim expenses", "travel claim", "mileage claim"],
-    "misspellings": ["expences", "expnese", "milege claim"],
-    "keywords": { "hr": ["expenses", "travel", "claim"] },
-    "linked_nodes": ["expenses_policy", "expenses_form", "hr_portal_help", "contact_welfare"]
-  },
-  {
-    "id": "expenses_policy",
-    "answers": [
-      "The expenses policy covers travel, meals, mileage, and receipts requirements.",
-      "I can highlight key points or provide the full policy document."
-    ],
-    "phrases": ["expenses policy", "travel policy", "mileage policy"],
-    "misspellings": ["expences policy", "milage policy"],
-    "keywords": { "hr": ["expenses", "policy"] },
-    "linked_nodes": ["expenses_support", "expenses_form", "contact_welfare"]
-  },
-  {
-    "id": "expenses_form",
-    "answers": [
-      "You can submit expenses via the HR portal or using the digital claim form.",
-      "Make sure to upload receipts and mileage logs if needed."
-    ],
-    "phrases": ["expenses form", "how to submit expenses", "claim form"],
-    "misspellings": ["expence form", "cliam form"],
-    "keywords": { "hr": ["expenses", "form"], "financial": ["claim"] },
-    "linked_nodes": ["expenses_support", "hr_portal_help", "contact_welfare"]
-  },
-  {
-    "id": "travel_support",
-    "answers": [
-      "Travel support includes mileage reimbursement, public transport costs, and necessary travel bookings.",
-      "Let me know if you need guidance or the travel policy."
-    ],
-    "phrases": ["travel support", "travel help", "mileage help", "train ticket claim"],
-    "misspellings": ["travil support", "milege help"],
-    "keywords": { "hr": ["travel", "mileage"], "financial": ["claim"] },
-    "linked_nodes": ["expenses_support", "expenses_policy", "hr_portal_help"]
-  },
-  {
-    "id": "housing_support",
-    "answers": [
-      "If you’re experiencing housing difficulties, we can signpost external housing support services.",
-      "If it’s urgent or linked to wellbeing, I can help connect you to the welfare team."
-    ],
-    "phrases": ["housing help", "housing support", "i need housing advice"],
-    "misspellings": ["housng help", "houzing help"],
-    "keywords": { "financial": ["housing", "rent"], "wellbeing": ["stress"] },
-    "linked_nodes": ["community_signposting", "crisis_support", "contact_welfare"]
-  },
-  {
-    "id": "community_signposting",
-    "answers": [
-      "Community support includes local services such as housing, foodbanks, debt advice, and wellbeing hubs.",
-      "Tell me what type of support you need and I’ll signpost appropriately."
-    ],
-    "phrases": ["community support", "signposting", "external support"],
-    "misspellings": ["commnity help", "singposting"],
-    "keywords": { "financial": ["debt"], "wellbeing": ["help"], "crisis": ["urgent"] },
-    "linked_nodes": ["housing_support", "foodbank_info", "debt_support", "contact_welfare"]
-  },
-  {
-    "id": "foodbank_info",
-    "answers": [
-      "Foodbanks can provide emergency food and essentials. I can signpost your nearest options.",
-      "Would you like me to look up local support?"
-    ],
-    "phrases": ["foodbank", "food bank", "help with food"],
-    "misspellings": ["foodbnk", "fod bank"],
-    "keywords": { "financial": ["foodbank", "help"], "crisis": ["urgent"] },
-    "linked_nodes": ["community_signposting", "financial_support", "contact_welfare"]
-  },
-  {
-    "id": "debt_support",
-    "answers": [
-      "We can signpost free debt advice and budgeting support.",
-      "If money worries are affecting your wellbeing, wellbeing support is available too."
-    ],
-    "phrases": ["debt support", "help with debt", "money problems", "debt advice"],
-    "misspellings": ["det support", "dept support"],
-    "keywords": { "financial": ["debt", "budget"], "wellbeing": ["stress"] },
-    "linked_nodes": ["financial_support", "community_signposting", "contact_welfare"]
-  },
-  {
-    "id": "domestic_abuse_support",
-    "answers": [
-      "If you are experiencing domestic abuse, support is available. If you’re in immediate danger, contact emergency services.",
-      "I can signpost confidential help and connect you to welfare if needed."
-    ],
-    "phrases": ["domestic abuse", "i'm being hurt", "unsafe at home"],
-    "misspellings": ["domstic abuse", "domestic abse"],
-    "keywords": { "crisis": ["danger", "unsafe"], "wellbeing": ["support"] },
-    "linked_nodes": ["crisis_support", "contact_welfare", "community_signposting"]
-  },
-  {
-    "id": "safeguarding_support",
-    "answers": [
-      "Safeguarding concerns should be reported immediately. I can help signpost who to contact.",
-      "If someone is at risk, please contact the safeguarding team or emergency services."
-    ],
-    "phrases": ["safeguarding", "someone at risk", "child protection"],
-    "misspellings": ["safegarding", "safegaurding"],
-    "keywords": { "crisis": ["risk", "danger"], "contact": ["report"] },
-    "linked_nodes": ["crisis_support", "report_concern", "contact_welfare"]
-  },
-  {
-    "id": "confidentiality_info",
-    "answers": [
-      "Your information is handled confidentially and only shared if there is a serious risk.",
-      "I can explain how confidentiality works in welfare and HR processes."
-    ],
-    "phrases": ["confidential", "privacy", "is this private"],
-    "misspellings": ["confidntial", "prvacy"],
-    "keywords": { "wellbeing": ["support"], "hr": ["policy"] },
-    "linked_nodes": ["contact_welfare", "wellbeing_support"]
-  },
-  {
-    "id": "data_protection_info",
-    "answers": [
-      "Data protection is important—your information is stored securely and used appropriately.",
-      "I can explain how we handle your data and your rights."
-    ],
-    "phrases": ["data protection", "gdpr", "my data safe"],
-    "misspellings": ["data protction", "gdper"],
-    "keywords": { "hr": ["policy"], "contact": ["data"] },
-    "linked_nodes": ["confidentiality_info", "contact_welfare"]
-  },
-  {
-    "id": "reschedule_appointment",
-    "answers": [
-      "If you need to reschedule, we can change your wellbeing appointment or book a new slot.",
-      "Tell me if you prefer morning or afternoon."
-    ],
-    "phrases": ["reschedule appointment", "change appointment", "move appointment"],
-    "misspellings": ["reschedual", "re-scedule"],
-    "keywords": { "wellbeing": ["appointment"], "contact": ["speak"] },
-    "linked_nodes": ["appointment_times", "book_appointment", "contact_welfare"]
-  },
-  {
-    "id": "cancel_appointment",
-    "answers": [
-      "Your appointment can be cancelled if you can’t attend. We can book another time if needed.",
-      "Let me know if you'd like to rebook."
-    ],
-    "phrases": ["cancel appointment", "cancel meeting", "i can't attend"],
-    "misspellings": ["cancle appointment", "cnacel"],
-    "keywords": { "wellbeing": ["appointment"], "contact": ["cancel"] },
-    "linked_nodes": ["book_appointment", "appointment_times", "contact_welfare"]
-  },
-  {
-    "id": "callback_request",
-    "answers": [
-      "I can request a call back from the welfare team.",
-      "Let me know the best time for them to contact you."
-    ],
-    "phrases": ["call back", "callback", "ring me", "someone call me"],
-    "misspellings": ["cal back", "callbak"],
-    "keywords": { "contact": ["call", "speak"] },
-    "linked_nodes": ["contact_welfare", "book_appointment"]
-  },
-  {
-    "id": "escalation_option",
-    "answers": [
-      "If this needs escalation, I can connect you with the welfare or HR teams.",
-      "Tell me if you'd like immediate contact or written guidance."
-    ],
-    "phrases": ["escalate", "i want to escalate", "speak to manager"],
-    "misspellings": ["esclate", "escalte"],
-    "keywords": { "contact": ["welfare", "manager"], "crisis": ["urgent"] },
-    "linked_nodes": ["contact_welfare", "hr_leave", "crisis_support"]
-  },
-  {
-    "id": "general_fallback",
-    "answers": [
-      "I’m not sure what you mean, but I can help with wellbeing, HR, financial support, adjustments, or contacting welfare.",
-      "Can you rephrase or choose one of these options?"
-    ],
-    "phrases": ["?", "not sure", "help me", "what can you do"],
-    "misspellings": ["hlp", "hep"],
-    "keywords": { "wellbeing": ["stress"], "financial": ["money"], "hr": ["leave"] },
-    "linked_nodes": ["wellbeing_support", "financial_support", "hr_leave", "contact_welfare"]
-  },
-  {
-    "id": "smalltalk_greeting",
-    "answers": [
-      "Hi! How can I support you today?",
-      "Hello! What would you like help with?"
-    ],
-    "phrases": ["hi", "hello", "hey", "hiya"],
-    "misspellings": ["helo", "helloo", "hii"],
-    "keywords": { },
-    "linked_nodes": ["wellbeing_support", "financial_support", "hr_leave", "contact_welfare"]
-  },
-  {
-    "id": "smalltalk_thanks",
-    "answers": [
-      "You’re welcome! I'm here if you need anything else.",
-      "No problem — happy to help."
-    ],
-    "phrases": ["thanks", "thank you", "cheers"],
-    "misspellings": ["thx", "tanks", "thanx"],
-    "keywords": { },
-    "linked_nodes": ["wellbeing_support", "financial_support", "hr_leave", "contact_welfare"]
-  },
-  {
-    "id": "smalltalk_goodbye",
-    "answers": [
-      "Goodbye! Take care and reach out anytime you need support.",
-      "Speak soon — I'm here whenever you need help."
-    ],
-    "phrases": ["bye", "goodbye", "see ya", "see you"],
-    "misspellings": ["byee", "gudbye"],
-    "keywords": { },
-    "linked_nodes": []
-  },
-  {
-    "id": "feedback_request",
-    "answers": [
-      "Would you like to give feedback about this support?",
-      "I can record your feedback and pass it to the welfare team."
-    ],
-    "phrases": ["feedback", "i have feedback", "give feedback"],
-    "misspellings": ["fedback", "feedbak"],
-    "keywords": { "contact": ["feedback"] },
-    "linked_nodes": ["contact_welfare", "general_fallback"]
-  },
-  {
-    "id": "feedback_submit",
-    "answers": [
-      "Thanks for your feedback — it helps us improve the service.",
-      "Your feedback has been noted."
-    ],
-    "phrases": ["submit feedback", "send feedback", "thanks"],
-    "misspellings": ["submt feedback", "fedbak"],
-    "keywords": { },
-    "linked_nodes": ["smalltalk_thanks", "general_fallback"]
-  },
-  {
-    "id": "policy_overview",
-    "answers": [
-      "We have policies on HR, wellbeing, adjustments, leave, and conduct.",
-      "Tell me which policy you’d like to know about."
-    ],
-    "phrases": ["policy", "policies", "policy help"],
-    "misspellings": ["polciy", "polcy", "poliicy"],
-    "keywords": { "hr": ["policy"], "wellbeing": ["support"] },
-    "linked_nodes": ["leave_policy", "dignity_at_work", "data_protection_info"]
-  },
-  {
-    "id": "contact_manager_info",
-    "answers": [
-      "If you'd like, I can guide you on how to raise something with your manager.",
-      "Is this about performance, wellbeing, or workplace concerns?"
-    ],
-    "phrases": ["contact my manager", "speak to manager", "talk to manager"],
-    "misspellings": ["manger contact", "speek to manager"],
-    "keywords": { "contact": ["manager"] },
-    "linked_nodes": ["performance_support", "report_concern", "wellbeing_support"]
-  }
-]
-
-[
-  {
-    "id": "equality_inclusion_info",
-    "answers": [
-      "Our Equality, Diversity & Inclusion (EDI) approach promotes fair treatment and respect for all.",
-      "I can signpost the EDI policy and ways to get support or raise concerns."
-    ],
-    "phrases": ["equality inclusion", "edi", "dei", "diversity", "inclusion policy"],
-    "misspellings": ["equlity", "incluion", "diverrsity", "edi policy"],
-    "keywords": { "hr": ["policy", "inclusion", "equality"] },
-    "linked_nodes": ["dignity_at_work", "policy_overview", "report_concern", "contact_welfare"]
-  },
-  {
-    "id": "disability_support",
-    "answers": [
-      "We can support disabled colleagues with reasonable adjustments and tailored guidance.",
-      "I can help you request adjustments and connect with Occupational Health."
-    ],
-    "phrases": ["disability support", "disabled staff help", "reasonable adjustments disability"],
-    "misspellings": ["disabilty support", "disable support", "reasnoble adjustmnts"],
-    "keywords": { "adjustments": ["reasonable", "equipment", "support"], "wellbeing": ["support"] },
-    "linked_nodes": ["workplace_adjustments", "contact_oh", "required_documents", "contact_welfare"]
-  },
-  {
-    "id": "neurodiversity_support",
-    "answers": [
-      "Support for neurodivergent colleagues (e.g., ADHD, autism, dyslexia) can include adjustments, coaching, and tools.",
-      "We can explore environmental, task, and communication adjustments."
-    ],
-    "phrases": ["neurodiversity support", "adhd support", "autism support", "dyslexia help", "neurodivergent help"],
-    "misspellings": ["neurodiversety", "neuro diverse", "dyslecsia help"],
-    "keywords": { "adjustments": ["coaching", "tools", "environment"], "wellbeing": ["support"] },
-    "linked_nodes": ["workplace_adjustments", "contact_oh", "coaching_mentoring", "wellbeing_support"]
-  },
-  {
-    "id": "menopause_support",
-    "answers": [
-      "Menopause support may include adjustments, flexible working, and wellbeing guidance.",
-      "I can signpost the guidance and help you discuss options."
-    ],
-    "phrases": ["menopause support", "perimenopause help", "menopause at work"],
-    "misspellings": ["menapause", "perimenopose"],
-    "keywords": { "wellbeing": ["support"], "adjustments": ["flexible", "temperature", "breaks"], "hr": ["policy"] },
-    "linked_nodes": ["wellbeing_support", "flexible_working_info", "workplace_adjustments", "contact_welfare"]
-  },
-  {
-    "id": "carers_support",
-    "answers": [
-      "If you have caring responsibilities, we can explore flexible working and support options.",
-      "I can signpost leave, adjustments, and wellbeing resources for carers."
-    ],
-    "phrases": ["carer support", "caring responsibilities", "i'm a carer", "support for carers"],
-    "misspellings": ["carers suprot", "carring responsibilites"],
-    "keywords": { "hr": ["leave", "flexible"], "adjustments": ["hours"], "wellbeing": ["support"] },
-    "linked_nodes": ["flexible_working_info", "request_leave", "wellbeing_support", "contact_welfare"]
-  },
-  {
-    "id": "childcare_support",
-    "answers": [
-      "We can signpost childcare support information and discuss flexible options where appropriate.",
-      "If you need time off or flexible arrangements, I can guide you."
-    ],
-    "phrases": ["childcare support", "help with childcare", "nursery costs help"],
-    "misspellings": ["child care support", "chilcare support"],
-    "keywords": { "hr": ["flexible", "leave"], "financial": ["costs"] },
-    "linked_nodes": ["flexible_working_info", "parental_leave_info", "financial_support", "contact_welfare"]
-  },
-  {
-    "id": "substance_misuse_support",
-    "answers": [
-      "Confidential support is available for alcohol or substance concerns, with signposting to specialist services.",
-      "If you’re in immediate risk, please seek urgent help."
-    ],
-    "phrases": ["alcohol support", "substance misuse", "drug help", "addiction help"],
-    "misspellings": ["substnce misues", "alchol support"],
-    "keywords": { "wellbeing": ["support"], "crisis": ["urgent"], "contact": ["speak"] },
-    "linked_nodes": ["wellbeing_support", "community_signposting", "crisis_support", "contact_welfare"]
-  },
-  {
-    "id": "gambling_support",
-    "answers": [
-      "If gambling is causing difficulties, we can signpost free specialist help and provide wellbeing support.",
-      "You’re not alone — support is available and confidential."
-    ],
-    "phrases": ["gambling help", "gambling support", "betting problem"],
-    "misspellings": ["gamblng help", "gamblin support"],
-    "keywords": { "wellbeing": ["support"], "financial": ["debt"], "contact": ["speak"] },
-    "linked_nodes": ["community_signposting", "debt_support", "wellbeing_support", "contact_welfare"]
-  },
-  {
-    "id": "sleep_support",
-    "answers": [
-      "Better sleep support includes routines, environment changes, and stress reduction.",
-      "I can share practical tips and resources to improve sleep."
-    ],
-    "phrases": ["sleep help", "cant sleep", "insomnia tips", "sleep support"],
-    "misspellings": ["sleap help", "insomia tips", "cant slep"],
-    "keywords": { "wellbeing": ["sleep", "stress"], "resources": ["tips"] },
-    "linked_nodes": ["mh_resources", "stress_management_tips", "mindfulness_resources", "wellbeing_support"]
-  },
-  {
-    "id": "stress_management_tips",
-    "answers": [
-      "Here are stress management tips: breathing techniques, time‑boxing, and short movement breaks.",
-      "Would you like a resource pack or a wellbeing appointment?"
-    ],
-    "phrases": ["stress tips", "manage stress", "deal with stress", "stress help"],
-    "misspellings": ["stres tips", "manadge stress"],
-    "keywords": { "wellbeing": ["stress"], "resources": ["tips", "guide"] },
-    "linked_nodes": ["resource_pack", "book_appointment", "mindfulness_resources", "wellbeing_workshop"]
-  },
-  {
-    "id": "mindfulness_resources",
-    "answers": [
-      "Mindfulness resources include short practices you can do during the day.",
-      "I can provide audio guides and simple routines."
-    ],
-    "phrases": ["mindfulness", "meditation help", "breathing exercises"],
-    "misspellings": ["mindfulnes", "meditaton help"],
-    "keywords": { "wellbeing": ["mindfulness", "breathing"], "resources": ["audio", "guide"] },
-    "linked_nodes": ["mh_resources", "resource_pack", "wellbeing_workshop", "wellbeing_support"]
-  },
-  {
-    "id": "mediation_info",
-    "answers": [
-      "Workplace mediation can help resolve conflicts informally and constructively.",
-      "I can explain how mediation works and next steps."
-    ],
-    "phrases": ["mediation", "mediation at work", "conflict mediation"],
-    "misspellings": ["mediaton", "mediation at wrk"],
-    "keywords": { "hr": ["mediation", "conflict"], "contact": ["support"] },
-    "linked_nodes": ["conflict_resolution", "dignity_at_work", "report_concern", "contact_welfare"]
-  },
-  {
-    "id": "conflict_resolution",
-    "answers": [
-      "Let’s look at options to resolve a workplace conflict — informal steps, mediation, or formal routes.",
-      "I can help you consider next steps based on your situation."
-    ],
-    "phrases": ["conflict at work", "resolve conflict", "work dispute", "issue with colleague"],
-    "misspellings": ["confict at work", "reslove conflict"],
-    "keywords": { "hr": ["conflict", "process"], "wellbeing": ["support"] },
-    "linked_nodes": ["mediation_info", "report_concern", "dignity_at_work", "contact_welfare"]
-  },
-  {
-    "id": "training_learning_support",
-    "answers": [
-      "We can signpost learning resources and training opportunities relevant to your role.",
-      "If this links to performance goals, I can help you plan next steps."
-    ],
-    "phrases": ["training support", "learning help", "course help", "skills training"],
-    "misspellings": ["trianing support", "lernng help"],
-    "keywords": { "hr": ["training", "development"], "wellbeing": ["support"] },
-    "linked_nodes": ["career_development", "coaching_mentoring", "performance_support"]
-  },
-  {
-    "id": "career_development",
-    "answers": [
-      "Career development support includes objectives, learning, and mentoring.",
-      "Let’s map options that fit your goals and wellbeing."
-    ],
-    "phrases": ["career development", "progression help", "help with my career"],
-    "misspellings": ["carrier development", "progresion help"],
-    "keywords": { "hr": ["development", "objectives"], "wellbeing": ["support"] },
-    "linked_nodes": ["training_learning_support", "coaching_mentoring", "performance_support"]
-  },
-  {
-    "id": "coaching_mentoring",
-    "answers": [
-      "Coaching or mentoring can support your wellbeing and performance.",
-      "I can explain options and how to access them."
-    ],
-    "phrases": ["coaching", "mentoring", "find a mentor", "work coach"],
-    "misspellings": ["coching", "mentoringg"],
-    "keywords": { "hr": ["development"], "wellbeing": ["support"] },
-    "linked_nodes": ["career_development", "training_learning_support", "performance_support", "wellbeing_support"]
-  },
-  {
-    "id": "health_safety_report",
-    "answers": [
-      "Health & Safety concerns should be reported promptly. I can explain how to report safely.",
-      "If there’s immediate danger, follow emergency procedures."
-    ],
-    "phrases": ["health and safety", "report hazard", "unsafe at work", "safety concern"],
-    "misspellings": ["helth & safety", "saftey concern"],
-    "keywords": { "hr": ["safety", "report"], "crisis": ["danger", "risk"] },
-    "linked_nodes": ["incident_injury_support", "report_concern", "crisis_support", "contact_welfare"]
-  },
-  {
-    "id": "incident_injury_support",
-    "answers": [
-      "Work incidents or injuries should be recorded via the H&S process.",
-      "I can signpost the form and who to notify."
-    ],
-    "phrases": ["incident report", "injury at work", "accident at work"],
-    "misspellings": ["incidnt report", "injury @ work"],
-    "keywords": { "hr": ["incident", "report"], "contact": ["notify"] },
-    "linked_nodes": ["health_safety_report", "hr_portal_help", "contact_welfare"]
-  },
-  {
-    "id": "vaccination_info",
-    "answers": [
-      "For vaccination or flu‑jab guidance, I can share internal signposting and support options.",
-      "Let me know what you need and I’ll point you in the right direction."
-    ],
-    "phrases": ["vaccination info", "flu jab", "vaccine help"],
-    "misspellings": ["vaccinationn info", "flue jab"],
-    "keywords": { "hr": ["guidance"], "wellbeing": ["health"] },
-    "linked_nodes": ["wellbeing_support", "hr_portal_help", "contact_welfare"]
-  },
-  {
-    "id": "wellbeing_checkin",
-    "answers": [
-      "We can schedule a quick wellbeing check‑in with a welfare officer.",
-      "Would you like a short call or a full appointment?"
-    ],
-    "phrases": ["wellbeing check in", "check-in", "welfare check", "quick chat with welfare"],
-    "misspellings": ["checkin", "wellbeing chek in"],
-    "keywords": { "contact": ["call"], "wellbeing": ["check-in", "support"] },
-    "linked_nodes": ["callback_request", "book_appointment", "reschedule_appointment"]
-  },
-  {
-    "id": "appointment_reminder",
-    "answers": [
-      "I can note a reminder for your wellbeing appointment or follow‑up.",
-      "Tell me the time window you prefer."
-    ],
-    "phrases": ["appointment reminder", "remind me", "set reminder"],
-    "misspellings": ["apointment reminder", "remnder"],
-    "keywords": { "contact": ["reminder"], "wellbeing": ["appointment"] },
-    "linked_nodes": ["book_appointment", "reschedule_appointment", "cancel_appointment"]
-  },
-  {
-    "id": "restart_flow",
-    "answers": [
-      "No problem — let’s start fresh. What would you like help with: wellbeing, HR, financial, adjustments, or contact?",
-      "You can also type a few words (e.g., ‘stress’, ‘money’, ‘leave’, ‘adjustments’)."
-    ],
-    "phrases": ["restart", "start over", "begin again", "reset"],
-    "misspellings": ["re-start", "resart", "strt over"],
-    "keywords": { },
-    "linked_nodes": ["help_menu", "wellbeing_support", "financial_support", "hr_leave", "workplace_adjustments", "contact_welfare"]
-  },
-  {
-    "id": "help_menu",
-    "answers": [
-      "Main options: Wellbeing, HR (leave/policy), Financial/Hardship, Adjustments, Contact Welfare.",
-      "Tell me which one you need, or type a few words describing your situation."
-    ],
-    "phrases": ["menu", "options", "help menu", "what can you do"],
-    "misspellings": ["menue", "optins"],
-    "keywords": { },
-    "linked_nodes": ["wellbeing_support", "financial_support", "hr_leave", "workplace_adjustments", "contact_welfare", "policy_overview"]
-  },
-  {
-    "id": "no_match_handover",
-    "answers": [
-      "I’m not sure I understood. I can connect you with the welfare team or show the help menu.",
-      "Would you like a callback or to see options?"
-    ],
-    "phrases": ["no match", "dont understand", "confused", "help me please"],
-    "misspellings": ["dnt understand", "confusd", "hep me"],
-    "keywords": { "contact": ["callback", "speak"], "wellbeing": ["support"] },
-    "linked_nodes": ["callback_request", "help_menu", "contact_welfare", "general_fallback"]
-  },
-  {
-    "id": "language_access_support",
-    "answers": [
-      "If you need language or interpreter support, I can arrange signposting or a welfare contact.",
-      "Tell me your preferred language and we’ll find the best option."
-    ],
-    "phrases": ["interpreter", "translation help", "language support", "speak another language"],
-    "misspellings": ["interprter", "translaton help", "langauge support"],
-    "keywords": { "contact": ["interpreter", "language"], "wellbeing": ["support"] },
-    "linked_nodes": ["contact_welfare", "wellbeing_support", "hr_portal_help"]
-  }
-]
 
