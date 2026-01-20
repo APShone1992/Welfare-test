@@ -1,46 +1,655 @@
+
 [
   {
-    "question": "What are your opening times?",
-    "answer": "We\u2019re open <b>Monday\u2013Friday, 8:30\u201317:00</b>.",
-    "synonyms": [
-      "When do you open?",
-      "Business hours",
-      "What time are you open?"
+    "id": "start",
+    "question": "How can I help you today?",
+    "answer": "I can assist with welfare, wellbeing, HR processes, financial support, workplace adjustments, and more.",
+    "synonyms": ["Hello", "Hi", "I need help", "Support"],
+    "tags": ["start", "welcome"],
+    "follow_up": [
+      "Are you looking for wellbeing support?",
+      "Do you need help with HR or policies?",
+      "Are you asking about financial support?",
+      "Do you want to speak to someone?"
     ],
-    "tags": [
-      "hours",
-      "open",
-      "schedule"
-    ]
+    "triggers": {
+      "wellbeing": "wellbeing_overview",
+      "mental": "wellbeing_overview",
+      "hr": "hr_topics",
+      "financial": "financial_support_info",
+      "money": "financial_support_info",
+      "speak": "contact_welfare_team"
+    }
   },
+
   {
-    "question": "How can I contact support?",
-    "answer": "Email us at <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
-    "synonyms": [
-      "Support email",
-      "Customer service",
-      "Help contact"
+    "id": "wellbeing_overview",
+    "question": "Are you looking for wellbeing support?",
+    "answer": "We offer wellbeing support including counselling, mental health resources, and wellbeing check-ins.",
+    "synonyms": ["wellbeing", "mental health", "stress"],
+    "tags": ["wellbeing", "mental health"],
+    "follow_up": [
+      "Do you want to book a wellbeing appointment?",
+      "Are you seeking mental health resources?",
+      "Do you need urgent support?"
     ],
-    "tags": [
-      "support",
-      "email",
-      "phone",
-      "contact"
-    ]
+    "triggers": {
+      "book": "book_wellbeing",
+      "appointment": "book_wellbeing",
+      "urgent": "urgent_support",
+      "crisis": "urgent_support",
+      "resources": "mental_health_resources"
+    }
   },
+
   {
-    "question": "Where are you located?",
-    "answer": "We\u2019re based in <b>Nuneaton, UK</b>. Visits by appointment.",
-    "synonyms": [
-      "Address",
-      "Office location",
-      "Where is your office?"
+    "id": "book_wellbeing",
+    "question": "Would you like to book a wellbeing appointment?",
+    "answer": "I can help with that. We offer confidential 1-to-1 appointments with our welfare team.",
+    "synonyms": ["book wellbeing", "counselling appointment"],
+    "tags": ["booking", "wellbeing"],
+    "follow_up": [
+      "Do you prefer an online appointment?",
+      "Would you like an in-person appointment?",
+      "Do you need to know available times?"
     ],
-    "tags": [
-      "address",
-      "map",
-      "location",
-      "office"
-    ]
+    "triggers": {
+      "online": "book_online",
+      "in person": "book_inperson",
+      "time": "appointment_times"
+    }
+  },
+
+  {
+    "id": "book_online",
+    "question": "Do you prefer an online appointment?",
+    "answer": "Online appointments are available Monday–Friday. A welfare officer will send you a Teams link.",
+    "synonyms": ["online support", "virtual meeting"],
+    "tags": ["appointment", "online"],
+    "follow_up": [
+      "Do you want to confirm the booking?",
+      "Do you want to see available times?"
+    ],
+    "triggers": {
+      "confirm": "appointment_confirmed",
+      "yes": "appointment_confirmed",
+      "times": "appointment_times"
+    }
+  },
+
+  {
+    "id": "book_inperson",
+    "question": "Would you prefer an in-person appointment?",
+    "answer": "We can arrange an in-person welfare meeting at our office.",
+    "synonyms": ["in person", "face to face"],
+    "tags": ["appointment", "inperson"],
+    "follow_up": [
+      "Would you like directions?",
+      "Do you want to confirm the booking?"
+    ],
+    "triggers": {
+      "confirm": "appointment_confirmed",
+      "directions": "office_directions"
+    }
+  },
+
+  {
+    "id": "office_directions",
+    "question": "Do you need directions to the welfare office?",
+    "answer": "The welfare office is located on the 2nd floor, near HR.",
+    "synonyms": ["directions", "where is welfare"],
+    "tags": ["location", "office"],
+    "follow_up": [
+      "Would you like to confirm your booking?",
+      "Do you need parking information?"
+    ],
+    "triggers": {
+      "parking": "parking_info",
+      "confirm": "appointment_confirmed"
+    }
+  },
+
+  {
+    "id": "parking_info",
+    "question": "Do you need parking information?",
+    "answer": "Visitor and staff parking is available near the main entrance.",
+    "synonyms": ["parking", "car park"],
+    "tags": ["parking"],
+    "follow_up": [
+      "Would you like to confirm your appointment?",
+      "Do you need anything else?"
+    ],
+    "triggers": {
+      "confirm": "appointment_confirmed"
+    }
+  },
+
+  {
+    "id": "appointment_times",
+    "question": "Do you want to know the available appointment times?",
+    "answer": "Appointments are available 9am–4pm, Monday–Friday.",
+    "synonyms": ["available times", "appointment times"],
+    "tags": ["appointment", "times"],
+    "follow_up": [
+      "Would you like to book now?",
+      "Do you prefer morning or afternoon?"
+    ],
+    "triggers": {
+      "book": "appointment_confirmed",
+      "morning": "appointment_confirmed",
+      "afternoon": "appointment_confirmed"
+    }
+  },
+
+  {
+    "id": "appointment_confirmed",
+    "question": "Your appointment is confirmed.",
+    "answer": "A welfare officer will contact you shortly with details.",
+    "synonyms": ["confirmed", "done"],
+    "tags": ["appointment", "confirmed"],
+    "follow_up": [
+      "Would you like support with anything else?",
+      "Do you want wellbeing resources?"
+    ],
+    "triggers": {
+      "resources": "mental_health_resources",
+      "no": "end"
+    }
+  },
+
+  {
+    "id": "mental_health_resources",
+    "question": "Are you looking for mental health resources?",
+    "answer": "We offer self-help guides, stress management tools, and wellbeing workshops.",
+    "synonyms": ["mental health", "resources"],
+    "tags": ["mental health", "resources"],
+    "follow_up": [
+      "Do you want to attend a wellbeing workshop?",
+      "Would you like more mental health materials?"
+    ],
+    "triggers": {
+      "workshop": "wellbeing_workshop",
+      "materials": "resource_pack"
+    }
+  },
+
+  {
+    "id": "wellbeing_workshop",
+    "question": "Would you like to join a wellbeing workshop?",
+    "answer": "Workshops run weekly and cover stress, resilience, and emotional wellbeing.",
+    "synonyms": ["workshop", "session"],
+    "tags": ["workshop"],
+    "follow_up": [
+      "Would you like to sign up?",
+      "Do you want more details?"
+    ],
+    "triggers": {
+      "sign": "workshop_confirmed",
+      "details": "workshop_details"
+    }
+  },
+
+  {
+    "id": "workshop_details",
+    "question": "Do you want more details about wellbeing workshops?",
+    "answer": "Workshops last 1 hour and are led by trained welfare advisors.",
+    "synonyms": ["more details", "info"],
+    "tags": ["workshop"],
+    "follow_up": [
+      "Would you like to sign up now?",
+      "Do you want alternative support?"
+    ],
+    "triggers": {
+      "sign": "workshop_confirmed",
+      "alternative": "wellbeing_overview"
+    }
+  },
+
+  {
+    "id": "workshop_confirmed",
+    "question": "You're signed up for the wellbeing workshop.",
+    "answer": "A confirmation email will be sent to you shortly.",
+    "synonyms": ["signed up", "registered"],
+    "tags": ["workshop", "confirmed"],
+    "follow_up": [
+      "Do you need anything else?",
+      "Would you like mental health resources?"
+    ],
+    "triggers": {
+      "resources": "mental_health_resources",
+      "no": "end"
+    }
+  },
+
+  {
+    "id": "urgent_support",
+    "question": "Do you need urgent support?",
+    "answer": "If you're in immediate crisis, please contact emergency services or a manager immediately.",
+    "synonyms": ["crisis", "urgent", "emergency"],
+    "tags": ["urgent", "crisis"],
+    "follow_up": [
+      "Do you want to speak to a welfare officer urgently?",
+      "Do you want crisis resources?"
+    ],
+    "triggers": {
+      "speak": "contact_welfare_team",
+      "resources": "crisis_resources"
+    }
+  },
+
+  {
+    "id": "crisis_resources",
+    "question": "Do you want crisis resources?",
+    "answer": "Here are crisis resources available to staff, including 24/7 helplines.",
+    "synonyms": ["crisis resources", "help"],
+    "tags": ["crisis", "resources"],
+    "follow_up": [
+      "Would you like to speak to someone now?",
+      "Do you need non-urgent support?"
+    ],
+    "triggers": {
+      "speak": "contact_welfare_team",
+      "non urgent": "wellbeing_overview"
+    }
+  },
+
+  {
+    "id": "contact_welfare_team",
+    "question": "Do you want to speak directly to a welfare officer?",
+    "answer": "You can reach the welfare team via phone or email.",
+    "synonyms": ["contact welfare", "speak to someone"],
+    "tags": ["contact", "support"],
+    "follow_up": [
+      "Do you want the phone number?",
+      "Do you want the email address?"
+    ],
+    "triggers": {
+      "phone": "give_phone",
+      "email": "give_email"
+    }
+  },
+
+  {
+    "id": "give_phone",
+    "question": "Do you want the welfare team's phone number?",
+    "answer": "You can call: 01234 567890",
+    "synonyms": ["phone", "number"],
+    "tags": ["contact"],
+    "follow_up": [
+      "Do you need the email too?",
+      "Do you want to book an appointment?"
+    ],
+    "triggers": {
+      "email": "give_email",
+      "appointment": "book_wellbeing"
+    }
+  },
+
+  {
+    "id": "give_email",
+    "question": "Do you want the welfare team's email address?",
+    "answer": "You can email: welfare@company.com",
+    "synonyms": ["email welfare", "email"],
+    "tags": ["contact"],
+    "follow_up": [
+      "Do you want the phone number?",
+      "Do you want to book a welfare appointment?"
+    ],
+    "triggers": {
+      "phone": "give_phone",
+      "appointment": "book_wellbeing"
+    }
+  },
+
+  {
+    "id": "resource_pack",
+    "question": "Would you like a wellbeing resource pack?",
+    "answer": "I can send you materials covering stress, mindfulness, and resilience.",
+    "synonyms": ["resources", "pack"],
+    "tags": ["resources"],
+    "follow_up": [
+      "Do you want to book a wellbeing appointment?",
+      "Do you need something else?"
+    ],
+    "triggers": {
+      "appointment": "book_wellbeing",
+      "no": "end"
+    }
+  },
+
+  {
+    "id": "hr_topics",
+    "question": "Are you looking for HR or policy information?",
+    "answer": "I can help with leave, sickness, adjustments, and workplace policies.",
+    "synonyms": ["HR", "policies"],
+    "tags": ["hr"],
+    "follow_up": [
+      "Are you asking about leave or sickness?",
+      "Do you need workplace adjustments?",
+      "Are you asking about reporting concerns?"
+    ],
+    "triggers": {
+      "leave": "leave_info",
+      "sick": "leave_info",
+      "adjustment": "workplace_adjustments",
+      "concern": "report_concern"
+    }
+  },
+
+  {
+    "id": "leave_info",
+    "question": "Do you want information about leave or sickness?",
+    "answer": "We can help you understand sick leave, annual leave, and welfare-related absences.",
+    "synonyms": ["leave", "sickness"],
+    "tags": ["leave"],
+    "follow_up": [
+      "Do you want to request time off?",
+      "Do you want to see the leave policy?"
+    ],
+    "triggers": {
+      "request": "request_leave",
+      "policy": "leave_policy"
+    }
+  },
+
+  {
+    "id": "request_leave",
+    "question": "Do you want to request time off?",
+    "answer": "You can submit a leave request through the HR portal.",
+    "synonyms": ["time off", "leave request"],
+    "tags": ["leave"],
+    "follow_up": [
+      "Do you want help accessing the HR portal?",
+      "Do you need leave policy details?"
+    ],
+    "triggers": {
+      "portal": "hr_portal_help",
+      "policy": "leave_policy"
+    }
+  },
+
+  {
+    "id": "leave_policy",
+    "question": "Do you want to see the leave policy?",
+    "answer": "The leave policy outlines sickness, annual leave, and welfare leave guidelines.",
+    "synonyms": ["policy", "leave info"],
+    "tags": ["leave", "policy"],
+    "follow_up": [
+      "Do you want help submitting a request?",
+      "Do you need anything else?"
+    ],
+    "triggers": {
+      "submit": "request_leave",
+      "no": "end"
+    }
+  },
+
+  {
+    "id": "hr_portal_help",
+    "question": "Do you need help accessing the HR portal?",
+    "answer": "You can log in using your staff credentials. Let me know if you need IT support.",
+    "synonyms": ["HR portal", "log in"],
+    "tags": ["hr", "portal"],
+    "follow_up": [
+      "Do you need IT support?",
+      "Do you need policy information?"
+    ],
+    "triggers": {
+      "IT": "tech_issue",
+      "policy": "hr_topics"
+    }
+  },
+
+  {
+    "id": "workplace_adjustments",
+    "question": "Do you need workplace adjustments?",
+    "answer": "We can support with ergonomic equipment, flexible hours, and wellbeing adjustments.",
+    "synonyms": ["adjustments", "reasonable adjustments"],
+    "tags": ["adjustments"],
+    "follow_up": [
+      "Do you want to request adjustments?",
+      "Do you want to speak to welfare about support needs?"
+    ],
+    "triggers": {
+      "request": "adjustment_request",
+      "speak": "contact_welfare_team"
+    }
+  },
+
+  {
+    "id": "adjustment_request",
+    "question": "Do you want to request adjustments?",
+    "answer": "An adjustment request can be submitted to HR with supporting documents.",
+    "synonyms": ["request adjustment"],
+    "tags": ["adjustment"],
+    "follow_up": [
+      "Do you want to know which documents you need?",
+      "Do you need help contacting HR?"
+    ],
+    "triggers": {
+      "documents": "required_documents",
+      "HR": "hr_topics"
+    }
+  },
+
+  {
+    "id": "required_documents",
+    "question": "Do you want to know which documents you need?",
+    "answer": "You may need medical evidence or an occupational health recommendation.",
+    "synonyms": ["documents", "evidence"],
+    "tags": ["documents"],
+    "follow_up": [
+      "Do you want help contacting occupational health?",
+      "Do you want to speak to welfare?"
+    ],
+    "triggers": {
+      "occupational": "contact_oh",
+      "welfare": "contact_welfare_team"
+    }
+  },
+
+  {
+    "id": "contact_oh",
+    "question": "Do you want to contact occupational health?",
+    "answer": "Occupational health can provide assessments and recommendations.",
+    "synonyms": ["OH", "occupational health"],
+    "tags": ["OH"],
+    "follow_up": [
+      "Do you want the OH email?",
+      "Do you need further support?"
+    ],
+    "triggers": {
+      "email": "give_oh_email",
+      "support": "wellbeing_overview"
+    }
+  },
+
+  {
+    "id": "give_oh_email",
+    "question": "Do you want the occupational health email?",
+    "answer": "You can contact OH at: oh@company.com",
+    "synonyms": ["email oh"],
+    "tags": ["OH"],
+    "follow_up": [
+      "Do you need anything else?",
+      "Do you want HR contact details?"
+    ],
+    "triggers": {
+      "HR": "hr_topics",
+      "no": "end"
+    }
+  },
+
+  {
+    "id": "report_concern",
+    "question": "Do you want to report a concern?",
+    "answer": "Concerns can be reported confidentially to HR or welfare.",
+    "synonyms": ["report", "concern"],
+    "tags": ["concern"],
+    "follow_up": [
+      "Do you want to contact HR?",
+      "Do you want to speak to welfare?"
+    ],
+    "triggers": {
+      "HR": "hr_topics",
+      "welfare": "contact_welfare_team"
+    }
+  },
+
+  {
+    "id": "tech_issue",
+    "question": "Are you having technical issues?",
+    "answer": "I can help with login problems, system access, and HR portal issues.",
+    "synonyms": ["IT", "tech issue"],
+    "tags": ["tech"],
+    "follow_up": [
+      "Is this a login issue?",
+      "Are you unable to access the HR portal?"
+    ],
+    "triggers": {
+      "login": "login_help",
+      "portal": "hr_portal_help"
+    }
+  },
+
+  {
+    "id": "login_help",
+    "question": "Are you unable to log in?",
+    "answer": "Try resetting your password via the IT portal.",
+    "synonyms": ["can't log in", "login issue"],
+    "tags": ["login"],
+    "follow_up": [
+      "Do you want the password reset link?",
+      "Do you need IT contact details?"
+    ],
+    "triggers": {
+      "reset": "send_reset_link",
+      "IT": "give_it_contact"
+    }
+  },
+
+  {
+    "id": "send_reset_link",
+    "question": "Do you want the password reset link?",
+    "answer": "Here is the password reset link: https://reset.company.com",
+    "synonyms": ["reset link"],
+    "tags": ["password"],
+    "follow_up": [
+      "Did that fix your issue?",
+      "Do you need further support?"
+    ],
+    "triggers": {
+      "support": "tech_issue",
+      "yes": "end"
+    }
+  },
+
+  {
+    "id": "give_it_contact",
+    "question": "Do you need IT contact details?",
+    "answer": "You can reach IT at: it@company.com",
+    "synonyms": ["IT contact"],
+    "tags": ["IT"],
+    "follow_up": [
+      "Do you need help with anything else?",
+      "Do you want wellbeing support?"
+    ],
+    "triggers": {
+      "wellbeing": "wellbeing_overview",
+      "no": "end"
+    }
+  },
+
+  {
+    "id": "financial_support_info",
+    "question": "Do you need information about financial support?",
+    "answer": "We offer financial wellbeing guidance, emergency loans, and hardship assistance.",
+    "synonyms": ["money", "financial help"],
+    "tags": ["financial"],
+    "follow_up": [
+      "Are you asking about hardship support?",
+      "Do you want to apply for financial assistance?",
+      "Do you want to speak to welfare?"
+    ],
+    "triggers": {
+      "hardship": "hardship_info",
+      "apply": "apply_financial_support",
+      "welfare": "contact_welfare_team"
+    }
+  },
+
+  {
+    "id": "hardship_info",
+    "question": "Do you want information on hardship support?",
+    "answer": "Hardship support is available for financial emergencies.",
+    "synonyms": ["hardship", "emergency money"],
+    "tags": ["financial", "hardship"],
+    "follow_up": [
+      "Do you want to apply for hardship support?",
+      "Do you need welfare contacts?"
+    ],
+    "triggers": {
+      "apply": "apply_financial_support",
+      "contacts": "contact_welfare_team"
+    }
+  },
+
+  {
+    "id": "apply_financial_support",
+    "question": "Do you want to apply for financial support?",
+    "answer": "You can apply via the welfare support form.",
+    "synonyms": ["apply support"],
+    "tags": ["financial"],
+    "follow_up": [
+      "Do you want the application form?",
+      "Do you need help completing it?"
+    ],
+    "triggers": {
+      "form": "provide_form",
+      "help": "form_support"
+    }
+  },
+
+  {
+    "id": "provide_form",
+    "question": "Do you want the financial support application form?",
+    "answer": "Here is the application form: https://company.com/welfare-form",
+    "synonyms": ["form link", "application form"],
+    "tags": ["financial"],
+    "follow_up": [
+      "Do you need help completing it?",
+      "Do you want to speak to welfare?"
+    ],
+    "triggers": {
+      "help": "form_support",
+      "welfare": "contact_welfare_team"
+    }
+  },
+
+  {
+    "id": "form_support",
+    "question": "Do you need help completing the form?",
+    "answer": "I can walk you through the required information.",
+    "synonyms": ["form help"],
+    "tags": ["form", "financial"],
+    "follow_up": [
+      "Do you want guidance on documents?",
+      "Do you want to speak with welfare?"
+    ],
+    "triggers": {
+      "documents": "required_documents",
+      "welfare": "contact_welfare_team"
+    }
+  },
+
+  {
+    "id": "end",
+    "question": "Is there anything else you need?",
+    "answer": "I'm here whenever you need support.",
+    "synonyms": ["goodbye", "exit"],
+    "tags": ["end"],
+    "follow_up": [],
+    "triggers": {}
   }
 ]
+
