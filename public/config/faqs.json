@@ -1,270 +1,269 @@
 
-{
-  "nodes": [
-    {
-      "id": "support_overview",
-      "answers": [
-        "I can help with wellbeing, HR (leave/policy), financial support, adjustments, and contacting welfare."
-      ],
-      "phrases": ["help", "what can you do", "support", "menu"],
-      "misspellings": ["hlp", "suport", "hep"],
-      "keywords": { "general": ["help", "support", "menu"] },
-      "linked_nodes": ["wellbeing_support", "financial_support", "hr_leave", "workplace_adjustments", "contact_information", "opening_times"],
-      "links": [
-        { "label": "Help hub", "url": "https://intranet.company.com/help" }
-      ]
-    },
-    {
-      "id": "wellbeing_support",
-      "answers": [
-        "We offer wellbeing appointments, guidance, and confidential support."
-      ],
-      "phrases": ["wellbeing", "mental health", "talk to someone"],
-      "misspellings": ["welbeing", "wellbin", "mentel"],
-      "keywords": { "wellbeing": ["support", "stress", "anxious", "talk"] },
-      "linked_nodes": ["book_appointment", "mh_resources", "crisis_support", "contact_information"],
-      "links": [
-        { "label": "Wellbeing hub", "url": "https://intranet.company.com/wellbeing" }
-      ]
-    },
-    {
-      "id": "book_appointment",
-      "answers": [
-        "Would you like an online or in‑person appointment?"
-      ],
-      "phrases": ["book appointment", "appointment", "book meeting"],
-      "misspellings": ["apointment", "appointmnt"],
-      "keywords": { "wellbeing": ["appointment", "book"] },
-      "linked_nodes": ["appointment_online", "appointment_inperson", "appointment_times"],
-      "links": [
-        { "label": "Book now", "url": "https://intranet.company.com/wellbeing/book" }
-      ]
-    },
-    {
-      "id": "appointment_online",
-      "answers": [
-        "Online appointments are available Mon–Fri. We’ll send a Teams link."
-      ],
-      "phrases": ["online appointment", "virtual", "teams"],
-      "misspellings": ["onlne", "on-line"],
-      "keywords": { "online": ["teams", "virtual"] },
-      "linked_nodes": ["appointment_confirmed", "appointment_times"],
-      "links": [
-        { "label": "Online booking", "url": "https://intranet.company.com/wellbeing/book?mode=online" }
-      ]
-    },
-    {
-      "id": "appointment_inperson",
-      "answers": [
-        "In‑person appointments are at the welfare office."
-      ],
-      "phrases": ["in person", "face to face", "come in"],
-      "misspellings": ["inpersn"],
-      "keywords": { "inperson": ["office", "visit"] },
-      "linked_nodes": ["appointment_confirmed", "appointment_times"],
-      "links": [
-        { "label": "In‑person booking", "url": "https://intranet.company.com/wellbeing/book?mode=inperson" },
-        { "label": "Find office", "url": "https://intranet.company.com/locations/welfare-office" }
-      ]
-    },
-    {
-      "id": "appointment_times",
-      "answers": [
-        "Appointments: Monday–Friday, 9:00–16:00."
-      ],
-      "phrases": ["appointment times", "availability", "when can i book"],
-      "misspellings": ["apointment times", "availablity"],
-      "keywords": { "time": ["times", "availability"] },
-      "linked_nodes": ["book_appointment"],
-      "links": [
-        { "label": "Check availability", "url": "https://intranet.company.com/wellbeing/availability" }
-      ]
-    },
-    {
-      "id": "appointment_confirmed",
-      "answers": [
-        "Your appointment is booked. A confirmation email will follow."
-      ],
-      "phrases": ["confirmed", "booked", "ok thanks"],
-      "misspellings": ["confrmd", "cnfirm"],
-      "keywords": { "confirm": ["email"] },
-      "linked_nodes": ["wellbeing_support"],
-      "links": [
-        { "label": "Manage booking", "url": "https://intranet.company.com/wellbeing/manage" }
-      ]
-    },
-    {
-      "id": "financial_support",
-      "answers": [
-        "We can help with financial wellbeing, hardship support, and emergency assistance."
-      ],
-      "phrases": ["financial support", "money worries", "help with bills"],
-      "misspellings": ["financal", "finacial suport"],
-      "keywords": { "financial": ["money", "bills", "debt", "hardship"] },
-      "linked_nodes": ["apply_financial_support", "required_documents", "contact_information"],
-      "links": [
-        { "label": "Financial help", "url": "https://intranet.company.com/financial" }
-      ]
-    },
-    {
-      "id": "apply_financial_support",
-      "answers": [
-        "Apply via the internal financial support form. I can guide you if needed."
-      ],
-      "phrases": ["apply financial support", "apply for help", "financial form"],
-      "misspellings": ["aply", "aplly"],
-      "keywords": { "financial": ["apply", "form"] },
-      "linked_nodes": ["required_documents"],
-      "links": [
-        { "label": "Apply now", "url": "https://intranet.company.com/financial/apply" },
-        { "label": "Form", "url": "https://company.com/financial-form" }
-      ]
-    },
-    {
-      "id": "hr_leave",
-      "answers": [
-        "I can help with annual leave, sick leave, and reporting sickness."
-      ],
-      "phrases": ["time off", "annual leave", "sick leave", "report sickness"],
-      "misspellings": ["leev", "sic", "annuel"],
-      "keywords": { "hr": ["leave", "sickness", "holiday", "policy"] },
-      "linked_nodes": ["leave_policy", "request_leave"],
-      "links": [
-        { "label": "Leave hub", "url": "https://intranet.company.com/hr/leave" }
-      ]
-    },
-    {
-      "id": "required_documents",
-      "answers": [
-        "You may need ID, recent payslips, and any relevant evidence."
-      ],
-      "phrases": ["what documents", "required documents", "what do i need"],
-      "misspellings": ["documnts", "reqired docs"],
-      "keywords": { "documents": ["evidence", "payslip", "id"] },
-      "linked_nodes": ["apply_financial_support", "hr_leave"],
-      "links": [
-        { "label": "Document checklist", "url": "https://intranet.company.com/docs/checklist" }
-      ]
-    },
-    {
-      "id": "workplace_adjustments",
-      "answers": [
-        "We support ergonomic equipment, flexible hours, and reasonable adjustments."
-      ],
-      "phrases": ["workplace adjustments", "reasonable adjustments", "equipment request"],
-      "misspellings": ["adjusments", "adjustmnts"],
-      "keywords": { "adjustments": ["equipment", "chair", "desk", "hours", "ergonomic"] },
-      "linked_nodes": ["required_documents"],
-      "links": [
-        { "label": "Adjustments", "url": "https://intranet.company.com/adjustments" }
-      ]
-    },
-    {
-      "id": "policy_overview",
-      "answers": [
-        "We have policies on HR, wellbeing, adjustments, leave, and conduct."
-      ],
-      "phrases": ["policy", "policies", "policy help"],
-      "misspellings": ["polciy", "polcy"],
-      "keywords": { "policy": ["overview", "guidance"] },
-      "linked_nodes": ["leave_policy"],
-      "links": [
-        { "label": "Policy library", "url": "https://intranet.company.com/policies" }
-      ]
-    },
-    {
-      "id": "leave_policy",
-      "answers": [
-        "The leave policy covers annual leave, sick leave, and welfare leave."
-      ],
-      "phrases": ["leave policy", "holiday policy", "sickness policy"],
-      "misspellings": ["leav policy", "polciy"],
-      "keywords": { "hr": ["policy", "leave"] },
-      "linked_nodes": ["request_leave"],
-      "links": [
-        { "label": "Leave policy", "url": "https://intranet.company.com/policies/leave" }
-      ]
-    },
-    {
-      "id": "request_leave",
-      "answers": [
-        "Submit leave requests via the HR portal."
-      ],
-      "phrases": ["request leave", "book time off", "apply for leave"],
-      "misspellings": ["rqst leave", "aply for leave"],
-      "keywords": { "hr": ["leave", "request", "portal"] },
-      "linked_nodes": ["hr_leave"],
-      "links": [
-        { "label": "HR portal", "url": "https://intranet.company.com/hr/portal" }
-      ]
-    },
-    {
-      "id": "mh_resources",
-      "answers": [
-        "Here are quick resources on stress, resilience, and self‑care."
-      ],
-      "phrases": ["resources", "self help", "mental health resources"],
-      "misspellings": ["resorces", "self-helf"],
-      "keywords": { "wellbeing": ["resources", "guide"] },
-      "linked_nodes": ["wellbeing_support"],
-      "links": [
-        { "label": "Wellbeing resources", "url": "https://intranet.company.com/wellbeing/resources" }
-      ]
-    },
-    {
-      "id": "contact_information",
-      "answers": [
-        "Welfare phone: 01234 567890. Email: welfare@company.com."
-      ],
-      "phrases": ["contact info", "contact welfare", "email welfare", "phone welfare"],
-      "misspellings": ["contct info", "emal welfare", "fone"],
-      "keywords": { "contact": ["phone", "email", "speak", "call"] },
-      "linked_nodes": [],
-      "links": [
-        { "label": "Contact directory", "url": "https://intranet.company.com/contacts" },
-        { "label": "Email welfare", "url": "mailto:welfare@company.com" },
-        { "label": "Call welfare", "url": "tel:+441234567890" }
-      ]
-    },
-    {
-      "id": "opening_times",
-      "answers": [
-        "Office hours: Mon–Fri 9:00–17:00. Appointments: 9:00–16:00."
-      ],
-      "phrases": ["opening times", "hours", "when are you open"],
-      "misspellings": ["oppening times"],
-      "keywords": { "info": ["hours", "opening"] },
-      "linked_nodes": [],
-      "links": [
-        { "label": "Calendar & holidays", "url": "https://intranet.company.com/calendar" }
-      ]
-    },
-    {
-      "id": "crisis_support",
-      "answers": [
-        "If you are in immediate danger, contact emergency services. I can also connect you to welfare urgently."
-      ],
-      "phrases": ["urgent", "emergency", "i need help now", "i'm not safe"],
-      "misspellings": ["urgernt", "crsis"],
-      "keywords": { "crisis": ["urgent", "danger", "unsafe", "emergency"] },
-      "linked_nodes": ["contact_information"],
-      "links": [
-        { "label": "Urgent help", "url": "https://intranet.company.com/wellbeing/urgent" }
-      ]
-    },
-    {
-      "id": "fallback_no_match",
-      "answers": [
-        "I’m not sure what you mean. Try a few words like ‘wellbeing’, ‘leave’, or ‘money’, or open the help menu."
-      ],
-      "phrases": ["?", "not sure", "help me"],
-      "misspellings": ["confusd", "hep me"],
-      "keywords": { "fallback": ["help", "menu"] },
-      "linked_nodes": ["support_overview"],
-      "links": [
-        { "label": "Help menu", "url": "https://intranet.company.com/help" }
-      ]
-    }
-  ]
-}
 
+[
+  {
+    "id": "hours",
+    "question": "What are your opening times?",
+    "answer": "We’re open <b>Monday–Friday, 08:30–17:00</b>.",
+    "synonyms": [
+      "When do you open?",
+      "Business hours",
+      "What time are you open?",
+      "Opening hours",
+      "Office hours",
+      "When do you opne?",
+      "Buisness hours",
+      "Opning hours",
+      "Opening tims",
+      "Opening timez",
+      "When are you openning?"
+    ],
+    "tags": ["hours", "open", "schedule", "time", "working"],
+    "keywords": ["open", "closing", "time", "weekday", "Mon-Fri"],
+    "related": ["holiday-hours", "contact"],
+    "followups": [
+      { "id": "holiday-hours", "label": "What about bank holidays?" },
+      { "id": "contact", "label": "Who can I call if I’m unsure?" },
+      { "id": "emergency-support", "label": "Do you help out of hours?" }
+    ],
+    "redirects": [
+      { "match": "after hours", "to": "emergency-support" },
+      { "match": "out of hours", "to": "emergency-support" }
+    ]
+  },
+  {
+    "id": "contact",
+    "question": "How can I contact support?",
+    "answer": "Email us at support@Kelly.co.uk or call <b>01234 567890</b>.",
+    "synonyms": [
+      "Support email",
+      "Customer service",
+      "Help contact",
+      "How do I reach you?",
+      "Contact details",
+      "Suport email",
+      "Custmer service",
+      "Conact support",
+      "Customer servce",
+      "Support emal"
+    ],
+    "tags": ["support", "email", "phone", "contact", "helpdesk"],
+    "keywords": ["call", "number", "email", "speak", "reach"],
+    "related": ["hours", "emergency-support"],
+    "followups": [
+      { "id": "hours", "label": "When are you open?" },
+      { "id": "emergency-support", "label": "Is there urgent support?" },
+      { "id": "privacy", "label": "How do you handle my data?" }
+    ],
+    "redirects": [
+      { "match": "urgent", "to": "emergency-support" },
+      { "match": "gdpr", "to": "privacy" }
+    ]
+  },
+  {
+    "id": "location",
+    "question": "Where are you located?",
+    "answer": "We’re based in <b>Nuneaton, UK</b>. Visits by appointment.",
+    "synonyms": [
+      "Address",
+      "Office location",
+      "Where is your office?",
+      "Head office",
+      "Site location",
+      "Adress",
+      "Locaton",
+      "Offce location",
+      "Addres"
+    ],
+    "tags": ["address", "map", "location", "office"],
+    "keywords": ["postcode", "directions", "visit", "where"],
+    "related": ["appointments"],
+    "followups": [
+      { "id": "appointments", "label": "Can I book a visit?" },
+      { "id": "hours", "label": "What times can I visit?" }
+    ],
+    "redirects": [
+      { "match": "book visit", "to": "appointments" },
+      { "match": "appointment", "to": "appointments" }
+    ]
+  },
+  {
+    "id": "holiday-hours",
+    "question": "What are your holiday hours?",
+    "answer": "Public holiday hours may differ. We’ll post updates on our website and social channels ahead of time.",
+    "synonyms": [
+      "Are you open on bank holidays?",
+      "Holiday opening times",
+      "Christmas hours",
+      "Easter hours",
+      "Holliday hours",
+      "Bank holidy hours",
+      "Holliday opening times",
+      "Bank holiday opening times",
+      "Christmas ours"
+    ],
+    "tags": ["hours", "holiday", "bank holiday"],
+    "keywords": ["Christmas", "Easter", "Bank Holiday", "open"],
+    "related": ["hours", "contact"],
+    "followups": [
+      { "id": "hours", "label": "Regular opening times" },
+      { "id": "contact", "label": "Confirm with the team" }
+    ],
+    "redirects": [
+      { "match": "after hours", "to": "emergency-support" }
+    ]
+  },
+  {
+    "id": "payments",
+    "question": "What payment methods do you accept?",
+    "answer": "We accept <b>Visa, MasterCard, bank transfer, and purchase orders (subject to approval)</b>.",
+    "synonyms": [
+      "How can I pay?",
+      "Card types accepted",
+      "Do you take AMEX?",
+      "Payment options",
+      "Paymnet methods",
+      "How can I pae?",
+      "Card typs accepted",
+      "Payment methodes"
+    ],
+    "tags": ["billing", "payment", "finance"],
+    "keywords": ["invoice", "card", "credit", "debit", "pay"],
+    "related": ["refunds"],
+    "followups": [
+      { "id": "refunds", "label": "What if I need a refund?" },
+      { "id": "contact", "label": "Speak to billing" }
+    ],
+    "redirects": [
+      { "match": "refund", "to": "refunds" },
+      { "match": "invoice", "to": "payments" }
+    ]
+  },
+  {
+    "id": "refunds",
+    "question": "What is your refund policy?",
+    "answer": "Refunds are available within <b>30 days</b> for eligible products and services. Please contact support with your order number.",
+    "synonyms": [
+      "Can I get a refund?",
+      "Returns",
+      "Money back",
+      "Cancellation policy",
+      "Refnd policy",
+      "Can I get a refnd?",
+      "Returnes",
+      "Cancellaton policy",
+      "Money bak"
+    ],
+    "tags": ["refund", "returns", "billing", "policy"],
+    "keywords": ["return", "cancel", "chargeback", "money back"],
+    "related": ["payments", "contact"],
+    "followups": [
+      { "id": "payments", "label": "Payment methods" },
+      { "id": "contact", "label": "Talk to support" }
+    ],
+    "redirects": [
+      { "match": "chargeback", "to": "refunds" },
+      { "match": "cancel order", "to": "refunds" }
+    ]
+  },
+  {
+    "id": "appointments",
+    "question": "How do I book an appointment?",
+    "answer": "Use our online booking form or contact support to schedule a visit. Appointments are required for on‑site visits.",
+    "synonyms": [
+      "Book a visit",
+      "Schedule meeting",
+      "Arrange appointment",
+      "Can I come by?",
+      "Book an apointment",
+      "Scedule meeting",
+      "Arrage appointment",
+      "Apointment booking"
+    ],
+    "tags": ["booking", "visit", "appointment", "schedule"],
+    "keywords": ["schedule", "reserve", "meeting", "onsite"],
+    "related": ["location", "hours"],
+    "followups": [
+      { "id": "location", "label": "Where do I go?" },
+      { "id": "hours", "label": "When can I come?" }
+    ],
+    "redirects": [
+      { "match": "where are you", "to": "location" },
+      { "match": "what time", "to": "hours" }
+    ]
+  },
+  {
+    "id": "emergency-support",
+    "question": "Do you offer emergency support?",
+    "answer": "Yes, emergency support is available for business‑critical incidents. Please call the main number and select <b>Option 1</b>.",
+    "synonyms": [
+      "Out of hours support",
+      "After hours help",
+      "Urgent support",
+      "Emergancy support",
+      "Out of ours support",
+      "Urgent suprot",
+      "After ours help"
+    ],
+    "tags": ["support", "emergency", "after hours"],
+    "keywords": ["critical", "urgent", "downtime", "P1"],
+    "related": ["contact", "hours"],
+    "followups": [
+      { "id": "contact", "label": "Contact details" },
+      { "id": "hours", "label": "Regular opening times" }
+    ],
+    "redirects": [
+      { "match": "phone number", "to": "contact" }
+    ]
+  },
+  {
+    "id": "privacy",
+    "question": "How do you handle my data (GDPR)?",
+    "answer": "We follow GDPR best practices. See our Privacy Policy for details on data collection and retention.",
+    "synonyms": [
+      "GDPR policy",
+      "Privacy policy",
+      "Data protection",
+      "How is my data used?",
+      "GDPR policiy",
+      "Privasy policy",
+      "Data protction",
+      "Prvacy policy"
+    ],
+    "tags": ["privacy", "gdpr", "security"],
+    "keywords": ["data", "retention", "consent", "compliance"],
+    "related": ["contact"],
+    "followups": [
+      { "id": "contact", "label": "Who can I speak to?" }
+    ],
+    "redirects": [
+      { "match": "contact dpo", "to": "contact" }
+    ]
+  },
+  {
+    "id": "jobs",
+    "question": "Are you hiring?",
+    "answer": "We post roles on our Careers page. You can also email your CV to careers@Kelly.co.uk.",
+    "synonyms": [
+      "Careers",
+      "Jobs",
+      "Vacancies",
+      "Open positions",
+      "Vacancys",
+      "Are you hirng?",
+      "Jobss",
+      "Career opportunities",
+      "Vancancies"
+    ],
+    "tags": ["careers", "jobs", "hiring"],
+    "keywords": ["apply", "role", "position", "vacancy"],
+    "related": ["contact"],
+    "followups": [
+      { "id": "contact", "label": "Who do I send my CV to?" }
+    ],
+    "redirects": [
+      { "match": "email cv", "to": "contact" },
+      { "match": "apply", "to": "jobs" }
+    ]
+  }
+]
