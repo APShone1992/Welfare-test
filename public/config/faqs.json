@@ -1,18 +1,14 @@
 [
-  {
-    "question": "What are your opening times?",
+{ "question": "What are your opening times?",
     "answer": "We\u2019re open <b>Monday\u2013Friday, 8:30\u201317:00</b>.",
     "synonyms": [
       "When do you open?",
       "Business hours",
-      "What time are you open?"
-    ],
+      "What time are you open?" ],
     "tags": [
       "hours",
       "open",
-      "schedule"
-    ]
-  },
+      "schedule"] },
   {
     "question": "How can I contact support?",
     "answer": "Email us at <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
