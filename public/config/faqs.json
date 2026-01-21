@@ -1,61 +1,77 @@
 
-[
-  {
-    "id": "hours",
-    "question": "What are your opening times?",
-    "answer": "We’re open <b>Monday–Friday, 08:30–17:00</b>.",
-    "synonyms": [
-      "When do you open?",
-      "Business hours",
-      "What time are you open?",
-      "Opening hours",
-      "Office hours",
-      "When do you opne?",
-      "Buisness hours",
-      "Opning hours",
-      "Opening tims",
-      "Opening timez",
-      "When are you openning?"
-    ],
-    "keywords": ["open", "closing", "time", "weekday", "mon-fri"],
-    "followups": [
-      { "id": "holiday-hours", "label": "What about bank holidays?" },
-      { "id": "contact", "label": "Who can I call if I’m unsure?" },
-      { "id": "emergency-support", "label": "Do you help out of hours?" }
-    ],
-    "redirects": [
-      { "match": "after hours", "to": "emergency-support" },
-      { "match": "out of hours", "to": "emergency-support" }
-    ]
+{
+  "meta": {
+    "version": "1.0",
+    "language": "en-GB",
+    "fallbackMessage": "Sorry — I didn’t quite understand that. You can ask me about opening times, holiday hours, or how to contact support.",
+    "learningEnabled": true
   },
-  {
-    "id": "holiday-hours",
-    "question": "What are your holiday hours?",
-    "answer": "Public holiday hours may differ. We’ll post updates on our website and social channels ahead of time.",
-    "keywords": ["holiday", "bank", "christmas", "easter"],
-    "followups": [
-      { "id": "hours", "label": "Regular opening times" },
-      { "id": "contact", "label": "Confirm with the team" }
-    ]
-  },
-  {
-    "id": "contact",
-    "question": "How can I contact support?",
-    "answer": "Email us at support@Kelly.co.uk or call <b>01234 567890</b>.",
-    "keywords": ["call", "phone", "email", "contact"],
-    "followups": [
-      { "id": "hours", "label": "When are you open?" },
-      { "id": "emergency-support", "label": "Is there urgent support?" }
-    ]
-  },
-  {
-    "id": "emergency-support",
-    "question": "Do you offer emergency support?",
-    "answer": "Yes, emergency support is available for business‑critical incidents. Call the main number and select <b>Option 1</b>.",
-    "keywords": ["urgent", "emergency", "critical", "p1"],
-    "followups": [
-      { "id": "contact", "label": "Contact details" }
+  "intents": [
+    {
+      "id": "hours",
+      "question": "What are your opening times?",
+      "answer": "We’re open Monday to Friday, from 08:30 until 17:00.",
+      "humanTouch": "If that helps, people often ask about bank holidays or how to reach us outside these hours.",
+      "synonyms": [
+        "When do you open?",
+        "Business hours",
+        "What time are you open?",
+        "Opening hours",
+        "Office hours",
+        "When do you opne?",
+        "Opening times"
+      ],
+      "keywords": ["open", "closing", "time", "weekday"],
+      "nextIntents": ["holiday-hours", "contact", "emergency-support"],
+      "redirects": [
+        { "match": "after hours", "to": "emergency-support" },
+        { "match": "out of hours", "to": "emergency-support" }
+      ]
+    },
+    {
+      "id": "holiday-hours",
+      "question": "What are your holiday hours?",
+      "answer": "Our opening hours may change on public and bank holidays. We always share updates on our website ahead of time.",
+      "humanTouch": "Would you like me to check our regular hours again, or help you get in touch with the team?",
+      "keywords": ["holiday", "bank", "christmas", "easter"],
+      "nextIntents": ["hours", "contact"]
+    },
+    {
+      "id": "contact",
+      "question": "How can I contact support?",
+      "answer": "You can email us at support@kelly.co.uk or phone us on 01234 567890.",
+      "humanTouch": "If this is urgent, I can explain how to reach our emergency support.",
+      "keywords": ["call", "phone", "email", "contact"],
+      "nextIntents": ["emergency-support", "hours"]
+    },
+    {
+      "id": "emergency-support",
+      "question": "Do you offer emergency support?",
+      "answer": "Yes — emergency support is available for business‑critical issues. Call the main number and select option 1.",
+      "humanTouch": "If you’d like, I can repeat our contact details or explain our normal opening hours.",
+      "keywords": ["urgent", "emergency", "critical", "p1"],
+      "nextIntents": ["contact", "hours"]
+    }
+  ],
+  "learning": {
+    "unknownIntent": {
+      "log": true,
+      "storeAs": "unmatched-questions",
+      "response": "That’s a good question — I don’t have an answer for that yet, but I’ve noted it so we can improve. In the meantime, you can ask about our opening times, holiday hours, or support."
+    },
+    "confidencePrompts": [
+      {
+        "ifContains": ["open", "time"],
+        "suggest": "Are you asking about our opening times?"
+      },
+      {
+        "ifContains": ["holiday", "bank"],
+        "suggest": "Do you mean our bank holiday hours?"
+      },
+      {
+        "ifContains": ["urgent", "emergency"],
+        "suggest": "Is this an urgent support request?"
+      }
     ]
   }
-]
-
+}
