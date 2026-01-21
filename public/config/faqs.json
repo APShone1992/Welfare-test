@@ -1,77 +1,46 @@
-
-{
-  "meta": {
-    "version": "1.0",
-    "language": "en-GB",
-    "fallbackMessage": "Sorry — I didn’t quite understand that. You can ask me about opening times, holiday hours, or how to contact support.",
-    "learningEnabled": true
+[
+  {
+    "question": "What are your opening times?",
+    "answer": "We\u2019re open <b>Monday\u2013Friday, 8:30\u201317:00</b>.",
+    "synonyms": [
+      "When do you open?",
+      "Business hours",
+      "What time are you open?"
+    ],
+    "tags": [
+      "hours",
+      "open",
+      "schedule"
+    ]
   },
-  "intents": [
-    {
-      "id": "hours",
-      "question": "What are your opening times?",
-      "answer": "We’re open Monday to Friday, from 08:30 until 17:00.",
-      "humanTouch": "If that helps, people often ask about bank holidays or how to reach us outside these hours.",
-      "synonyms": [
-        "When do you open?",
-        "Business hours",
-        "What time are you open?",
-        "Opening hours",
-        "Office hours",
-        "When do you opne?",
-        "Opening times"
-      ],
-      "keywords": ["open", "closing", "time", "weekday"],
-      "nextIntents": ["holiday-hours", "contact", "emergency-support"],
-      "redirects": [
-        { "match": "after hours", "to": "emergency-support" },
-        { "match": "out of hours", "to": "emergency-support" }
-      ]
-    },
-    {
-      "id": "holiday-hours",
-      "question": "What are your holiday hours?",
-      "answer": "Our opening hours may change on public and bank holidays. We always share updates on our website ahead of time.",
-      "humanTouch": "Would you like me to check our regular hours again, or help you get in touch with the team?",
-      "keywords": ["holiday", "bank", "christmas", "easter"],
-      "nextIntents": ["hours", "contact"]
-    },
-    {
-      "id": "contact",
-      "question": "How can I contact support?",
-      "answer": "You can email us at support@kelly.co.uk or phone us on 01234 567890.",
-      "humanTouch": "If this is urgent, I can explain how to reach our emergency support.",
-      "keywords": ["call", "phone", "email", "contact"],
-      "nextIntents": ["emergency-support", "hours"]
-    },
-    {
-      "id": "emergency-support",
-      "question": "Do you offer emergency support?",
-      "answer": "Yes — emergency support is available for business‑critical issues. Call the main number and select option 1.",
-      "humanTouch": "If you’d like, I can repeat our contact details or explain our normal opening hours.",
-      "keywords": ["urgent", "emergency", "critical", "p1"],
-      "nextIntents": ["contact", "hours"]
-    }
-  ],
-  "learning": {
-    "unknownIntent": {
-      "log": true,
-      "storeAs": "unmatched-questions",
-      "response": "That’s a good question — I don’t have an answer for that yet, but I’ve noted it so we can improve. In the meantime, you can ask about our opening times, holiday hours, or support."
-    },
-    "confidencePrompts": [
-      {
-        "ifContains": ["open", "time"],
-        "suggest": "Are you asking about our opening times?"
-      },
-      {
-        "ifContains": ["holiday", "bank"],
-        "suggest": "Do you mean our bank holiday hours?"
-      },
-      {
-        "ifContains": ["urgent", "emergency"],
-        "suggest": "Is this an urgent support request?"
-      }
+  {
+    "question": "How can I contact support?",
+    "answer": "Email us at <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
+    "synonyms": [
+      "Support email",
+      "Customer service",
+      "Help contact"
+    ],
+    "tags": [
+      "support",
+      "email",
+      "phone",
+      "contact"
+    ]
+  },
+  {
+    "question": "Where are you located?",
+    "answer": "We\u2019re based in <b>Nuneaton, UK</b>. Visits by appointment.",
+    "synonyms": [
+      "Address",
+      "Office location",
+      "Where is your office?"
+    ],
+    "tags": [
+      "address",
+      "map",
+      "location",
+      "office"
     ]
   }
-}
+]
