@@ -315,3 +315,129 @@ function matchFAQ(query) {
       (0.25 * scoreSyn) +
       (0.12 * scoreKeys) +
       (0.08 * scoreTags) +
+      boost;
+
+    results.push({ item, score });
+  }
+
+  results.sort((a, b) => b.score - a.score);
+
+  const top = results[0];
+  if (!top || top.score < SETTINGS.minConfidence) {
+    return {
+      matched: false,
+      suggestions: results.slice(0, SETTINGS.topSuggestions).map(r => r.item.question)
+    };
+  }
+
+  return {
+    matched: true,
+    answerHTML: top.item.answer,
+    question: top.item.question,
+    followUps: top.item.followUps || []
+  };
+}
+
+/* -------------------------------------------------------
+   UI
+---------------------------------------------------------- */
+const chatWindow = document.getElementById("chatWindow");
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+
+function addBubble(text, type = "bot", isHTML = false) {
+  const div = document.createElement("div");
+  div.className = "bubble " + type;
+  if (isHTML) div.innerHTML = text;
+  else div.textContent = text;
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function addTyping() {
+  const div = document.createElement("div");
+  div.className = "bubble bot";
+  div.setAttribute("data-typing", "true");
+  div.innerHTML = `Typing <span class="typing"><span></span><span></span><span></span></span>`;
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function removeTyping() {
+  const t = chatWindow.querySelector('[data-typing="true"]');
+  if (t) t.remove();
+}
+
+/* -------------------------------------------------------
+   MAIN MESSAGE HANDLER
+---------------------------------------------------------- */
+function handleUserMessage(text) {
+  if (!text) return;
+
+  rememberUserMessage(text);
+
+  addBubble(text, "user");
+  input.value = "";
+
+  addTyping();
+  setTimeout(() => {
+    removeTyping();
+
+    if (!faqsLoaded) {
+      addBubble("Loading knowledge base… please try again in a second.", "bot");
+      return;
+    }
+
+    // 1) Context inference first
+    const contextual = inferContext(text);
+    if (contextual && contextual.matched) {
+      addBubble(contextual.answerHTML, "bot", true);
+      return;
+    }
+
+    // 2) AI-ish reasoning (tomorrow, number again, parking, etc.)
+    const logic = aiReasoning(text);
+    if (logic && logic.matched) {
+      addBubble(logic.answerHTML, "bot", true);
+      return;
+    }
+
+    // 3) FAQ match fallback
+    const res = matchFAQ(text);
+
+    if (res.matched) {
+      updateTopic(res.question);
+      rememberTopic(res.question);
+
+      addBubble(res.answerHTML, "bot", true);
+
+      // Suggest follow-ups (optional)
+      if (res.followUps && res.followUps.length) {
+        const options = res.followUps.slice(0, 3).map(f => `• ${f}`).join("<br>");
+        addBubble(`You can also ask:<br>${options}`, "bot", true);
+      }
+    } else {
+      const suggestions = (res.suggestions && res.suggestions.length)
+        ? "<br><br>• " + res.suggestions.join("<br>• ")
+        : "";
+      addBubble("I’m not sure. Did you mean:" + suggestions, "bot", true);
+    }
+  }, 350);
+}
+
+function sendChat() {
+  handleUserMessage(input.value.trim());
+}
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendChat();
+  }
+});
+
+sendBtn.addEventListener("click", sendChat);
+
+window.addEventListener("DOMContentLoaded", () => {
+  addBubble(SETTINGS.greeting, "bot", true);
+});
