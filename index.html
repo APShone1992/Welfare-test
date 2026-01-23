@@ -1,40 +1,55 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Welfare Support Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Welfare Support FAQ chatbot" />
   <link rel="stylesheet" href="public/chat.css" />
 </head>
-
 <body>
-  <div class="chat-container">
+  <a class="skip-link" href="#chatWindow">Skip to chat</a>
+
+  <main class="chat-container" role="application" aria-label="Welfare Support chatbot">
     <header class="chat-header">
       <img src="public/assets/bot-icon.svg" alt="" class="bot-avatar" />
-      <h1>Welfare Support</h1>
+      <div class="chat-title">
+        <h1>Welfare Support</h1>
+        <p class="subtitle">Instant answers to common questions</p>
+      </div>
 
-      <!-- NEW: FAQ browser toggle (small + unobtrusive) -->
-      <button id="faqToggle" class="header-btn" type="button" aria-label="Browse FAQs" title="Browse FAQs">❓</button>
+      <div class="chat-actions">
+        <button id="clearBtn" type="button" class="icon-btn" aria-label="Clear chat" title="Clear chat">🧹</button>
+      </div>
     </header>
 
-    <div id="chatWindow" class="chat-window" aria-live="polite" aria-atomic="false"></div>
+    <section
+      id="chatWindow"
+      class="chat-window"
+      role="log"
+      aria-live="polite"
+      aria-atomic="false"
+      aria-relevant="additions text">
+    </section>
 
-    <!-- NEW: Quick chips row -->
-    <div id="chipRow" class="chips" aria-label="Suggested questions"></div>
+    <section class="quick-replies" aria-label="Suggested questions">
+      <div id="quickReplies" class="chips"></div>
+    </section>
 
-    <div class="input-area">
+    <form class="input-area" id="chatForm" autocomplete="off">
+      <label class="sr-only" for="chatInput">Ask a question</label>
       <input
         id="chatInput"
+        name="chatInput"
         type="text"
-        placeholder="Ask a question..."
-        autocomplete="off"
+        placeholder="Ask a question… (try “opening times”)"
         aria-label="Ask a question"
       />
-      <button id="sendBtn" type="button">Send</button>
-    </div>
-  </div>
+      <button id="sendBtn" type="submit">Send</button>
+    </form>
+  </main>
 
-  <script src="public/chat.js"></script>
+  <script src="public/chat.js" defer></script>
 </body>
 </html>
