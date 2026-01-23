@@ -2,11 +2,10 @@
 /* ---------------------------------------------------------
    Welfare Support Chat – Modern Blue/White Premium Theme
    Includes:
-   - Premium UI
-   - Bubble tails
-   - Fade-in animation
-   - Scroll fix (overflow-x hidden)
-   - Timestamps
+   - Premium blue/white UI
+   - Rounded speech bubble tails
+   - Timestamp styling
+   - Smooth fade-in for the whole chat container
 ---------------------------------------------------------- */
 
 :root {
@@ -27,9 +26,7 @@
   --radius: 20px;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html, body {
   height: 100%;
@@ -40,9 +37,8 @@ html, body {
 }
 
 /* ---------------------------------------------------------
-   CHAT CONTAINER – fade-in
+   CHAT CONTAINER (fade-in)
 ---------------------------------------------------------- */
-
 .chat-container {
   width: 100%;
   max-width: 540px;
@@ -56,6 +52,7 @@ html, body {
   min-height: 660px;
   border: 1px solid var(--border-light);
 
+  /* Fade-in */
   opacity: 0;
   transform: translateY(12px);
   animation: chatFadeIn 0.45s ease-out forwards;
@@ -69,7 +66,6 @@ html, body {
 /* ---------------------------------------------------------
    HEADER
 ---------------------------------------------------------- */
-
 .chat-header {
   display: flex;
   align-items: center;
@@ -80,10 +76,7 @@ html, body {
   box-shadow: var(--shadow-soft);
 }
 
-.bot-avatar {
-  width: 36px;
-  height: 36px;
-}
+.bot-avatar { width: 36px; height: 36px; }
 
 .chat-header h1 {
   margin: 0;
@@ -95,28 +88,23 @@ html, body {
 /* ---------------------------------------------------------
    CHAT WINDOW
 ---------------------------------------------------------- */
-
 .chat-window {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  overflow-x: hidden;  /* FIX: stop tail overflow */
   background: var(--white);
-  scroll-behavior: smooth;
 }
 
 /* ---------------------------------------------------------
    BUBBLES
 ---------------------------------------------------------- */
-
 .bubble {
-  position: relative;
-  display: inline-block;
-  max-width: 78%;     /* room for tails – FIX */
+  position: relative; /* required for tails */
+  max-width: 80%;
   padding: 12px 16px;
   border-radius: 18px;
   margin: 12px 0;
-  line-height: 1.5;
+  line-height: 1.55;
   font-size: 15px;
   box-shadow: var(--shadow-soft);
   animation: bubbleIn 0.28s ease-out;
@@ -151,6 +139,7 @@ html, body {
    BUBBLE TAILS
 ---------------------------------------------------------- */
 
+/* Bot bubble tail */
 .bubble.bot::after {
   content: "";
   position: absolute;
@@ -164,6 +153,7 @@ html, body {
   box-shadow: var(--shadow-soft);
 }
 
+/* User bubble tail */
 .bubble.user::after {
   content: "";
   position: absolute;
@@ -178,9 +168,8 @@ html, body {
 }
 
 /* ---------------------------------------------------------
-   TIMESTAMP
+   TIMESTAMP (under each bubble)
 ---------------------------------------------------------- */
-
 .timestamp {
   font-size: 11px;
   opacity: 0.6;
@@ -202,7 +191,6 @@ html, body {
 /* ---------------------------------------------------------
    INPUT AREA
 ---------------------------------------------------------- */
-
 .input-area {
   display: flex;
   gap: 12px;
@@ -247,7 +235,6 @@ html, body {
 /* ---------------------------------------------------------
    TYPING INDICATOR
 ---------------------------------------------------------- */
-
 .typing span {
   display: inline-block;
   width: 7px;
@@ -269,15 +256,13 @@ html, body {
 /* ---------------------------------------------------------
    MOBILE
 ---------------------------------------------------------- */
-
 @media (max-width: 560px) {
   .chat-container {
     margin: 0;
     min-height: 100vh;
     border-radius: 0;
   }
-  .chat-window {
-    padding: 18px;
-  }
+
+  .chat-window { padding: 18px; }
 }
 
