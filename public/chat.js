@@ -32,7 +32,7 @@ const ESCALATION = {
 
   // Optional backend endpoint (Google Apps Script Web App URL)
   // Leave empty if you only want the form to show (no submission).
-  endpoint: "https://docs.google.com/spreadsheets/d/1GferLO7LCK2PsUw5OXSIPTXJ-XsnlZKgCFp-MIL2ia4/edit?gid=0#gid=0",
+  endpoint: "https://script.google.com/macros/s/AKfycbzllEA7HTp6BMX9nZIrsrzLpt5-iHIYU6yxltqcCnwCRmKbKVto28boO0tW3dH1ZRkFOA/exec",
 
   fallbackEmail: "support@Kelly.co.uk",
   fallbackPhone: "01234 567890"
