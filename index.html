@@ -1,98 +1,39 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Welfare Support Chat</title>
-  <meta name="description" content="Welfare Support – Ask questions, get quick answers about opening times, support contact details, and office information." />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Favicon (optional, uses your bot icon) -->
-  public/assets/bot-icon.svg
-
-  <!-- Main Chat Styles -->
-  public/chat.css
-
-  <style>
-    /* Page background improvement */
-    body {
-      background: linear-gradient(180deg, #e8f1ff 0%, #f5f8ff 100%);
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 40px 12px;
-      animation: pageFade 0.6s ease-out;
-    }
-
-    @keyframes pageFade {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Optional center alignment container */
-    .page-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-    }
-
-    /* Title above chat */
-    .page-title {
-      text-align: center;
-      color: #003d80;
-      font-size: 26px;
-      margin-bottom: 14px;
-      font-weight: 700;
-      letter-spacing: 0.4px;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.08);
-    }
-
-    .page-sub {
-      text-align: center;
-      font-size: 15px;
-      color: #325d9a;
-      margin-bottom: 26px;
-      max-width: 480px;
-      line-height: 1.6;
-    }
-  </style>
+  <!-- Correct path to CSS -->
+  <link rel="stylesheet" href="public/chat.css" />
 </head>
-
 <body>
 
-  <div class="page-wrapper">
+  <div class="chat-container">
+    <header class="chat-header">
+      <img src="public/assets/bot-icon.svg" alt="" class="bot-avatar" />
+      <h1>Welfare Support</h1>
+    </header>
 
-    <!-- Optional intro text -->
-    <div class="page-title">Welfare Support Assistant</div>
-    <div class="page-sub">
-      Ask me anything about opening times, how to contact support, or where our office is located.
+    <div id="chatWindow" class="chat-window" aria-live="polite" aria-atomic="false"></div>
+
+    <div class="input-area">
+      <input
+        id="chatInput"
+        type="text"
+        placeholder="Ask a question..."
+        autocomplete="off"
+        aria-label="Ask a question"
+      />
+      <button id="sendBtn" type="button">Send</button>
     </div>
+  </div>
 
-    <!-- Chat UI -->
-    <div class="chat-container">
-
-      <header class="chat-header">
-        public/assets/bot-icon.svg
-        <h1>Welfare Support</h1>
-      </header>
-
-      <div id="chatWindow" class="chat-window" aria-live="polite"></div>
-
-      <div class="input-area">
-        <input id="chatInput" type="text" placeholder="Ask a question..." autocomplete="off" aria-label="Ask a question" />
-        <button id="sendBtn" type="button">Send</button>
-      </div>
-
-    </div> <!-- end chat-container -->
-
-  </div> <!-- end wrapper -->
-
-  <!-- Chat Engine -->
-  public/chat.js</script>
-
+  <!-- Correct path to JS -->
+  <script src="public/chat.js"></script>
 </body>
 </html>
+
+
 
