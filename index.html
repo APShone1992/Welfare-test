@@ -1,49 +1,41 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Welfare Support Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Welfare Support – Ask questions and get quick answers about opening times, support details, and location." />
 
-  <!-- Favicon -->
-  public/assets/bot-icon.svg
-
-  <!-- Main Chat Styles -->
-  public/chat.css
+  <!-- Correct path to CSS -->
+  <link rel="stylesheet" href="public/chat.css" />
 </head>
 
 <body>
 
-  <div class="page-wrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;margin-top:20px;">
+  <div class="chat-container">
 
-    <h1 style="color:#003d80;font-size:26px;margin-bottom:8px;text-align:center;">Welfare Support Assistant</h1>
-    <p style="color:#325d9a;font-size:15px;margin-top:0;margin-bottom:20px;text-align:center;max-width:480px;">
-      Ask about opening times, contact details, parking, or anything else you need help with.
-    </p>
+    <header class="chat-header">
+      <img src="public/assets/bot-icon.svg" alt="" class="bot-avatar" />
+      <h1>Welfare Support</h1>
+    </header>
 
-    <!-- CHAT BOX -->
-    <div class="chat-container">
+    <div id="chatWindow" class="chat-window" aria-live="polite" aria-atomic="false"></div>
 
-      <header class="chat-header">
-        <img src="public/assets/bot-icon.svg" class="bot-avatar" alt="Bot" />
-        <h1>Welfare Support</h1>
-      </header>
-
-      <div id="chatWindow" class="chat-window" aria-live="polite"></div>
-
-      <div class="input-area">
-        <input id="chatInput" type="text" placeholder="Ask a question..." autocomplete="off" />
-        <button id="sendBtn">Send</button>
-      </div>
-
+    <div class="input-area">
+      <input
+        id="chatInput"
+        type="text"
+        placeholder="Ask a question..."
+        autocomplete="off"
+        aria-label="Ask a question"
+      />
+      <button id="sendBtn" type="button">Send</button>
     </div>
 
   </div>
 
- ipt>
-
+  <!-- Correct path to JS -->
+  <script src="public/chat.js"></script>
 </body>
 </html>
+
