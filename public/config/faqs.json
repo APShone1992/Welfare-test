@@ -1,38 +1,33 @@
 
 [
-  {
-    "question": "What are your opening times?",
-    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b>.",
-    "synonyms": ["When do you open?", "Business hours", "What time are you open?"],
-    "tags": ["hours", "open", "schedule"],
-    "quickReplies": ["How can I contact support?", "Where are you located?"]
-  },
-  {
-    "question": "How can I contact support?",
-    "answer": "Email us at <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
-    "synonyms": ["Support email", "Customer service", "Help contact"],
-    "tags": ["support", "email", "phone", "contact"],
-    "quickReplies": ["What are your opening times?", "What information should I include?"]
-  },
-  {
-    "question": "What information should I include when I contact you?",
-    "answer": "To help us respond quickly, include: <ul><li>Your full name</li><li>National Insurance number (if relevant)</li><li>A brief description of the issue</li><li>Any reference numbers</li></ul>",
-    "synonyms": ["What details do you need?", "What should I send?"],
-    "tags": ["support", "details", "information"],
-    "quickReplies": ["How can I contact support?", "Where are you located?"]
-  },
-  {
-    "question": "Where are you located?",
-    "answer": "We’re based in <b>Nuneaton, UK</b>. Visits are by appointment.",
-    "synonyms": ["Address", "Office location", "Where is your office?"],
-    "tags": ["address", "map", "location", "office"],
-    "quickReplies": ["How can I contact support?", "Do you offer appointments?"]
-  },
-  {
-    "question": "Do you offer appointments?",
-    "answer": "Yes — appointments are available by request. Please contact support to arrange a suitable time.",
-    "synonyms": ["Book an appointment", "Can I visit?"],
-    "tags": ["appointment", "visit"],
-    "quickReplies": ["How can I contact support?", "Where are you located?"]
-  }
+    {
+        "question": "What are your opening times?",
+        "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b>.",
+        "synonyms": [
+            "When do you open?",
+            "Business hours",
+            "What time are you open?"
+        ],
+        "tags": ["hours", "open", "schedule"]
+    },
+    {
+        "question": "How can I contact support?",
+        "answer": "Email us at mailto:support@Kelly.co.uksupport@Kelly.co.uk</a> or call <b>01234 567890</b>.",
+        "synonyms": [
+            "Support email",
+            "Customer service",
+            "Help contact"
+        ],
+        "tags": ["support", "email", "phone", "contact"]
+    },
+    {
+        "question": "Where are you located?",
+        "answer": "We’re based in <b>Nuneaton, UK</b>. Visits by appointment.",
+        "synonyms": [
+            "Address",
+            "Office location",
+            "Where is your office?"
+        ],
+        "tags": ["address", "map", "location", "office"]
+    }
 ]
