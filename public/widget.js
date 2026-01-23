@@ -1,61 +1,87 @@
 
-// Welfare Support – Floating Widget (Improved)
+// Welfare Support – Floating Widget (Upgraded)
 (function () {
-  // Detect base URL from this script src (…/public/widget.js)
-  const currentScript = document.currentScript || (function () {
-    const scripts = document.getElementsByTagName("script");
-    return scripts[scripts.length - 1];
-  })();
+  // Prefer document.currentScript, fallback to last script tag
+  const currentScript =
+    document.currentScript ||
+    (function () {
+      const scripts = document.getElementsByTagName("script");
+      return scripts[scripts.length - 1];
+    })();
+
+  if (!currentScript || !currentScript.src) return;
 
   const scriptURL = new URL(currentScript.src, window.location.href);
+
+  // Remove trailing /public/widget.js -> leaves repo root URL
   const appBase = scriptURL.href.replace(/\/public\/widget\.js(?:\?.*)?$/, "/");
 
   // Launcher button
   const btn = document.createElement("button");
   btn.type = "button";
   btn.setAttribute("aria-label", "Open Welfare Support chat");
-  btn.textContent = "💬";
   btn.style.cssText = `
-    position: fixed; bottom: 20px; right: 20px;
-    z-index: 2147483647;
+    position: fixed; bottom: 20px; right: 20px; z-index: 2147483647;
     width: 60px; height: 60px; border-radius: 50%;
     background: #0078ff; color: #fff; border: none; cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-    font-size: 24px; line-height: 60px;
-    transition: transform .15s ease;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25); font-size: 24px; line-height: 60px;
   `;
-  btn.addEventListener("mouseenter", () => (btn.style.transform = "scale(1.06)"));
-  btn.addEventListener("mouseleave", () => (btn.style.transform = "scale(1)"));
+  btn.textContent = "💬";
   document.body.appendChild(btn);
 
   // Iframe popup
   const frame = document.createElement("iframe");
   frame.title = "Welfare Support Chat";
   frame.src = appBase + "index.html";
+  frame.setAttribute("aria-label", "Welfare Support chat window");
   frame.style.cssText = `
-    position: fixed; bottom: 90px; right: 20px;
-    z-index: 2147483647;
-    width: 380px; height: 520px;
-    border: none; border-radius: 14px;
+    position: fixed; bottom: 90px; right: 20px; z-index: 2147483647;
+    width: 380px; height: 520px; border: none; border-radius: 14px;
     display: none; background: #fff;
     box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-    opacity: 0; transition: opacity .2s ease;
   `;
   document.body.appendChild(frame);
 
-  function openFrame() {
+  function isOpen() {
+    return frame.style.display !== "none";
+  }
+
+  function open() {
     frame.style.display = "block";
-    requestAnimationFrame(() => (frame.style.opacity = "1"));
+    btn.setAttribute("aria-expanded", "true");
   }
 
-  function closeFrame() {
-    frame.style.opacity = "0";
-    setTimeout(() => (frame.style.display = "none"), 180);
+  function close() {
+    frame.style.display = "none";
+    btn.setAttribute("aria-expanded", "false");
   }
 
-  btn.addEventListener("click", () => {
-    const isOpen = frame.style.display === "block";
-    if (isOpen) closeFrame();
-    else openFrame();
+  function toggle() {
+    isOpen() ? close() : open();
+  }
+
+  btn.addEventListener("click", toggle);
+
+  // ESC closes widget
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isOpen()) close();
   });
+
+  // Mobile responsive sizing
+  function resize() {
+    const small = window.matchMedia("(max-width: 480px)").matches;
+    if (small) {
+      frame.style.width = "calc(100vw - 24px)";
+      frame.style.height = "70vh";
+      frame.style.right = "12px";
+      frame.style.bottom = "90px";
+    } else {
+      frame.style.width = "380px";
+      frame.style.height = "520px";
+      frame.style.right = "20px";
+      frame.style.bottom = "90px";
+    }
+  }
+  window.addEventListener("resize", resize);
+  resize();
 })();
