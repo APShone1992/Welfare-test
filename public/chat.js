@@ -1,11 +1,6 @@
 
 /* -------------------------------------------------------
-   Welfare Support – Chat Engine (Clean Final Version)
-   Features:
-   - FAQ matching with synonyms, tags, keywords
-   - AI-ish reasoning (tomorrow, parking, number again, etc.)
-   - Short-term memory (context)
-   - Long-term memory (localStorage)
+   Welfare Support – Chat Engine (Fixed UK Time Logic)
 ---------------------------------------------------------- */
 
 const SETTINGS = {
@@ -86,7 +81,6 @@ function updateTopic(topic) {
 /* -------------------------------------------------------
    LOAD FAQS
 ---------------------------------------------------------- */
-// Use a relative path that works on GitHub Pages too
 fetch("./public/config/faqs.json")
   .then(res => res.json())
   .then(data => {
@@ -121,19 +115,90 @@ const jaccard = (a, b) => {
 };
 
 /* -------------------------------------------------------
+   ✅ UK TIME HELPERS (FIXED)
+   Uses formatToParts - no locale string parsing issues
+---------------------------------------------------------- */
+const UK_TZ = "Europe/London";
+
+function getUKParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: UK_TZ,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+
+  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  return {
+    // weekday: "Mon", "Tue", ...
+    weekday: map.weekday,
+    year: Number(map.year),
+    month: Number(map.month),
+    day: Number(map.day),
+    hour: Number(map.hour),
+    minute: Number(map.minute)
+  };
+}
+
+function ukWeekdayNumber(weekdayShort) {
+  // Convert "Mon".."Sun" to 1..0 same as Date.getDay (Sun=0)
+  const lookup = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return lookup[weekdayShort] ?? 0;
+}
+
+function minutesSinceMidnight(h, m) {
+  return (h * 60) + m;
+}
+
+function isOpenNowUK() {
+  const uk = getUKParts();
+  const day = ukWeekdayNumber(uk.weekday);
+  const mins = minutesSinceMidnight(uk.hour, uk.minute);
+
+  // Opening hours: Mon–Fri 08:30–17:00
+  const isWeekend = (day === 0 || day === 6);
+  const openMins = minutesSinceMidnight(8, 30);
+  const closeMins = minutesSinceMidnight(17, 0);
+
+  // Open if >= 08:30 and < 17:00
+  const openNow = (!isWeekend && mins >= openMins && mins < closeMins);
+
+  return { openNow, uk, day, mins, openMins, closeMins };
+}
+
+function willBeOpenTomorrowUK() {
+  // Determine UK weekday for "tomorrow" without parsing locale strings.
+  // We take current UK date parts, then construct a UTC date and add 1 day,
+  // then re-format in UK timezone.
+  const uk = getUKParts(new Date());
+
+  // Create a Date from YYYY-MM-DD in UTC at noon to avoid DST edge issues
+  const safeUTC = new Date(Date.UTC(uk.year, uk.month - 1, uk.day, 12, 0, 0));
+  safeUTC.setUTCDate(safeUTC.getUTCDate() + 1);
+
+  const ukTomorrow = getUKParts(safeUTC);
+  const day = ukWeekdayNumber(ukTomorrow.weekday);
+
+  const isWeekend = (day === 0 || day === 6);
+  return { isWeekend, ukTomorrow, day };
+}
+
+/* -------------------------------------------------------
    CONTEXT INFERENCE
 ---------------------------------------------------------- */
 function inferContext(query) {
   const q = normalize(query);
 
-  // Learn preference
   if (q.includes("prefer email") || q.includes("email me"))
     setUserPreference("contactMethod", "email");
 
   if (q.includes("prefer phone") || q.includes("call me"))
     setUserPreference("contactMethod", "phone");
 
-  // Follow-up weekend/holiday Qs
   if (memory.lastMatchedTopic) {
     const last = normalize(memory.lastMatchedTopic);
 
@@ -181,18 +246,12 @@ function aiReasoning(query) {
     };
   }
 
-  /* OPEN TOMORROW? */
+  /* OPEN TOMORROW? (✅ FIXED) */
   if (q.includes("tomorrow")) {
-    const now = new Date();
-    const ukNow = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
-    const tomorrow = new Date(ukNow);
-    tomorrow.setDate(ukNow.getDate() + 1);
-
-    const day = tomorrow.getDay(); // 0 Sun, 6 Sat
-
+    const t = willBeOpenTomorrowUK();
     rememberTopic("opening times");
 
-    if (day === 0 || day === 6) {
+    if (t.isWeekend) {
       return {
         matched: true,
         answerHTML:
@@ -226,7 +285,7 @@ function aiReasoning(query) {
     };
   }
 
-  /* AVAILABILITY RIGHT NOW */
+  /* AVAILABILITY RIGHT NOW (✅ FIXED) */
   if (
     q.includes("available") ||
     q.includes("open now") ||
@@ -234,20 +293,10 @@ function aiReasoning(query) {
     q.includes("someone there") ||
     q.includes("anyone there")
   ) {
-    const now = new Date();
-    const uk = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
-
-    const day = uk.getDay();
-    const hr = uk.getHours();
-    const min = uk.getMinutes();
-
-    const isWeekend = (day === 0 || day === 6);
-    const afterOpen = (hr > 8) || (hr === 8 && min >= 30);
-    const beforeClose = (hr < 17);
-
+    const status = isOpenNowUK();
     rememberTopic("availability");
 
-    if (!isWeekend && afterOpen && beforeClose) {
+    if (status.openNow) {
       return {
         matched: true,
         answerHTML:
@@ -365,21 +414,18 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1. Context inference
     const contextual = inferContext(text);
     if (contextual && contextual.matched) {
       addBubble(contextual.answerHTML, "bot", true);
       return;
     }
 
-    // 2. AI-ish reasoning
     const logic = aiReasoning(text);
     if (logic && logic.matched) {
       addBubble(logic.answerHTML, "bot", true);
       return;
     }
 
-    // 3. FAQ matching
     const res = matchFAQ(text);
 
     if (res.matched) {
@@ -415,7 +461,6 @@ input.addEventListener("keydown", (e) => {
 
 sendBtn.addEventListener("click", sendChat);
 
-// Ensure greeting runs even if script loads after DOMContentLoaded
 function init() {
   addBubble(SETTINGS.greeting, "bot", true);
 }
@@ -425,4 +470,3 @@ if (document.readyState === "loading") {
 } else {
   init();
 }
-
