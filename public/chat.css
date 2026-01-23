@@ -1,12 +1,6 @@
 
 /* ---------------------------------------------------------
    Welfare Support Chat – Premium Blue/White Theme (Fixed)
-   Fixes included:
-   - User bubbles ALWAYS right, bot bubbles ALWAYS left
-   - Bubble tails
-   - Timestamp styling
-   - Smooth fade-in
-   - Scroll fix (overflow-x hidden)
 ---------------------------------------------------------- */
 
 :root {
@@ -21,8 +15,8 @@
   --bot-bg: #f5f8ff;
   --bot-text: #001a4d;
 
-  --shadow-main: 0 12px 28px rgba(0, 0, 0, 0.11);
-  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.08);
+  --shadow-main: 0 12px 28px rgba(0,0,0,0.11);
+  --shadow-soft: 0 4px 14px rgba(0,0,0,0.08);
 
   --radius: 20px;
 }
@@ -38,7 +32,7 @@ html, body {
 }
 
 /* ---------------------------------------------------------
-   CHAT CONTAINER (fade-in)
+   CHAT CONTAINER – fade-in
 ---------------------------------------------------------- */
 
 .chat-container {
@@ -53,6 +47,7 @@ html, body {
   flex-direction: column;
   min-height: 660px;
   border: 1px solid var(--border-light);
+  min-height: 0; /* IMPORTANT FOR FLEX SCROLL */
 
   opacity: 0;
   transform: translateY(12px);
@@ -91,20 +86,21 @@ html, body {
 }
 
 /* ---------------------------------------------------------
-   CHAT WINDOW (IMPORTANT: flex layout fixes left/right alignment)
+   CHAT WINDOW (critical flex layout)
 ---------------------------------------------------------- */
 
 .chat-window {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  overflow-x: hidden;     /* scroll fix (tails won't cause sideways overflow) */
+  overflow-x: hidden;
   background: var(--white);
   scroll-behavior: smooth;
+  min-height: 0; /* IMPORTANT */
 
-  display: flex;          /* critical for bubble alignment */
-  flex-direction: column; /* stack messages */
-  align-items: stretch;   /* bubbles decide their own align-self */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 /* ---------------------------------------------------------
@@ -113,8 +109,8 @@ html, body {
 
 .bubble {
   position: relative;
-  width: fit-content;     /* keeps bubble tight around content */
-  max-width: 78%;         /* leaves space for tails */
+  max-width: 78%;
+  width: fit-content;
   padding: 12px 16px;
   border-radius: 18px;
   margin: 12px 0;
@@ -122,8 +118,6 @@ html, body {
   font-size: 15px;
   box-shadow: var(--shadow-soft);
   animation: bubbleIn 0.28s ease-out;
-  word-wrap: break-word;
-  white-space: pre-wrap;
 }
 
 @keyframes bubbleIn {
@@ -137,17 +131,17 @@ html, body {
   text-underline-offset: 2px;
 }
 
-/* Bot messages LEFT */
+/* Bot on LEFT */
 .bubble.bot {
-  align-self: flex-start;   /* ✅ ALWAYS LEFT */
+  align-self: flex-start;
   background: var(--bot-bg);
   color: var(--bot-text);
   border-bottom-left-radius: 8px;
 }
 
-/* User messages RIGHT */
+/* User on RIGHT */
 .bubble.user {
-  align-self: flex-end;     /* ✅ ALWAYS RIGHT */
+  align-self: flex-end;
   background: linear-gradient(135deg, var(--blue), var(--blue-light));
   color: var(--white);
   border-bottom-right-radius: 8px;
@@ -186,7 +180,7 @@ html, body {
 }
 
 /* ---------------------------------------------------------
-   TIMESTAMPS (works with your JS bubble structure)
+   TIMESTAMP
 ---------------------------------------------------------- */
 
 .timestamp {
@@ -197,13 +191,11 @@ html, body {
   user-select: none;
 }
 
-/* Bot timestamp left */
 .bubble.bot .timestamp {
   text-align: left;
   color: rgba(0, 26, 77, 0.65);
 }
 
-/* User timestamp right */
 .bubble.user .timestamp {
   text-align: right;
   color: rgba(255, 255, 255, 0.75);
@@ -229,8 +221,8 @@ html, body {
   border-radius: 14px;
   border: 1px solid #c6d5ff;
   font-size: 15px;
-  transition: all 0.2s ease;
   outline: none;
+  transition: all 0.2s ease;
 }
 
 .input-area input:focus {
@@ -250,14 +242,13 @@ html, body {
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.input-area button:hover,
-.input-area button:focus {
+.input-area button:hover {
   background: var(--blue-dark);
   transform: translateY(-1px);
 }
 
 /* ---------------------------------------------------------
-   TYPING INDICATOR
+   TYPING DOTS
 ---------------------------------------------------------- */
 
 .typing span {
@@ -269,7 +260,6 @@ html, body {
   border-radius: 50%;
   animation: typingPulse 1.4s infinite ease-in-out;
 }
-
 .typing span:nth-child(2) { animation-delay: 0.15s; }
 .typing span:nth-child(3) { animation-delay: 0.3s; }
 
@@ -288,7 +278,6 @@ html, body {
     min-height: 100vh;
     border-radius: 0;
   }
-
   .chat-window {
     padding: 18px;
   }
