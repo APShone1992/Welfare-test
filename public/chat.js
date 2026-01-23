@@ -1,12 +1,13 @@
 
 /* -------------------------------------------------------
-   Welfare Support – Chat Engine (Clean Final + UI Enhancements)
-   Includes:
-   - Timestamps under bubbles
-   - FAQ matching with synonyms/tags/keywords
-   - AI-ish reasoning (tomorrow, parking, number again, Coventry, available now)
-   - Short-term memory (context)
-   - Long-term memory (localStorage)
+   Welfare Support – Chat Engine (Clean Final + Time Fix + "Open in X")
+   Features:
+   - Safe UK time handling (no locale-string parsing bugs)
+   - Availability: shows UK weekday/time + "opens in X minutes" when closed
+   - FAQ matching with synonyms/keywords/tags + suggestions + follow-ups
+   - AI-ish reasoning: tomorrow, parking, number again, Coventry, available now
+   - Short-term context + Long-term memory (localStorage)
+   - Timestamps under bubbles (UK time)
 ---------------------------------------------------------- */
 
 const SETTINGS = {
@@ -20,15 +21,29 @@ const SETTINGS = {
 let FAQS = [];
 let faqsLoaded = false;
 
+// Business hours (UK local time)
+const HOURS = {
+  openHour: 8,
+  openMinute: 30,
+  closeHour: 17,
+  closeMinute: 0
+};
+
+// Contact details (matches your FAQ content)
+const CONTACT = {
+  email: "support@Kelly.co.uk",
+  phone: "01234 567890"
+};
+
 /* -------------------------------------------------------
    LONG-TERM MEMORY (localStorage)
 ---------------------------------------------------------- */
 const MEM_KEY = "welfareSupportMemory";
 
 let longTermMemory = {
-  prefs: {},
-  lastTopics: [],
-  contactRequests: 0
+  prefs: {},          // e.g., contactMethod: "email" | "phone"
+  lastTopics: [],     // recent topics
+  contactRequests: 0  // how often user asked for contact details
 };
 
 function loadMemory() {
@@ -85,7 +100,7 @@ function updateTopic(topic) {
 }
 
 /* -------------------------------------------------------
-   LOAD FAQS
+   LOAD FAQS (GitHub Pages safe)
 ---------------------------------------------------------- */
 fetch("public/config/faqs.json")
   .then(res => res.json())
@@ -121,19 +136,152 @@ const jaccard = (a, b) => {
 };
 
 /* -------------------------------------------------------
-   TIME HELPERS (UK time + HH:MM formatting)
+   SAFE UK TIME HELPERS (NO parsing of locale strings)
+   - Uses Intl.DateTimeFormat(...).formatToParts(...)
 ---------------------------------------------------------- */
-function getUKTimeHHMM() {
-  const now = new Date();
-  const uk = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
-  const hh = String(uk.getHours()).padStart(2, "0");
-  const mm = String(uk.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+
+function getUKParts(date = new Date()) {
+  const dtf = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    weekday: "long",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+
+  const parts = dtf.formatToParts(date);
+  const get = (type) => parts.find(p => p.type === type)?.value;
+
+  const weekday = get("weekday") || "";
+  const year = parseInt(get("year") || "0", 10);
+  const month = parseInt(get("month") || "1", 10);
+  const day = parseInt(get("day") || "1", 10);
+  const hour = parseInt(get("hour") || "0", 10);
+  const minute = parseInt(get("minute") || "0", 10);
+
+  return { weekday, year, month, day, hour, minute };
 }
 
-function getUKDateObj() {
+function getUKTimeHHMM() {
+  const { hour, minute } = getUKParts();
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+// Calculates timeZone offset in ms at a given instant (for Europe/London)
+function tzOffsetMs(date, timeZone) {
+  const dtf = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  });
+
+  const parts = dtf.formatToParts(date).reduce((acc, p) => {
+    acc[p.type] = p.value;
+    return acc;
+  }, {});
+
+  // Interpreting formatted parts as if they were UTC gives a comparable timestamp
+  const asUTC = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+
+  // Offset is difference between that "asUTC" and the real UTC time
+  return asUTC - date.getTime();
+}
+
+// Convert a UK-local date/time (year,month,day,hour,minute) to a UTC timestamp
+function ukLocalToUtcMs({ year, month, day, hour, minute }) {
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+  const offset = tzOffsetMs(utcGuess, "Europe/London");
+  return utcGuess.getTime() - offset;
+}
+
+function isWeekendUK(weekdayName) {
+  return weekdayName === "Saturday" || weekdayName === "Sunday";
+}
+
+function minutesUntil(msFuture) {
+  return Math.max(0, Math.ceil((msFuture - Date.now()) / 60000));
+}
+
+/* -------------------------------------------------------
+   NEXT OPEN TIME CALC (UK schedule)
+   - If closed, returns next open datetime + minutes until open
+---------------------------------------------------------- */
+function getNextOpenInfo() {
   const now = new Date();
-  return new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
+  const nowUK = getUKParts(now);
+
+  const openMinutes = HOURS.openHour * 60 + HOURS.openMinute;
+  const closeMinutes = HOURS.closeHour * 60 + HOURS.closeMinute;
+  const nowMinutes = nowUK.hour * 60 + nowUK.minute;
+
+  // helper: find next weekday date (UK) by stepping days
+  function nextUKDateMatching(predicate) {
+    // step in 24h increments; read UK parts each time
+    let d = new Date(now.getTime());
+    for (let i = 0; i < 14; i++) {
+      const uk = getUKParts(d);
+      if (predicate(uk)) return uk;
+      d = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+    }
+    return getUKParts(d);
+  }
+
+  // If it's a weekday and BEFORE open: next open is today 08:30
+  if (!isWeekendUK(nowUK.weekday) && nowMinutes < openMinutes) {
+    const nextOpenUtc = ukLocalToUtcMs({
+      year: nowUK.year,
+      month: nowUK.month,
+      day: nowUK.day,
+      hour: HOURS.openHour,
+      minute: HOURS.openMinute
+    });
+    return {
+      nextWeekday: nowUK.weekday,
+      nextTime: `${String(HOURS.openHour).padStart(2, "0")}:${String(HOURS.openMinute).padStart(2, "0")}`,
+      minutes: minutesUntil(nextOpenUtc)
+    };
+  }
+
+  // If it's a weekday and AFTER close: next open is next weekday 08:30
+  // If weekend: next open is Monday 08:30
+  if (isWeekendUK(nowUK.weekday) || nowMinutes >= closeMinutes) {
+    const next = nextUKDateMatching(uk => !isWeekendUK(uk.weekday) && (
+      // if today is weekend, we want Monday; if after close on weekday, we want next day
+      !(uk.year === nowUK.year && uk.month === nowUK.month && uk.day === nowUK.day)
+    ));
+
+    const nextOpenUtc = ukLocalToUtcMs({
+      year: next.year,
+      month: next.month,
+      day: next.day,
+      hour: HOURS.openHour,
+      minute: HOURS.openMinute
+    });
+
+    return {
+      nextWeekday: next.weekday,
+      nextTime: `${String(HOURS.openHour).padStart(2, "0")}:${String(HOURS.openMinute).padStart(2, "0")}`,
+      minutes: minutesUntil(nextOpenUtc)
+    };
+  }
+
+  // Otherwise we are within business hours (open) -> no next-open countdown needed
+  return null;
 }
 
 /* -------------------------------------------------------
@@ -142,7 +290,7 @@ function getUKDateObj() {
 function inferContext(query) {
   const q = normalize(query);
 
-  // Learn preference
+  // Learn preferences (lightweight)
   if (q.includes("prefer email") || q.includes("email me") || q.includes("by email")) {
     setUserPreference("contactMethod", "email");
   }
@@ -150,13 +298,10 @@ function inferContext(query) {
     setUserPreference("contactMethod", "phone");
   }
 
-  // Weekend follow-up after opening times
+  // Weekend/bank holiday follow-up after opening times
   if (memory.lastMatchedTopic) {
     const last = normalize(memory.lastMatchedTopic);
-
-    const mentionsWeekend = ["weekend", "weekends", "saturday", "sunday", "bank holiday", "holiday"]
-      .some(w => q.includes(w));
-
+    const mentionsWeekend = ["weekend", "weekends", "saturday", "sunday", "bank holiday", "holiday"].some(w => q.includes(w));
     if (mentionsWeekend && (last.includes("open") || last.includes("opening"))) {
       return {
         matched: true,
@@ -190,34 +335,33 @@ function aiReasoning(query) {
       matched: true,
       answerHTML:
         "Here you go:<br><br>" +
-        "<b>Email:</b> <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a><br>" +
-        "<b>Phone:</b> <b>01234 567890</b>" +
+        `<b>Email:</b> <a href="mailto:${CONTACT.email}">${CONTACT.email}</a><br>` +
+        `<b>Phone:</b> <b>${CONTACT.phone}</b>` +
         (pref ? `<br><br><small>I remember you prefer <b>${pref}</b>.</small>` : "")
     };
   }
 
-  /* OPEN TOMORROW? */
+  /* OPEN TOMORROW? (safe UK weekday display) */
   if (q.includes("tomorrow") || q.includes("open tomorrow")) {
-    const ukNow = getUKDateObj();
-    const tomorrow = new Date(ukNow);
-    tomorrow.setDate(ukNow.getDate() + 1);
+    // Use a +24h instant and read its UK weekday
+    const tomorrowInstant = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const tomorrowUK = getUKParts(tomorrowInstant);
 
-    const day = tomorrow.getDay(); // 0 Sun, 6 Sat
     rememberTopic("opening times");
 
-    if (day === 0 || day === 6) {
+    if (isWeekendUK(tomorrowUK.weekday)) {
       return {
         matched: true,
         answerHTML:
-          "Tomorrow is a <b>weekend</b>, so we’re closed.<br>" +
-          "Hours: <b>Mon–Fri, 8:30–17:00</b>."
+          `Tomorrow is <b>${tomorrowUK.weekday}</b>, so we’re <b>closed</b>.<br>` +
+          `Hours: <b>Mon–Fri, 8:30–17:00</b>.`
       };
     }
 
     return {
       matched: true,
       answerHTML:
-        "Yes — tomorrow is a weekday, so we’ll be open <b>8:30–17:00</b>."
+        `Yes — tomorrow is <b>${tomorrowUK.weekday}</b>, so we’ll be open <b>8:30–17:00</b>.`
     };
   }
 
@@ -241,33 +385,55 @@ function aiReasoning(query) {
     };
   }
 
-  /* AVAILABLE NOW? (UK business hours Mon–Fri 08:30–17:00) */
-  if (q.includes("available") || q.includes("open now") || q.includes("right now") || q.includes("someone there") || q.includes("anyone there")) {
-    const uk = getUKDateObj();
-    const day = uk.getDay();   // 0 Sun, 6 Sat
-    const hr = uk.getHours();
-    const min = uk.getMinutes();
+  /* AVAILABLE NOW? + SHOW UK DAY/TIME + "OPEN IN X MINUTES" WHEN CLOSED */
+  if (
+    q.includes("available") ||
+    q.includes("open now") ||
+    q.includes("right now") ||
+    q.includes("someone there") ||
+    q.includes("anyone there")
+  ) {
+    const nowUK = getUKParts();
+    const timeNow = `${String(nowUK.hour).padStart(2, "0")}:${String(nowUK.minute).padStart(2, "0")}`;
 
-    const isWeekend = (day === 0 || day === 6);
-    const afterOpen = (hr > 8) || (hr === 8 && min >= 30);
-    const beforeClose = (hr < 17);
+    const isWeekend = isWeekendUK(nowUK.weekday);
+    const afterOpen = (nowUK.hour > HOURS.openHour) || (nowUK.hour === HOURS.openHour && nowUK.minute >= HOURS.openMinute);
+    const beforeClose = (nowUK.hour < HOURS.closeHour) || (nowUK.hour === HOURS.closeHour && nowUK.minute < HOURS.closeMinute);
 
     rememberTopic("availability");
 
+    // OPEN
     if (!isWeekend && afterOpen && beforeClose) {
       return {
         matched: true,
         answerHTML:
-          "Yes — we’re currently <b>open</b> and staff should be available.<br>" +
-          "Hours: <b>Mon–Fri, 8:30–17:00</b>."
+          `Yes — we’re currently <b>open</b> (UK time: <b>${nowUK.weekday} ${timeNow}</b>).<br>` +
+          `Hours: <b>Mon–Fri, 8:30–17:00</b>.`
       };
     }
 
+    // CLOSED -> show next open + minutes
+    const next = getNextOpenInfo();
+    if (next) {
+      const mins = next.minutes;
+      const pretty =
+        mins <= 1 ? "in <b>1 minute</b>" : `in <b>${mins} minutes</b>`;
+
+      return {
+        matched: true,
+        answerHTML:
+          `Right now we appear to be <b>closed</b> (UK time: <b>${nowUK.weekday} ${timeNow}</b>).<br>` +
+          `We open ${pretty} on <b>${next.nextWeekday}</b> at <b>${next.nextTime}</b>.<br>` +
+          `Hours: <b>Mon–Fri, 8:30–17:00</b>.`
+      };
+    }
+
+    // Fallback (should rarely happen)
     return {
       matched: true,
       answerHTML:
-        "Right now we appear to be <b>closed</b>.<br>" +
-        "Hours: <b>Mon–Fri, 8:30–17:00</b>."
+        `Right now we appear to be <b>closed</b> (UK time: <b>${nowUK.weekday} ${timeNow}</b>).<br>` +
+        `Hours: <b>Mon–Fri, 8:30–17:00</b>.`
     };
   }
 
@@ -275,7 +441,7 @@ function aiReasoning(query) {
 }
 
 /* -------------------------------------------------------
-   FAQ MATCHING (supports synonyms + canonicalKeywords + tags)
+   FAQ MATCHING (synonyms + canonicalKeywords + tags)
 ---------------------------------------------------------- */
 function matchFAQ(query) {
   const qNorm = normalize(query);
@@ -308,7 +474,6 @@ function matchFAQ(query) {
   }
 
   results.sort((a, b) => b.score - a.score);
-
   const top = results[0];
 
   if (!top || top.score < SETTINGS.minConfidence) {
@@ -334,9 +499,9 @@ const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 
 /**
- * Adds a message bubble with timestamp.
- * - For bot messages with HTML: pass isHTML=true
- * - For user messages: always safe textContent
+ * Adds a message bubble with timestamp (UK time)
+ * - User messages: safe text only
+ * - Bot messages: allow HTML when isHTML=true
  */
 function addBubble(text, type = "bot", isHTML = false) {
   const bubble = document.createElement("div");
@@ -345,11 +510,8 @@ function addBubble(text, type = "bot", isHTML = false) {
   const content = document.createElement("div");
   content.className = "bubble-content";
 
-  if (isHTML) {
-    content.innerHTML = text;
-  } else {
-    content.textContent = text;
-  }
+  if (isHTML) content.innerHTML = text;
+  else content.textContent = text;
 
   const timestamp = document.createElement("div");
   timestamp.className = "timestamp";
@@ -371,9 +533,8 @@ function addTyping() {
   content.className = "bubble-content";
   content.innerHTML = `Typing <span class="typing"><span></span><span></span><span></span></span>`;
 
-  // no timestamp for typing bubble
+  // No timestamp on typing bubble
   div.appendChild(content);
-
   chatWindow.appendChild(div);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
@@ -403,7 +564,7 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Context inference
+    // 1) Context inference first
     const contextual = inferContext(text);
     if (contextual && contextual.matched) {
       addBubble(contextual.answerHTML, "bot", true);
@@ -417,7 +578,7 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 3) FAQ matching
+    // 3) FAQ matching fallback
     const res = matchFAQ(text);
 
     if (res.matched) {
@@ -426,7 +587,6 @@ function handleUserMessage(text) {
 
       addBubble(res.answerHTML, "bot", true);
 
-      // Follow-ups
       if (res.followUps && res.followUps.length) {
         const options = res.followUps.slice(0, 3).map(f => "• " + f).join("<br>");
         addBubble("You can also ask:<br>" + options, "bot", true);
@@ -457,3 +617,4 @@ sendBtn.addEventListener("click", sendChat);
 window.addEventListener("DOMContentLoaded", () => {
   addBubble(SETTINGS.greeting, "bot", true);
 });
+``
