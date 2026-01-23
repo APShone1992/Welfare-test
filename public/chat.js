@@ -22,7 +22,7 @@ const ESCALATION = {
   afterFails: 2,
 
   // 👇 PASTE your deployed Google Apps Script Web App URL here:
-  endpoint: "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE",
+  endpoint: "https://docs.google.com/spreadsheets/d/1GferLO7LCK2PsUw5OXSIPTXJ-XsnlZKgCFp-MIL2ia4/edit?gid=0#gid=0",
 
   // Displayed contact fallback (in case endpoint is not configured)
   fallbackEmail: "support@Kelly.co.uk",
