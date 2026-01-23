@@ -2,42 +2,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Welfare Support Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Welfare Support FAQ chatbot – quick answers, suggestions, and support info." />
-  <link rel="stylesheet" href="public/chat.css" />
+    <meta charset="UTF-8" />
+    <title>Welfare Support Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Correct path to CSS -->
+    public/chat.css
 </head>
 
 <body>
-  <div class="chat-container">
+<div class="chat-container">
+
     <header class="chat-header">
-      <img src="public/assets/bot-icon.svg" alt="" class="bot-avatar" />
-      <div class="header-text">
+        public/assets/bot-icon.svg
         <h1>Welfare Support</h1>
-        <p class="header-subtitle">Ask a question or type <b>help</b></p>
-      </div>
     </header>
 
-    <div id="chatWindow"
-         class="chat-window"
-         role="log"
-         aria-live="polite"
-         aria-relevant="additions"
-         aria-atomic="false"></div>
+    <div id="chatWindow" class="chat-window" aria-live="polite"></div>
 
     <div class="input-area">
-      <input
-        id="chatInput"
-        type="text"
-        placeholder="Ask a question..."
-        autocomplete="off"
-        aria-label="Ask a question"
-      />
-      <button id="sendBtn" type="button" aria-label="Send message">Send</button>
+        <input
+            id="chatInput"
+            type="text"
+            placeholder="Ask a question..."
+            autocomplete="off"
+            aria-label="Ask a question"
+        />
+        <button id="sendBtn" type="button">Send</button>
     </div>
-  </div>
+</div>
 
-  <script defer src="public/chat.js"></script>
+<!-- Correct path to JS -->
+public/chat.js</script>
 </body>
 </html>
