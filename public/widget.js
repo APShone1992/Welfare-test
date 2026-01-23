@@ -1,7 +1,6 @@
 
-// Welfare Support – Floating Widget (Upgraded)
+// Welfare Support – Floating Widget (Fixed + Upgraded)
 (function () {
-  // Prefer document.currentScript, fallback to last script tag
   const currentScript =
     document.currentScript ||
     (function () {
@@ -12,8 +11,6 @@
   if (!currentScript || !currentScript.src) return;
 
   const scriptURL = new URL(currentScript.src, window.location.href);
-
-  // Remove trailing /public/widget.js -> leaves repo root URL
   const appBase = scriptURL.href.replace(/\/public\/widget\.js(?:\?.*)?$/, "/");
 
   // Launcher button
@@ -33,7 +30,6 @@
   const frame = document.createElement("iframe");
   frame.title = "Welfare Support Chat";
   frame.src = appBase + "index.html";
-  frame.setAttribute("aria-label", "Welfare Support chat window");
   frame.style.cssText = `
     position: fixed; bottom: 90px; right: 20px; z-index: 2147483647;
     width: 380px; height: 520px; border: none; border-radius: 14px;
@@ -42,32 +38,18 @@
   `;
   document.body.appendChild(frame);
 
-  function isOpen() {
-    return frame.style.display !== "none";
-  }
-
-  function open() {
-    frame.style.display = "block";
-    btn.setAttribute("aria-expanded", "true");
-  }
-
-  function close() {
-    frame.style.display = "none";
-    btn.setAttribute("aria-expanded", "false");
-  }
-
-  function toggle() {
-    isOpen() ? close() : open();
-  }
+  function isOpen() { return frame.style.display !== "none"; }
+  function open() { frame.style.display = "block"; }
+  function close() { frame.style.display = "none"; }
+  function toggle() { isOpen() ? close() : open(); }
 
   btn.addEventListener("click", toggle);
 
-  // ESC closes widget
   window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && isOpen()) close();
   });
 
-  // Mobile responsive sizing
+  // Responsive (mobile)
   function resize() {
     const small = window.matchMedia("(max-width: 480px)").matches;
     if (small) {
@@ -85,3 +67,4 @@
   window.addEventListener("resize", resize);
   resize();
 })();
+``
