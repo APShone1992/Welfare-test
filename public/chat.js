@@ -13,7 +13,7 @@ const SETTINGS = {
   topSuggestions: 3,
   boostSubstring: 0.12,
   greeting:
-    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, or where we’re located."
+    'Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, or where we’re located.'
 };
 
 let FAQS = [];
@@ -46,8 +46,7 @@ function saveMemory() {
 function rememberTopic(topic) {
   if (!topic) return;
   longTermMemory.lastTopics.push(topic);
-  if (longTermMemory.lastTopics.length > 10)
-    longTermMemory.lastTopics.shift();
+  if (longTermMemory.lastTopics.length > 10) longTermMemory.lastTopics.shift();
   saveMemory();
 }
 
@@ -77,8 +76,7 @@ let memory = {
 
 function rememberUserMessage(text) {
   memory.lastUserMessages.push(text);
-  if (memory.lastUserMessages.length > 5)
-    memory.lastUserMessages.shift();
+  if (memory.lastUserMessages.length > 5) memory.lastUserMessages.shift();
 }
 
 function updateTopic(topic) {
@@ -88,7 +86,8 @@ function updateTopic(topic) {
 /* -------------------------------------------------------
    LOAD FAQS
 ---------------------------------------------------------- */
-fetch("public/config/faqs.json")
+// Use a relative path that works on GitHub Pages too
+fetch("./public/config/faqs.json")
   .then(res => res.json())
   .then(data => {
     FAQS = data || [];
@@ -170,15 +169,15 @@ function aiReasoning(query) {
     rememberContactAccess();
     rememberTopic("contact support");
     updateTopic("How can I contact support?");
+
+    const pref = getUserPreference("contactMethod");
     return {
       matched: true,
       answerHTML:
         "Here you go:<br><br>" +
-        "<b>Email:</b> mailto:support@Kelly.co.uksupport@Kelly.co.uk</a><br>" +
+        `<b>Email:</b> <a href="mailto:support@Kelly.co.uk">support@Kelly.co.uk</a><br>` +
         "<b>Phone:</b> 01234 567890" +
-        (getUserPreference("contactMethod")
-          ? `<br><br><small>I remember you prefer <b>${getUserPreference("contactMethod")}</b>.</small>`
-          : "")
+        (pref ? `<br><br><small>I remember you prefer <b>${pref}</b>.</small>` : "")
     };
   }
 
@@ -416,7 +415,14 @@ input.addEventListener("keydown", (e) => {
 
 sendBtn.addEventListener("click", sendChat);
 
-window.addEventListener("DOMContentLoaded", () => {
+// Ensure greeting runs even if script loads after DOMContentLoaded
+function init() {
   addBubble(SETTINGS.greeting, "bot", true);
-});
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
 
