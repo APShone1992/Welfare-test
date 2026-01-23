@@ -2,7 +2,7 @@
 [
   {
     "question": "What are your opening times?",
-    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b>. If you need help outside these hours, you can still send an email and we'll reply next working day.",
+    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b>. If you contact us outside these hours, we’ll reply on the next working day.",
     "synonyms": [
       "opening times",
       "when do you open",
@@ -18,20 +18,21 @@
     ],
     "category": "general",
     "followUps": [
-      "Are you open on bank holidays?",
-      "Can I book an appointment?"
+      "Are you open tomorrow?",
+      "Are you open on weekends or bank holidays?",
+      "Is anyone available now?"
     ]
   },
-
   {
     "question": "How can I contact support?",
-    "answer": "You can email us at <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
+    "answer": "Email us at <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
     "synonyms": [
       "support email",
       "customer service",
       "help contact",
       "contact details",
-      "get in touch"
+      "get in touch",
+      "phone number"
     ],
     "canonicalKeywords": [
       "email",
@@ -41,30 +42,32 @@
     ],
     "category": "support",
     "followUps": [
-      "What is your response time?",
-      "Can I speak to someone in person?"
+      "What’s your number again?",
+      "What is your response time?"
     ]
   },
-
   {
     "question": "Where are you located?",
     "answer": "We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.",
     "synonyms": [
-      "office location",
       "address",
+      "office location",
       "where is your office",
-      "location"
+      "location",
+      "directions"
     ],
     "canonicalKeywords": [
       "address",
       "map",
       "office",
-      "directions"
+      "directions",
+      "parking"
     ],
     "category": "general",
     "followUps": [
-      "Do you allow walk-in appointments?",
-      "Is there parking available?"
+      "Are you far from Coventry?",
+      "Is there parking?"
     ]
   }
 ]
+
