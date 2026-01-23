@@ -5,13 +5,23 @@
   <meta charset="UTF-8" />
   <title>Welfare Support Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  public/chat.css
+
+  <!-- Correct CSS link -->
+  <link rel="stylesheet" href="./public/chat.css" />
+
+  <!-- Load JS correctly -->
+  <script src="./public/chat.js" defer></script>
 </head>
 
 <body>
   <div class="chat-container">
     <header class="chat-header">
-      public/assets/bot-icon.svg
+      <!-- Correct bot icon -->
+      <img
+        src="./public/assets/bot-icon.svg"
+        class="bot-avatar"
+        alt="Welfare Support bot"
+      />
       <h1>Welfare Support</h1>
     </header>
 
@@ -28,8 +38,5 @@
       <button id="sendBtn" type="button">Send</button>
     </div>
   </div>
-
-  public/chat.js</script>
 </body>
 </html>
-
