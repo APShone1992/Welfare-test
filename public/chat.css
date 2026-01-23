@@ -1,25 +1,32 @@
 
 /* ---------------------------------------------------------
    Welfare Support Chat – Modern Blue/White Premium Theme
-   Clean, soft, rounded, polished UI
+   Includes:
+   - Premium blue/white UI
+   - Rounded speech bubble tails
+   - Timestamp styling
+   - Smooth fade-in for the whole chat container
 ---------------------------------------------------------- */
 
 :root {
   --blue: #0078ff;
   --blue-light: #4da3ff;
   --blue-dark: #005fcc;
+
   --white: #ffffff;
   --bg: #eef4ff;
+
   --border-light: #d9e3ff;
   --bot-bg: #f5f8ff;
+  --bot-text: #001a4d;
+
   --shadow-main: 0 12px 28px rgba(0, 0, 0, 0.11);
   --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.08);
+
   --radius: 20px;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html, body {
   height: 100%;
@@ -30,9 +37,8 @@ html, body {
 }
 
 /* ---------------------------------------------------------
-   CHAT CONTAINER
+   CHAT CONTAINER (fade-in)
 ---------------------------------------------------------- */
-
 .chat-container {
   width: 100%;
   max-width: 540px;
@@ -45,12 +51,21 @@ html, body {
   flex-direction: column;
   min-height: 660px;
   border: 1px solid var(--border-light);
+
+  /* Fade-in */
+  opacity: 0;
+  transform: translateY(12px);
+  animation: chatFadeIn 0.45s ease-out forwards;
+}
+
+@keyframes chatFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ---------------------------------------------------------
    HEADER
 ---------------------------------------------------------- */
-
 .chat-header {
   display: flex;
   align-items: center;
@@ -61,10 +76,7 @@ html, body {
   box-shadow: var(--shadow-soft);
 }
 
-.bot-avatar {
-  width: 36px;
-  height: 36px;
-}
+.bot-avatar { width: 36px; height: 36px; }
 
 .chat-header h1 {
   margin: 0;
@@ -76,7 +88,6 @@ html, body {
 /* ---------------------------------------------------------
    CHAT WINDOW
 ---------------------------------------------------------- */
-
 .chat-window {
   flex: 1;
   padding: 24px;
@@ -87,8 +98,8 @@ html, body {
 /* ---------------------------------------------------------
    BUBBLES
 ---------------------------------------------------------- */
-
 .bubble {
+  position: relative; /* required for tails */
   max-width: 80%;
   padding: 12px 16px;
   border-radius: 18px;
@@ -100,25 +111,23 @@ html, body {
 }
 
 @keyframes bubbleIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* BOT BUBBLE */
+.bubble-content a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .bubble.bot {
   background: var(--bot-bg);
-  color: #001a4d;
+  color: var(--bot-text);
   margin-right: auto;
   border-bottom-left-radius: 8px;
 }
 
-/* USER BUBBLE */
 .bubble.user {
   background: linear-gradient(135deg, var(--blue), var(--blue-light));
   color: var(--white);
@@ -127,9 +136,61 @@ html, body {
 }
 
 /* ---------------------------------------------------------
-   INPUT AREA
+   BUBBLE TAILS
 ---------------------------------------------------------- */
 
+/* Bot bubble tail */
+.bubble.bot::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  bottom: 10px;
+  width: 14px;
+  height: 14px;
+  background: var(--bot-bg);
+  transform: rotate(45deg);
+  border-bottom-left-radius: 12px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* User bubble tail */
+.bubble.user::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  bottom: 10px;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-light));
+  transform: rotate(45deg);
+  border-bottom-right-radius: 12px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---------------------------------------------------------
+   TIMESTAMP (under each bubble)
+---------------------------------------------------------- */
+.timestamp {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 6px;
+  padding: 0 2px;
+  user-select: none;
+}
+
+.bubble.bot .timestamp {
+  text-align: left;
+  color: rgba(0, 26, 77, 0.65);
+}
+
+.bubble.user .timestamp {
+  text-align: right;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ---------------------------------------------------------
+   INPUT AREA
+---------------------------------------------------------- */
 .input-area {
   display: flex;
   gap: 12px;
@@ -145,10 +206,10 @@ html, body {
   border: 1px solid #c6d5ff;
   font-size: 15px;
   transition: all 0.2s ease;
+  outline: none;
 }
 
 .input-area input:focus {
-  outline: none;
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(0, 120, 255, 0.15);
 }
@@ -165,7 +226,8 @@ html, body {
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.input-area button:hover {
+.input-area button:hover,
+.input-area button:focus {
   background: var(--blue-dark);
   transform: translateY(-1px);
 }
@@ -173,7 +235,6 @@ html, body {
 /* ---------------------------------------------------------
    TYPING INDICATOR
 ---------------------------------------------------------- */
-
 .typing span {
   display: inline-block;
   width: 7px;
@@ -184,34 +245,24 @@ html, body {
   animation: typingPulse 1.4s infinite ease-in-out;
 }
 
-.typing span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.typing span:nth-child(3) {
-  animation-delay: 0.3s;
-}
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
 
 @keyframes typingPulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.25);
-  }
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50%      { opacity: 1; transform: scale(1.25); }
 }
 
 /* ---------------------------------------------------------
    MOBILE
 ---------------------------------------------------------- */
-
 @media (max-width: 560px) {
   .chat-container {
     margin: 0;
     min-height: 100vh;
     border-radius: 0;
   }
+
+  .chat-window { padding: 18px; }
 }
 
