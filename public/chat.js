@@ -1,9 +1,10 @@
 
 /* -------------------------------------------------------
-   Welfare Support – Chat Engine (Clean Final Version)
-   Features:
-   - FAQ matching with synonyms, tags, keywords
-   - AI-ish reasoning (tomorrow, parking, number again, etc.)
+   Welfare Support – Chat Engine (Clean Final + UI Enhancements)
+   Includes:
+   - Timestamps under bubbles
+   - FAQ matching with synonyms/tags/keywords
+   - AI-ish reasoning (tomorrow, parking, number again, Coventry, available now)
    - Short-term memory (context)
    - Long-term memory (localStorage)
 ---------------------------------------------------------- */
@@ -46,8 +47,7 @@ function saveMemory() {
 function rememberTopic(topic) {
   if (!topic) return;
   longTermMemory.lastTopics.push(topic);
-  if (longTermMemory.lastTopics.length > 10)
-    longTermMemory.lastTopics.shift();
+  if (longTermMemory.lastTopics.length > 10) longTermMemory.lastTopics.shift();
   saveMemory();
 }
 
@@ -77,8 +77,7 @@ let memory = {
 
 function rememberUserMessage(text) {
   memory.lastUserMessages.push(text);
-  if (memory.lastUserMessages.length > 5)
-    memory.lastUserMessages.shift();
+  if (memory.lastUserMessages.length > 5) memory.lastUserMessages.shift();
 }
 
 function updateTopic(topic) {
@@ -122,30 +121,48 @@ const jaccard = (a, b) => {
 };
 
 /* -------------------------------------------------------
-   CONTEXT INFERENCE
+   TIME HELPERS (UK time + HH:MM formatting)
+---------------------------------------------------------- */
+function getUKTimeHHMM() {
+  const now = new Date();
+  const uk = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
+  const hh = String(uk.getHours()).padStart(2, "0");
+  const mm = String(uk.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function getUKDateObj() {
+  const now = new Date();
+  return new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
+}
+
+/* -------------------------------------------------------
+   CONTEXT INFERENCE (follow-ups)
 ---------------------------------------------------------- */
 function inferContext(query) {
   const q = normalize(query);
 
   // Learn preference
-  if (q.includes("prefer email") || q.includes("email me"))
+  if (q.includes("prefer email") || q.includes("email me") || q.includes("by email")) {
     setUserPreference("contactMethod", "email");
-
-  if (q.includes("prefer phone") || q.includes("call me"))
+  }
+  if (q.includes("prefer phone") || q.includes("call me") || q.includes("by phone")) {
     setUserPreference("contactMethod", "phone");
+  }
 
-  // Follow-up weekend/holiday Qs
+  // Weekend follow-up after opening times
   if (memory.lastMatchedTopic) {
     const last = normalize(memory.lastMatchedTopic);
 
-    const mentionsWeekend = ["weekend", "saturday", "sunday", "bank holiday"]
+    const mentionsWeekend = ["weekend", "weekends", "saturday", "sunday", "bank holiday", "holiday"]
       .some(w => q.includes(w));
 
-    if (mentionsWeekend && last.includes("open")) {
+    if (mentionsWeekend && (last.includes("open") || last.includes("opening"))) {
       return {
         matched: true,
         answerHTML:
-          "We’re <b>closed on weekends and bank holidays</b>.<br>Hours: <b>Mon–Fri, 8:30–17:00</b>."
+          "We’re <b>closed on weekends and bank holidays</b>.<br>" +
+          "Hours: <b>Mon–Fri, 8:30–17:00</b>."
       };
     }
   }
@@ -154,61 +171,58 @@ function inferContext(query) {
 }
 
 /* -------------------------------------------------------
-   AI-ISH REASONING
+   AI-ISH REASONING (no API)
 ---------------------------------------------------------- */
 function aiReasoning(query) {
   const q = normalize(query);
 
-  /* CONTACT DETAILS AGAIN */
-  const asksContact =
-    q.includes("number") ||
-    q.includes("phone") ||
-    q.includes("contact") ||
-    q.includes("email");
+  /* CONTACT DETAILS AGAIN / LOST */
+  const asksContact = q.includes("number") || q.includes("phone") || q.includes("contact") || q.includes("email");
+  const reAsk = q.includes("again") || q.includes("lost") || q.includes("remind") || q.includes("what is") || q.includes("whats") || q.includes("what’s");
 
-  if (asksContact && (q.includes("again") || q.includes("lost") || q.includes("remind"))) {
+  if (asksContact && reAsk) {
     rememberContactAccess();
     rememberTopic("contact support");
     updateTopic("How can I contact support?");
+    const pref = getUserPreference("contactMethod");
+
     return {
       matched: true,
       answerHTML:
         "Here you go:<br><br>" +
-        "<b>Email:</b> <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a><br>" +
-        "<b>Phone:</b> 01234 567890" +
-        (getUserPreference("contactMethod")
-          ? `<br><br><small>I remember you prefer <b>${getUserPreference("contactMethod")}</b>.</small>`
-          : "")
+        "<b>Email:</b> <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a><br>" +
+        "<b>Phone:</b> <b>01234 567890</b>" +
+        (pref ? `<br><br><small>I remember you prefer <b>${pref}</b>.</small>` : "")
     };
   }
 
   /* OPEN TOMORROW? */
-  if (q.includes("tomorrow")) {
-    const now = new Date();
-    const ukNow = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
+  if (q.includes("tomorrow") || q.includes("open tomorrow")) {
+    const ukNow = getUKDateObj();
     const tomorrow = new Date(ukNow);
     tomorrow.setDate(ukNow.getDate() + 1);
 
     const day = tomorrow.getDay(); // 0 Sun, 6 Sat
-
     rememberTopic("opening times");
 
     if (day === 0 || day === 6) {
       return {
         matched: true,
         answerHTML:
-          "Tomorrow is a <b>weekend</b>, so we’re closed.<br>Hours: <b>Mon–Fri, 8:30–17:00</b>."
+          "Tomorrow is a <b>weekend</b>, so we’re closed.<br>" +
+          "Hours: <b>Mon–Fri, 8:30–17:00</b>."
       };
     }
 
     return {
       matched: true,
-      answerHTML: "Yes — tomorrow is a weekday, so we’ll be open <b>8:30–17:00</b>."
+      answerHTML:
+        "Yes — tomorrow is a weekday, so we’ll be open <b>8:30–17:00</b>."
     };
   }
 
   /* PARKING */
-  if (q.includes("parking") || q.includes("car park")) {
+  if (q.includes("parking") || q.includes("car park") || q.includes("park my car")) {
     rememberTopic("parking");
     return {
       matched: true,
@@ -218,27 +232,19 @@ function aiReasoning(query) {
   }
 
   /* DISTANCE FROM COVENTRY */
-  if (q.includes("coventry") || (q.includes("cov") && q.includes("far"))) {
+  if ((q.includes("coventry") || q.includes("cov")) && (q.includes("far") || q.includes("distance") || q.includes("how long"))) {
     rememberTopic("location");
     return {
       matched: true,
       answerHTML:
-        "We’re in <b>Nuneaton</b>, about <b>8 miles</b> from Coventry — a <b>15–20 minute drive</b>."
+        "We’re in <b>Nuneaton</b>, about <b>8 miles</b> from Coventry — typically a <b>15–20 minute drive</b> depending on traffic."
     };
   }
 
-  /* AVAILABILITY RIGHT NOW */
-  if (
-    q.includes("available") ||
-    q.includes("open now") ||
-    q.includes("right now") ||
-    q.includes("someone there") ||
-    q.includes("anyone there")
-  ) {
-    const now = new Date();
-    const uk = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
-
-    const day = uk.getDay();
+  /* AVAILABLE NOW? (UK business hours Mon–Fri 08:30–17:00) */
+  if (q.includes("available") || q.includes("open now") || q.includes("right now") || q.includes("someone there") || q.includes("anyone there")) {
+    const uk = getUKDateObj();
+    const day = uk.getDay();   // 0 Sun, 6 Sat
     const hr = uk.getHours();
     const min = uk.getMinutes();
 
@@ -252,14 +258,16 @@ function aiReasoning(query) {
       return {
         matched: true,
         answerHTML:
-          "Yes — we’re currently <b>open</b> and staff should be available.<br>Hours: <b>Mon–Fri, 8:30–17:00</b>."
+          "Yes — we’re currently <b>open</b> and staff should be available.<br>" +
+          "Hours: <b>Mon–Fri, 8:30–17:00</b>."
       };
     }
 
     return {
       matched: true,
       answerHTML:
-        "Right now we appear to be <b>closed</b>.<br>Hours: <b>Mon–Fri, 8:30–17:00</b>."
+        "Right now we appear to be <b>closed</b>.<br>" +
+        "Hours: <b>Mon–Fri, 8:30–17:00</b>."
     };
   }
 
@@ -267,7 +275,7 @@ function aiReasoning(query) {
 }
 
 /* -------------------------------------------------------
-   FAQ MATCHING
+   FAQ MATCHING (supports synonyms + canonicalKeywords + tags)
 ---------------------------------------------------------- */
 function matchFAQ(query) {
   const qNorm = normalize(query);
@@ -276,17 +284,17 @@ function matchFAQ(query) {
   const results = [];
 
   for (const item of FAQS) {
-    const q = item.question || "";
+    const question = item.question || "";
     const syns = item.synonyms || [];
     const keys = item.canonicalKeywords || [];
     const tags = item.tags || [];
 
-    const scoreQ = jaccard(qTokens, tokenSet(q));
+    const scoreQ = jaccard(qTokens, tokenSet(question));
     const scoreSyn = syns.length ? Math.max(...syns.map(s => jaccard(qTokens, tokenSet(s)))) : 0;
     const scoreKeys = keys.length ? Math.max(...keys.map(k => jaccard(qTokens, tokenSet(k)))) : 0;
     const scoreTags = tags.length ? Math.max(...tags.map(t => jaccard(qTokens, tokenSet(t)))) : 0;
 
-    const anyField = [q, ...syns, ...keys, ...tags].map(normalize).join(" ");
+    const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
     const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
 
     const score =
@@ -319,17 +327,38 @@ function matchFAQ(query) {
 }
 
 /* -------------------------------------------------------
-   UI FUNCTIONS
+   UI
 ---------------------------------------------------------- */
 const chatWindow = document.getElementById("chatWindow");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 
+/**
+ * Adds a message bubble with timestamp.
+ * - For bot messages with HTML: pass isHTML=true
+ * - For user messages: always safe textContent
+ */
 function addBubble(text, type = "bot", isHTML = false) {
-  const div = document.createElement("div");
-  div.className = "bubble " + type;
-  div[isHTML ? "innerHTML" : "textContent"] = text;
-  chatWindow.appendChild(div);
+  const bubble = document.createElement("div");
+  bubble.className = "bubble " + type;
+
+  const content = document.createElement("div");
+  content.className = "bubble-content";
+
+  if (isHTML) {
+    content.innerHTML = text;
+  } else {
+    content.textContent = text;
+  }
+
+  const timestamp = document.createElement("div");
+  timestamp.className = "timestamp";
+  timestamp.textContent = getUKTimeHHMM();
+
+  bubble.appendChild(content);
+  bubble.appendChild(timestamp);
+
+  chatWindow.appendChild(bubble);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
@@ -337,7 +366,14 @@ function addTyping() {
   const div = document.createElement("div");
   div.className = "bubble bot";
   div.setAttribute("data-typing", "true");
-  div.innerHTML = `Typing <span class="typing"><span></span><span></span><span></span></span>`;
+
+  const content = document.createElement("div");
+  content.className = "bubble-content";
+  content.innerHTML = `Typing <span class="typing"><span></span><span></span><span></span></span>`;
+
+  // no timestamp for typing bubble
+  div.appendChild(content);
+
   chatWindow.appendChild(div);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
@@ -354,33 +390,34 @@ function handleUserMessage(text) {
   if (!text) return;
 
   rememberUserMessage(text);
-  addBubble(text, "user");
+  addBubble(text, "user", false);
   input.value = "";
 
   addTyping();
+
   setTimeout(() => {
     removeTyping();
 
     if (!faqsLoaded) {
-      addBubble("Loading knowledge base… please try again in a second.", "bot");
+      addBubble("Loading knowledge base… please try again in a second.", "bot", false);
       return;
     }
 
-    // 1. Context inference
+    // 1) Context inference
     const contextual = inferContext(text);
     if (contextual && contextual.matched) {
       addBubble(contextual.answerHTML, "bot", true);
       return;
     }
 
-    // 2. AI-ish reasoning
+    // 2) AI-ish reasoning
     const logic = aiReasoning(text);
     if (logic && logic.matched) {
       addBubble(logic.answerHTML, "bot", true);
       return;
     }
 
-    // 3. FAQ matching
+    // 3) FAQ matching
     const res = matchFAQ(text);
 
     if (res.matched) {
@@ -389,6 +426,7 @@ function handleUserMessage(text) {
 
       addBubble(res.answerHTML, "bot", true);
 
+      // Follow-ups
       if (res.followUps && res.followUps.length) {
         const options = res.followUps.slice(0, 3).map(f => "• " + f).join("<br>");
         addBubble("You can also ask:<br>" + options, "bot", true);
