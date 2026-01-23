@@ -248,40 +248,49 @@ function aiReasoning(query) {
     };
   }
 
-  // 5) Available right now? (UK timezone + business hours)
-  if (q.includes("available") || q.includes("open now") || q.includes("right now") || q.includes("someone there") || q.includes("anyone there")) {
-    const now = new Date();
-    const uk = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
 
-    const day = uk.getDay();        // 0 Sun, 6 Sat
-    const hr = uk.getHours();
-    const min = uk.getMinutes();
+// 5) Available right now? (UK timezone + business hours)
+if (
+  q.includes("available") ||
+  q.includes("open now") ||
+  q.includes("right now") ||
+  q.includes("someone there") ||
+  q.includes("anyone there")
+) {
+  const now = new Date();
+  const uk = new Date(now.toLocaleString("en-GB", { timeZone: "Europe/London" }));
 
-    const isWeekend = day === 0 || day === 6;
-    const afterOpen = (hr > 8) || (hr === 8 && min >= 30);
-    const beforeClose = hr < 17;
+  const day = uk.getDay();        // 0 = Sunday, 6 = Saturday
+  const hr = uk.getHours();
+  const min = uk.getMinutes();
 
-    rememberTopic("availability");
+  const isWeekend = (day === 0 || day === 6);
+  const afterOpen = (hr > 8) || (hr === 8 && min >= 30);
+  const beforeClose = (hr < 17);
 
-    if (!isWeekend && afterOpen && beforeClose) {
-      return {
-        matched: true,
-        answerHTML:
-          "Yes — we’re currently <b>open</b> and staff should be available.<br>" +
-          "Hours: <b>Mon–Fri, 8:30–17:00</b>.",
-        reasoned: true
-      };
-    }
+  rememberTopic("availability");
 
+  if (!isWeekend && afterOpen && beforeClose) {
     return {
       matched: true,
       answerHTML:
-        "Right now we appear to be <b>closed</b>.<br>" +
-        "Hours: <b>Mon–Fri, 8:30–17:00</b>.<br>" +
-        "If you email us, we’ll reply on the next working day.",
+        "Yes — we’re currently <b>open</b> and staff should be available.<br>" +
+        "Hours: <b>Mon–Fri, 8:30–17:00</b>.",
       reasoned: true
     };
   }
+
+  return {
+    matched: true,
+    answerHTML:
+      "Right now we appear to be <b>closed</b>.<br>" +
+      "Hours: <b>Mon–Fri, 8:30–17:00</b>.<br>" +
+      "Feel free to leave a message.",
+    reasoned: true
+  };
+}
+
+
 
   return null;
 }
