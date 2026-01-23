@@ -1,67 +1,136 @@
 
-// Welfare Support – Floating Widget (Improved)
-(function () {
-  // Detect base URL from this script src (…/public/widget.js)
-  const currentScript =
-    document.currentScript ||
-    (function () {
-      const scripts = document.getElementsByTagName("script");
-      return scripts[scripts.length - 1];
-    })();
+:root {
+    --blue: #0078ff;
+    --blue-dark: #005fcc;
+    --bg: #e7f0ff;
+    --bot-bg: #eef4ff;
+    --bot-text: #001a4d;
+    --shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
 
-  const scriptURL = new URL(currentScript.src, window.location.href);
+* { box-sizing: border-box; }
 
-  // Remove trailing /public/widget.js -> leaves repo root URL
-  const appBase = scriptURL.href.replace(/\/public\/widget\.js(?:\?.*)?$/, "/");
+body {
+    margin: 0;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
 
-  // Launcher button
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.setAttribute("aria-label", "Open Welfare Support chat");
-  btn.style.cssText = `
-    position: fixed; bottom: 20px; right: 20px; z-index: 2147483647;
-    width: 60px; height: 60px; border-radius: 50%;
-    background: #0078ff; color: #fff; border: none; cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25); font-size: 24px; line-height: 60px;
-  `;
-  btn.textContent = "💬";
-  document.body.appendChild(btn);
+/* Chat container */
+.chat-container {
+    max-width: 520px;
+    background: white;
+    margin: 32px auto;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
 
-  // Iframe popup
-  const frame = document.createElement("iframe");
-  frame.title = "Welfare Support Chat";
-  frame.src = appBase + "index.html?embed=1";
-  frame.style.cssText = `
-    position: fixed; bottom: 90px; right: 20px; z-index: 2147483647;
-    width: 380px; height: 520px; border: none; border-radius: 14px;
-    display: none; background: #fff;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-  `;
-  document.body.appendChild(frame);
+/* Header */
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--blue);
+    color: white;
+    padding: 14px 16px;
+}
 
-  function isOpen() {
-    return frame.style.display !== "none";
-  }
+.bot-avatar {
+    width: 32px;
+    height: 32px;
+}
 
-  function open() {
-    frame.style.display = "block";
-    btn.textContent = "✕";
-    btn.setAttribute("aria-label", "Close Welfare Support chat");
-  }
+/* Window */
+.chat-window {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+}
 
-  function close() {
-    frame.style.display = "none";
-    btn.textContent = "💬";
-    btn.setAttribute("aria-label", "Open Welfare Support chat");
-  }
+/* Bubbles */
+.bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    margin: 8px 0;
+    line-height: 1.45;
+    font-size: 15px;
+    animation: fadeIn 0.15s ease-out;
+}
 
-  btn.addEventListener("click", () => {
-    if (isOpen()) close();
-    else open();
-  });
+.bubble.bot {
+    background: var(--bot-bg);
+    color: var(--bot-text);
+    margin-right: auto;
+    border-bottom-left-radius: 6px;
+}
 
-  // Close on ESC
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && isOpen()) close();
-  });
-})();
+.bubble.user {
+    background: var(--blue);
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 6px;
+}
+
+/* Input area */
+.input-area {
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #cfd8ea;
+}
+
+.input-area button {
+    padding: 10px 16px;
+    background: var(--blue);
+    border-radius: 10px;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.input-area button:hover {
+    background: var(--blue-dark);
+}
+
+/* Typing dots */
+.typing span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin: 0 2px;
+    background: #9bb8f8;
+    border-radius: 50%;
+    animation: blink 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) { animation-delay: .15s; }
+.typing span:nth-child(3) { animation-delay: .3s; }
+
+@keyframes blink {
+    0%, 80%, 100% { opacity: .3; }
+    40% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 560px) {
+    .chat-container {
+        margin: 0;
+        border-radius: 0;
+        height: 100vh;
+    }
+}
