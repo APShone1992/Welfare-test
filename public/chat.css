@@ -1,5 +1,5 @@
 
-:root {
+:root{
   --blue: #0078ff;
   --blue-600: #005fcc;
   --bg: #e7f0ff;
@@ -8,7 +8,6 @@
   --shadow: 0 4px 14px rgba(0,0,0,0.1);
 }
 
-/* RESET */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 
@@ -19,7 +18,6 @@ body {
   color: #222;
 }
 
-/* CONTAINER */
 .chat-container {
   width: 100%;
   max-width: 520px;
@@ -33,7 +31,6 @@ body {
   min-height: 560px;
 }
 
-/* HEADER */
 .chat-header {
   display: flex;
   align-items: center;
@@ -54,7 +51,6 @@ body {
   font-weight: 700;
 }
 
-/* CHAT WINDOW */
 .chat-window {
   flex: 1;
   padding: 16px;
@@ -62,7 +58,6 @@ body {
   background: #fff;
 }
 
-/* BUBBLES */
 .bubble {
   max-width: 78%;
   padding: 10px 14px;
@@ -74,7 +69,6 @@ body {
   white-space: pre-wrap;
 }
 
-/* BOT */
 .bubble.bot {
   background: var(--bot-bg);
   color: var(--bot-text);
@@ -82,7 +76,6 @@ body {
   border-bottom-left-radius: 6px;
 }
 
-/* USER */
 .bubble.user {
   background: var(--blue);
   color: #fff;
@@ -90,21 +83,11 @@ body {
   border-bottom-right-radius: 6px;
 }
 
-/* TIMESTAMP (new, but simple) */
-.bubble .meta {
-  display: block;
-  margin-top: 6px;
-  font-size: 11px;
-  opacity: 0.6;
-}
-
-/* INPUT AREA */
 .input-area {
   display: flex;
   gap: 10px;
   border-top: 1px solid #e5e5e5;
   padding: 10px;
-  background: #fff;
 }
 
 .input-area input {
@@ -113,7 +96,6 @@ body {
   border-radius: 10px;
   border: 1px solid #cfd8ea;
   font-size: 15px;
-  background: #fff;
 }
 
 .input-area button {
@@ -124,15 +106,13 @@ body {
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  font-weight: 600;
 }
 
-.input-area button:hover,
-.input-area button:focus {
+.input-area button:hover {
   background: var(--blue-600);
 }
 
-/* TYPING INDICATOR */
+/* typing dots */
 .typing {
   display: inline-block;
   height: 8px;
@@ -157,7 +137,7 @@ body {
   40% { opacity: 1; }
 }
 
-/* CHIPS – matches your old theme */
+/* NEW: Quick reply chips */
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -167,23 +147,19 @@ body {
 
 .chip {
   background: var(--bot-bg);
+  border: 1px solid #d6ddf5;
   color: var(--bot-text);
-  border-radius: 50px;
   padding: 6px 12px;
-  border: 1px solid #d5defb;
+  border-radius: 100px;
   font-size: 14px;
   cursor: pointer;
 }
 
-.chip:hover {
-  background: #dde7ff;
+/* NEW: Timestamp */
+.bubble .meta {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.6;
 }
 
-/* MOBILE */
-@media (max-width: 560px) {
-  .chat-container {
-    margin: 0;
-    min-height: 100vh;
-    border-radius: 0;
-  }
-}
