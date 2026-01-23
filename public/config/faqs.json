@@ -1,33 +1,72 @@
 
 [
-    {
-        "question": "What are your opening times?",
-        "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b>.",
-        "synonyms": [
-            "When do you open?",
-            "Business hours",
-            "What time are you open?"
-        ],
-        "tags": ["hours", "open", "schedule"]
-    },
-    {
-        "question": "How can I contact support?",
-        "answer": "Email us at mailto:support@Kelly.co.uksupport@Kelly.co.uk</a> or call <b>01234 567890</b>.",
-        "synonyms": [
-            "Support email",
-            "Customer service",
-            "Help contact"
-        ],
-        "tags": ["support", "email", "phone", "contact"]
-    },
-    {
-        "question": "Where are you located?",
-        "answer": "We’re based in <b>Nuneaton, UK</b>. Visits by appointment.",
-        "synonyms": [
-            "Address",
-            "Office location",
-            "Where is your office?"
-        ],
-        "tags": ["address", "map", "location", "office"]
-    }
+  {
+    "question": "What are your opening times?",
+    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b>. If you contact us outside these hours, we’ll reply on the next working day.",
+    "synonyms": [
+      "opening times",
+      "when do you open",
+      "business hours",
+      "office hours",
+      "what time are you open"
+    ],
+    "canonicalKeywords": [
+      "hours",
+      "schedule",
+      "timetable",
+      "availability"
+    ],
+    "category": "general",
+    "followUps": [
+      "Are you open tomorrow?",
+      "Are you open on weekends or bank holidays?",
+      "Is anyone available now?"
+    ]
+  },
+  {
+    "question": "How can I contact support?",
+    "answer": "Email us at <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
+    "synonyms": [
+      "support email",
+      "customer service",
+      "help contact",
+      "contact details",
+      "get in touch",
+      "phone number"
+    ],
+    "canonicalKeywords": [
+      "email",
+      "phone",
+      "contact",
+      "support request"
+    ],
+    "category": "support",
+    "followUps": [
+      "What’s your number again?",
+      "What is your response time?"
+    ]
+  },
+  {
+    "question": "Where are you located?",
+    "answer": "We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.",
+    "synonyms": [
+      "address",
+      "office location",
+      "where is your office",
+      "location",
+      "directions"
+    ],
+    "canonicalKeywords": [
+      "address",
+      "map",
+      "office",
+      "directions",
+      "parking"
+    ],
+    "category": "general",
+    "followUps": [
+      "Are you far from Coventry?",
+      "Is there parking?"
+    ]
+  }
 ]
