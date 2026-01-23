@@ -1,5 +1,5 @@
 
-:root{
+:root {
   --blue: #0078ff;
   --blue-600: #005fcc;
   --bg: #e7f0ff;
@@ -8,9 +8,13 @@
   --shadow: 0 4px 14px rgba(0,0,0,0.1);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html, body { height: 100%; }
+html, body {
+  height: 100%;
+}
 
 body {
   margin: 0;
