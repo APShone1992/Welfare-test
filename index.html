@@ -1,55 +1,38 @@
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Welfare Support Chat</title>
-  <meta name="description" content="Welfare Support FAQ chatbot" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Correct path to CSS -->
   <link rel="stylesheet" href="public/chat.css" />
 </head>
 <body>
-  <a class="skip-link" href="#chatWindow">Skip to chat</a>
 
-  <main class="chat-container" role="application" aria-label="Welfare Support chatbot">
+  <div class="chat-container">
     <header class="chat-header">
       <img src="public/assets/bot-icon.svg" alt="" class="bot-avatar" />
-      <div class="chat-title">
-        <h1>Welfare Support</h1>
-        <p class="subtitle">Instant answers to common questions</p>
-      </div>
-
-      <div class="chat-actions">
-        <button id="clearBtn" type="button" class="icon-btn" aria-label="Clear chat" title="Clear chat">🧹</button>
-      </div>
+      <h1>Welfare Support</h1>
     </header>
 
-    <section
-      id="chatWindow"
-      class="chat-window"
-      role="log"
-      aria-live="polite"
-      aria-atomic="false"
-      aria-relevant="additions text">
-    </section>
+    <div id="chatWindow" class="chat-window" aria-live="polite" aria-atomic="false"></div>
 
-    <section class="quick-replies" aria-label="Suggested questions">
-      <div id="quickReplies" class="chips"></div>
-    </section>
-
-    <form class="input-area" id="chatForm" autocomplete="off">
-      <label class="sr-only" for="chatInput">Ask a question</label>
+    <div class="input-area">
       <input
         id="chatInput"
-        name="chatInput"
         type="text"
-        placeholder="Ask a question… (try “opening times”)"
+        placeholder="Ask a question..."
+        autocomplete="off"
         aria-label="Ask a question"
       />
-      <button id="sendBtn" type="submit">Send</button>
-    </form>
-  </main>
+      <button id="sendBtn" type="button">Send</button>
+    </div>
+  </div>
 
-  <script src="public/chat.js" defer></script>
+  <!-- Correct path to JS -->
+  <script src="public/chat.js"></script>
 </body>
 </html>
+
+
