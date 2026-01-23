@@ -133,3 +133,129 @@ body {
   40% { opacity: 1; }
 }
 
+/* NEW: quick reply chips (same theme) */
+.chips{
+  display:flex;
+  gap:8px;
+  padding: 10px 10px 0;
+  flex-wrap: wrap;
+}
+.chip{
+  background: var(--bot-bg);
+  color: var(--bot-text);
+  border: 1px solid #d5defb;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor:pointer;
+}
+.chip:hover{ background: #dde7ff; }
+
+/* NEW: suggestion links inside bot bubble */
+.suggest a{
+  color: var(--blue-600);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* NEW: FAQ browser panel (still inside chat window styling) */
+.faq-panel{
+  border: 1px solid #d5defb;
+  background: var(--bot-bg);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: 6px;
+}
+.faq-panel h3{
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--bot-text);
+}
+.faq-cat{
+  margin: 6px 0 10px;
+}
+.faq-cat-title{
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--bot-text);
+  margin: 6px 0;
+}
+.faq-q{
+  display:block;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid #d5defb;
+  background: #fff;
+  margin: 6px 0;
+  color: var(--bot-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.faq-q:hover{ background: #f6f9ff; }
+
+/* NEW: escalation support form (matches your theme) */
+.support-form{
+  margin-top: 8px;
+}
+.support-form label{
+  display:block;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 8px 0 4px;
+}
+.support-form input,
+.support-form textarea{
+  width: 100%;
+  border: 1px solid #cfd8ea;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.support-form textarea{ min-height: 90px; resize: vertical; }
+.support-actions{
+  display:flex;
+  gap:10px;
+  margin-top: 10px;
+}
+.support-actions button{
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor:pointer;
+  font-size: 14px;
+}
+.btn-primary{
+  background: var(--blue);
+  color:#fff;
+}
+.btn-primary:hover{ background: var(--blue-600); }
+.btn-secondary{
+  background: #fff;
+  border: 1px solid #cfd8ea;
+  color: var(--bot-text);
+}
+.form-hint{
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 8px;
+}
+
+/* Timestamp */
+.bubble .meta{
+  display:block;
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* Mobile */
+@media (max-width: 560px) {
+  .chat-container {
+    margin: 0;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+}
+``
+
