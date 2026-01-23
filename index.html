@@ -5,28 +5,36 @@
   <meta charset="UTF-8" />
   <title>Welfare Support Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  public/chat.css
+  <link rel="stylesheet" href="public/chat.css" />
 </head>
 
 <body>
   <div class="chat-container">
     <header class="chat-header">
-      public/assets/bot-icon.svg
+      <img src="public/assets/bot-icon.svg" alt="" class="bot-avatar" />
       <h1>Welfare Support</h1>
+
+      <!-- NEW: FAQ browser toggle (small + unobtrusive) -->
+      <button id="faqToggle" class="header-btn" type="button" aria-label="Browse FAQs" title="Browse FAQs">❓</button>
     </header>
 
-    <div id="chatWindow" class="chat-window" aria-live="polite"></div>
+    <div id="chatWindow" class="chat-window" aria-live="polite" aria-atomic="false"></div>
 
-    <!-- NEW -->
-    <div id="chipRow" class="chips"></div>
+    <!-- NEW: Quick chips row -->
+    <div id="chipRow" class="chips" aria-label="Suggested questions"></div>
 
     <div class="input-area">
-      <input id="chatInput" type="text" placeholder="Ask a question..." autocomplete="off" />
+      <input
+        id="chatInput"
+        type="text"
+        placeholder="Ask a question..."
+        autocomplete="off"
+        aria-label="Ask a question"
+      />
       <button id="sendBtn" type="button">Send</button>
     </div>
   </div>
 
-  public/chat.js</script>
+  <script src="public/chat.js"></script>
 </body>
 </html>
