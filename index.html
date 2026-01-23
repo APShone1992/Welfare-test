@@ -1,22 +1,32 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Welfare Support Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0078ff" />
+  <meta name="color-scheme" content="light dark" />
 
   <!-- Correct path to CSS -->
   <link rel="stylesheet" href="public/chat.css" />
 </head>
-<body>
 
-  <div class="chat-container">
+<body>
+  <a class="skip-link" href="#chatInput">Skip to message input</a>
+
+  <div class="chat-container" role="application" aria-label="Welfare Support chat">
     <header class="chat-header">
       <img src="public/assets/bot-icon.svg" alt="" class="bot-avatar" />
-      <h1>Welfare Support</h1>
+      <div class="header-text">
+        <h1>Welfare Support</h1>
+        <p class="subtitle">Ask a question and I’ll do my best to help.</p>
+      </div>
     </header>
 
     <div id="chatWindow" class="chat-window" aria-live="polite" aria-atomic="false"></div>
+
+    <div id="chipRow" class="chips" aria-label="Suggested questions"></div>
 
     <div class="input-area">
       <input
@@ -28,12 +38,16 @@
       />
       <button id="sendBtn" type="button">Send</button>
     </div>
+
+    <footer class="chat-footer">
+      <span class="footer-note">Tip: type <b>help</b> for options, or <b>clear</b> to reset.</span>
+    </footer>
   </div>
 
   <!-- Correct path to JS -->
   <script src="public/chat.js"></script>
 </body>
 </html>
-
+``
 
 
