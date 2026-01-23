@@ -1,5 +1,5 @@
 
-:root {
+:root{
   --blue: #0078ff;
   --blue-600: #005fcc;
   --bg: #e7f0ff;
@@ -8,13 +8,9 @@
   --shadow: 0 4px 14px rgba(0,0,0,0.1);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
   margin: 0;
@@ -130,6 +126,11 @@ body {
   background: var(--blue-600);
 }
 
+.input-area button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 .typing {
   display: inline-block;
   height: 8px;
@@ -153,6 +154,50 @@ body {
 @keyframes blink {
   0%, 80%, 100% { opacity: .3; }
   40% { opacity: 1; }
+}
+
+/* =========================
+   Suggested question chips
+   ========================= */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 2px;
+  max-width: 92%;
+}
+
+.chip-btn {
+  border: 1px solid #cfd8ea;
+  background: #f6f9ff;
+  color: #0b2a66;
+  padding: 8px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-btn:hover,
+.chip-btn:focus {
+  border-color: #8ab6ff;
+  box-shadow: 0 0 0 3px rgba(0,120,255,.12);
+  outline: none;
+}
+
+.chip-btn:active {
+  transform: translateY(1px);
+}
+
+.chip-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 @media (max-width: 560px) {
