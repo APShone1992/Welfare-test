@@ -1,12 +1,14 @@
 
 /* -------------------------------------------------------
-   Welfare Support – Chat Engine (Fixed UK Time Logic)
+   Welfare Support – Chat Engine (UK Time + Chips + Anti-Spam)
 ---------------------------------------------------------- */
 
 const SETTINGS = {
   minConfidence: 0.20,
   topSuggestions: 3,
   boostSubstring: 0.12,
+  chipLimit: 6,
+  chipClickCooldownMs: 900,   // anti-spam cooldown
   greeting:
     'Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, or where we’re located.'
 };
@@ -115,8 +117,7 @@ const jaccard = (a, b) => {
 };
 
 /* -------------------------------------------------------
-   ✅ UK TIME HELPERS (FIXED)
-   Uses formatToParts - no locale string parsing issues
+   UK TIME HELPERS (Robust)
 ---------------------------------------------------------- */
 const UK_TZ = "Europe/London";
 
@@ -134,8 +135,7 @@ function getUKParts(date = new Date()) {
 
   const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
   return {
-    // weekday: "Mon", "Tue", ...
-    weekday: map.weekday,
+    weekday: map.weekday,  // "Mon", "Tue", ...
     year: Number(map.year),
     month: Number(map.month),
     day: Number(map.day),
@@ -145,7 +145,6 @@ function getUKParts(date = new Date()) {
 }
 
 function ukWeekdayNumber(weekdayShort) {
-  // Convert "Mon".."Sun" to 1..0 same as Date.getDay (Sun=0)
   const lookup = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   return lookup[weekdayShort] ?? 0;
 }
@@ -159,32 +158,27 @@ function isOpenNowUK() {
   const day = ukWeekdayNumber(uk.weekday);
   const mins = minutesSinceMidnight(uk.hour, uk.minute);
 
-  // Opening hours: Mon–Fri 08:30–17:00
   const isWeekend = (day === 0 || day === 6);
   const openMins = minutesSinceMidnight(8, 30);
   const closeMins = minutesSinceMidnight(17, 0);
 
   // Open if >= 08:30 and < 17:00
   const openNow = (!isWeekend && mins >= openMins && mins < closeMins);
-
-  return { openNow, uk, day, mins, openMins, closeMins };
+  return { openNow, uk };
 }
 
 function willBeOpenTomorrowUK() {
-  // Determine UK weekday for "tomorrow" without parsing locale strings.
-  // We take current UK date parts, then construct a UTC date and add 1 day,
-  // then re-format in UK timezone.
   const uk = getUKParts(new Date());
 
-  // Create a Date from YYYY-MM-DD in UTC at noon to avoid DST edge issues
+  // Create a safe UTC date at noon to avoid DST edges
   const safeUTC = new Date(Date.UTC(uk.year, uk.month - 1, uk.day, 12, 0, 0));
   safeUTC.setUTCDate(safeUTC.getUTCDate() + 1);
 
   const ukTomorrow = getUKParts(safeUTC);
   const day = ukWeekdayNumber(ukTomorrow.weekday);
-
   const isWeekend = (day === 0 || day === 6);
-  return { isWeekend, ukTomorrow, day };
+
+  return { isWeekend, ukTomorrow };
 }
 
 /* -------------------------------------------------------
@@ -199,9 +193,9 @@ function inferContext(query) {
   if (q.includes("prefer phone") || q.includes("call me"))
     setUserPreference("contactMethod", "phone");
 
+  // Follow-up weekend/holiday Qs
   if (memory.lastMatchedTopic) {
     const last = normalize(memory.lastMatchedTopic);
-
     const mentionsWeekend = ["weekend", "saturday", "sunday", "bank holiday"]
       .some(w => q.includes(w));
 
@@ -246,7 +240,7 @@ function aiReasoning(query) {
     };
   }
 
-  /* OPEN TOMORROW? (✅ FIXED) */
+  /* OPEN TOMORROW? */
   if (q.includes("tomorrow")) {
     const t = willBeOpenTomorrowUK();
     rememberTopic("opening times");
@@ -285,7 +279,7 @@ function aiReasoning(query) {
     };
   }
 
-  /* AVAILABILITY RIGHT NOW (✅ FIXED) */
+  /* AVAILABILITY RIGHT NOW */
   if (
     q.includes("available") ||
     q.includes("open now") ||
@@ -320,7 +314,6 @@ function aiReasoning(query) {
 function matchFAQ(query) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
-
   const results = [];
 
   for (const item of FAQS) {
@@ -348,7 +341,6 @@ function matchFAQ(query) {
   }
 
   results.sort((a, b) => b.score - a.score);
-
   const top = results[0];
 
   if (!top || top.score < SETTINGS.minConfidence) {
@@ -367,11 +359,25 @@ function matchFAQ(query) {
 }
 
 /* -------------------------------------------------------
-   UI FUNCTIONS
+   UI FUNCTIONS + ANTI-SPAM STATE
 ---------------------------------------------------------- */
 const chatWindow = document.getElementById("chatWindow");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
+
+// Prevent chip spam while bot is responding
+let isResponding = false;
+let lastChipClickAt = 0;
+
+function setUIEnabled(enabled) {
+  // input + send
+  input.disabled = !enabled;
+  sendBtn.disabled = !enabled;
+
+  // any chips currently shown
+  const chips = chatWindow.querySelectorAll(".chip-btn");
+  chips.forEach(btn => (btn.disabled = !enabled));
+}
 
 function addBubble(text, type = "bot", isHTML = false) {
   const div = document.createElement("div");
@@ -395,6 +401,57 @@ function removeTyping() {
   if (t) t.remove();
 }
 
+/**
+ * Adds suggested question chips.
+ * Anti-spam:
+ * - chips are disabled while bot is responding
+ * - clicking one disables the entire chip set immediately
+ * - cooldown blocks rapid double clicks
+ */
+function addChips(questions = []) {
+  if (!questions.length) return;
+
+  const wrap = document.createElement("div");
+  wrap.className = "chips";
+
+  const list = questions.slice(0, SETTINGS.chipLimit);
+
+  list.forEach((q) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip-btn";
+    b.textContent = q;
+
+    b.addEventListener("click", () => {
+      const now = Date.now();
+
+      // Cooldown and responding lock
+      if (isResponding) return;
+      if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
+      lastChipClickAt = now;
+
+      // Disable ALL chips in this wrap immediately (prevents spam)
+      wrap.querySelectorAll(".chip-btn").forEach(btn => (btn.disabled = true));
+
+      // Send chip text
+      handleUserMessage(q);
+
+      // Keep focus in input after
+      input.focus();
+    });
+
+    wrap.appendChild(b);
+  });
+
+  // If bot is responding right now, make chips disabled immediately
+  if (isResponding) {
+    wrap.querySelectorAll(".chip-btn").forEach(btn => (btn.disabled = true));
+  }
+
+  chatWindow.appendChild(wrap);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
 /* -------------------------------------------------------
    MAIN MESSAGE HANDLER
 ---------------------------------------------------------- */
@@ -405,27 +462,41 @@ function handleUserMessage(text) {
   addBubble(text, "user");
   input.value = "";
 
+  // Lock UI to prevent spam while bot responds
+  isResponding = true;
+  setUIEnabled(false);
+
   addTyping();
+
   setTimeout(() => {
     removeTyping();
 
     if (!faqsLoaded) {
       addBubble("Loading knowledge base… please try again in a second.", "bot");
+      isResponding = false;
+      setUIEnabled(true);
       return;
     }
 
+    // 1) Context inference
     const contextual = inferContext(text);
     if (contextual && contextual.matched) {
       addBubble(contextual.answerHTML, "bot", true);
+      isResponding = false;
+      setUIEnabled(true);
       return;
     }
 
+    // 2) AI reasoning
     const logic = aiReasoning(text);
     if (logic && logic.matched) {
       addBubble(logic.answerHTML, "bot", true);
+      isResponding = false;
+      setUIEnabled(true);
       return;
     }
 
+    // 3) FAQ matching
     const res = matchFAQ(text);
 
     if (res.matched) {
@@ -434,21 +505,25 @@ function handleUserMessage(text) {
 
       addBubble(res.answerHTML, "bot", true);
 
+      // Follow-up chips (buttons)
       if (res.followUps && res.followUps.length) {
-        const options = res.followUps.slice(0, 3).map(f => "• " + f).join("<br>");
-        addBubble("You can also ask:<br>" + options, "bot", true);
+        addBubble("You can also ask:", "bot");
+        addChips(res.followUps);
       }
     } else {
-      const suggestions =
-        res.suggestions && res.suggestions.length
-          ? "<br><br>• " + res.suggestions.join("<br>• ")
-          : "";
-      addBubble("I’m not sure. Did you mean:" + suggestions, "bot", true);
+      addBubble("I’m not sure. Did you mean:", "bot");
+      addChips(res.suggestions || []);
     }
+
+    // Unlock UI after response has been printed
+    isResponding = false;
+    setUIEnabled(true);
+
   }, 350);
 }
 
 function sendChat() {
+  if (isResponding) return; // extra guard
   handleUserMessage(input.value.trim());
 }
 
