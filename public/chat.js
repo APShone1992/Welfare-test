@@ -1,426 +1,209 @@
 
-/* -------------------------------------------------------
-   Welfare Support – Chat Engine (Final Version)
-   Includes:
-   - UK Time handling (safe)
-   - Auto-scroll via scrollIntoView (always works)
-   - "Open now" + "Opens in X minutes"
-   - Bubble timestamps
-   - Short-term & long-term memory
-   - FAQ search + synonyms + keywords + tags
-   - AI-ish reasoning
----------------------------------------------------------- */
+// ------------------------------------------------------------
+// Welfare Support – Upgraded FAQ Chat Engine
+// ------------------------------------------------------------
 
 const SETTINGS = {
-  minConfidence: 0.20,
-  topSuggestions: 3,
-  boostSubstring: 0.12,
+  minConfidence: 0.24,
+  topSuggestions: 4,
+  boostSubstring: 0.10,
+  boostExactPhrase: 0.16,
+  typingDelayMs: 300,
+  maxHistory: 80,
   greeting:
-    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, or where we’re located."
+    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, how to contact support, or where we’re located.",
+  fallback:
+    "I’m not sure I’ve got that yet. Try rephrasing, or choose one of these:",
+  helpText:
+    "You can ask about <b>opening times</b>, <b>contact</b>, or <b>location</b>.<br><br>" +
+    "Commands:<br>• <b>help</b> – show this message<br>• <b>clear</b> – clear chat history<br>• <b>restart</b> – show the welcome message again"
 };
 
 let FAQS = [];
 let faqsLoaded = false;
 
-// Business Hours (UK Local)
-const HOURS = {
-  openHour: 8,
-  openMinute: 30,
-  closeHour: 17,
-  closeMinute: 0
-};
+// Elements
+const chatWindow = document.getElementById("chatWindow");
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const chipRow = document.getElementById("chipRow");
 
-// Contact Details
-const CONTACT = {
-  email: "support@Kelly.co.uk",
-  phone: "01234 567890"
-};
-
-/* -------------------------------------------------------
-   LONG-TERM MEMORY (localStorage)
----------------------------------------------------------- */
-const MEM_KEY = "welfareSupportMemory";
-
-let longTermMemory = {
-  prefs: {},
-  lastTopics: [],
-  contactRequests: 0
-};
-
-function loadMemory() {
-  try { const saved = localStorage.getItem(MEM_KEY); if (saved) longTermMemory = JSON.parse(saved); }
-  catch {}
+// ---------------------------
+// FAQ Load
+// ---------------------------
+async function loadFaqs() {
+  try {
+    const res = await fetch("public/config/faqs.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("FAQ fetch failed: " + res.status);
+    const data = await res.json();
+    FAQS = Array.isArray(data) ? data : [];
+  } catch (e) {
+    FAQS = [];
+    console.warn(e);
+  } finally {
+    faqsLoaded = true;
+    sendBtn.disabled = false;
+    buildChips();
+    if (!FAQS.length) {
+      addBubble(
+        "I couldn’t load the knowledge base right now. Please check your <b>public/config/faqs.json</b> path and try again.",
+        "bot",
+        true
+      );
+    }
+  }
 }
+sendBtn.disabled = true;
+loadFaqs();
 
-function saveMemory() {
-  try { localStorage.setItem(MEM_KEY, JSON.stringify(longTermMemory)); }
-  catch {}
-}
+// ---------------------------
+// Normalization & similarity
+// ---------------------------
+const STOPWORDS = new Set([
+  "a","an","the","and","or","but","to","of","in","on","at","for","from","by",
+  "is","are","was","were","be","been","being","do","does","did",
+  "i","me","my","you","your","we","our","us",
+  "what","when","where","how","can","could","would","should",
+  "please","tell"
+]);
 
-function rememberTopic(topic) {
-  if (!topic) return;
-  longTermMemory.lastTopics.push(topic);
-  if (longTermMemory.lastTopics.length > 10) longTermMemory.lastTopics.shift();
-  saveMemory();
-}
-
-function rememberContactAccess() {
-  longTermMemory.contactRequests++;
-  saveMemory();
-}
-
-function setUserPreference(key, value) {
-  longTermMemory.prefs[key] = value;
-  saveMemory();
-}
-
-function getUserPreference(key) {
-  return longTermMemory.prefs[key];
-}
-
-loadMemory();
-
-/* -------------------------------------------------------
-   SHORT-TERM MEMORY
----------------------------------------------------------- */
-let memory = {
-  lastUserMessages: [],
-  lastMatchedTopic: null
-};
-
-function rememberUserMessage(text) {
-  memory.lastUserMessages.push(text);
-  if (memory.lastUserMessages.length > 5) memory.lastUserMessages.shift();
-}
-
-function updateTopic(topic) {
-  memory.lastMatchedTopic = topic;
-}
-
-/* -------------------------------------------------------
-   LOAD FAQ DATA
----------------------------------------------------------- */
-fetch("public/config/faqs.json")
-  .then(res => res.json())
-  .then(data => { FAQS = data || []; faqsLoaded = true; })
-  .catch(() => { FAQS = []; faqsLoaded = true; });
-
-/* -------------------------------------------------------
-   TEXT NORMALISATION
----------------------------------------------------------- */
 const normalize = (s) =>
-  (s || "")
+  (s ?? "")
+    .toString()
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[̀-ͯ]/g, "")            // accents
     .replace(/[“”‘’]/g, '"')
     .replace(/[–—]/g, "-")
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, " ")
     .trim();
 
-const tokenSet = (s) => new Set(normalize(s).split(" ").filter(Boolean));
+function tokens(s) {
+  return normalize(s)
+    .split(" ")
+    .filter(Boolean)
+    .filter(t => !STOPWORDS.has(t));
+}
 
-const jaccard = (a, b) => {
+function tokenSet(s) {
+  return new Set(tokens(s));
+}
+
+function jaccard(a, b) {
   if (!a.size || !b.size) return 0;
-  const inter = new Set([...a].filter(x => b.has(x)));
-  return inter.size / new Set([...a, ...b]).size;
-};
-
-/* -------------------------------------------------------
-   SUPER SAFE UK TIME HANDLING
----------------------------------------------------------- */
-function getUKParts(date = new Date()) {
-  const dtf = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/London",
-    weekday: "long",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  });
-
-  const parts = dtf.formatToParts(date);
-  const get = (type) => parts.find(p => p.type === type)?.value;
-
-  return {
-    weekday: get("weekday"),
-    year: parseInt(get("year")),
-    month: parseInt(get("month")),
-    day: parseInt(get("day")),
-    hour: parseInt(get("hour")),
-    minute: parseInt(get("minute"))
-  };
+  let inter = 0;
+  for (const x of a) if (b.has(x)) inter++;
+  const union = a.size + b.size - inter;
+  return union ? inter / union : 0;
 }
 
-function getUKTimeHHMM() {
-  const { hour, minute } = getUKParts();
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+// Dice coefficient with bigrams (good for phrase similarity)
+function bigrams(str) {
+  const s = normalize(str).replace(/\s+/g, " ");
+  const out = [];
+  for (let i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
+  return out;
 }
-
-function tzOffsetMs(date, timeZone) {
-  const dtf = new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  });
-
-  const parts = dtf.formatToParts(date).reduce((o, p) => {
-    o[p.type] = p.value;
-    return o;
-  }, {});
-
-  const asUTC = Date.UTC(
-    Number(parts.year),
-    Number(parts.month) - 1,
-    Number(parts.day),
-    Number(parts.hour),
-    Number(parts.minute),
-    Number(parts.second)
-  );
-
-  return asUTC - date.getTime();
-}
-
-function ukLocalToUtcMs({ year, month, day, hour, minute }) {
-  const guess = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  const offset = tzOffsetMs(guess, "Europe/London");
-  return guess.getTime() - offset;
-}
-
-function isWeekendUK(weekday) {
-  return weekday === "Saturday" || weekday === "Sunday";
-}
-
-function minutesUntil(ms) {
-  return Math.max(0, Math.ceil((ms - Date.now()) / 60000));
-}
-
-/* -------------------------------------------------------
-   NEXT OPEN LOGIC
----------------------------------------------------------- */
-function getNextOpenInfo() {
-  const nowUK = getUKParts();
-  const nowMs = Date.now();
-
-  const nowMinutes = nowUK.hour * 60 + nowUK.minute;
-  const openMinutes = HOURS.openHour * 60 + HOURS.openMinute;
-  const closeMinutes = HOURS.closeHour * 60 + HOURS.closeMinute;
-
-  function nextWeekdayStart() {
-    let d = new Date();
-    for (let i = 0; i < 14; i++) {
-      const uk = getUKParts(d);
-      if (!isWeekendUK(uk.weekday)) return uk;
-      d = new Date(d.getTime() + 86400000);
+function diceCoefficient(a, b) {
+  const A = bigrams(a);
+  const B = bigrams(b);
+  if (!A.length || !B.length) return 0;
+  const map = new Map();
+  for (const x of A) map.set(x, (map.get(x) || 0) + 1);
+  let matches = 0;
+  for (const y of B) {
+    const n = map.get(y) || 0;
+    if (n > 0) {
+      matches++;
+      map.set(y, n - 1);
     }
   }
-
-  // Before opening today
-  if (!isWeekendUK(nowUK.weekday) && nowMinutes < openMinutes) {
-    const utc = ukLocalToUtcMs({
-      year: nowUK.year,
-      month: nowUK.month,
-      day: nowUK.day,
-      hour: HOURS.openHour,
-      minute: HOURS.openMinute
-    });
-
-    return {
-      nextWeekday: nowUK.weekday,
-      nextTime: `${String(HOURS.openHour).padStart(2, "0")}:${String(HOURS.openMinute).padStart(2, "0")}`,
-      minutes: minutesUntil(utc)
-    };
-  }
-
-  // Weekend or after closing
-  if (isWeekendUK(nowUK.weekday) || nowMinutes >= closeMinutes) {
-    const next = nextWeekdayStart();
-    const utc = ukLocalToUtcMs({
-      year: next.year,
-      month: next.month,
-      day: next.day,
-      hour: HOURS.openHour,
-      minute: HOURS.openMinute
-    });
-
-    return {
-      nextWeekday: next.weekday,
-      nextTime: `${String(HOURS.openHour).padStart(2, "0")}:${String(HOURS.openMinute).padStart(2, "0")}`,
-      minutes: minutesUntil(utc)
-    };
-  }
-
-  return null;
+  return (2 * matches) / (A.length + B.length);
 }
 
-/* -------------------------------------------------------
-   CONTEXT INFERENCE
----------------------------------------------------------- */
-function inferContext(text) {
-  const q = normalize(text);
+// Light edit similarity (normalized Levenshtein) for short strings
+function editSimilarity(a, b) {
+  a = normalize(a); b = normalize(b);
+  if (!a || !b) return 0;
+  const m = a.length, n = b.length;
+  const dp = new Array(n + 1);
+  for (let j = 0; j <= n; j++) dp[j] = j;
 
-  if (q.includes("prefer email")) setUserPreference("contactMethod", "email");
-  if (q.includes("prefer phone")) setUserPreference("contactMethod", "phone");
-
-  if (memory.lastMatchedTopic) {
-    const last = normalize(memory.lastMatchedTopic);
-
-    if (["weekend","saturday","sunday","bank holiday"].some(w => q.includes(w))
-        && last.includes("open")) {
-      return {
-        matched: true,
-        answerHTML:
-          "We’re <b>closed on weekends and bank holidays</b>.<br>Hours: <b>Mon–Fri 8:30–17:00</b>."
-      };
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = dp[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[j] = Math.min(
+        dp[j] + 1,       // delete
+        dp[j - 1] + 1,   // insert
+        prev + cost      // substitute
+      );
+      prev = temp;
     }
   }
-
-  return null;
+  const dist = dp[n];
+  const maxLen = Math.max(m, n);
+  return maxLen ? 1 - dist / maxLen : 0;
 }
 
-/* -------------------------------------------------------
-   AI-ish Reasoning
----------------------------------------------------------- */
-function aiReasoning(text) {
-  const q = normalize(text);
-
-  /* Contact details again / lost */
-  const asksContact = q.includes("number") || q.includes("phone") || q.includes("contact") || q.includes("email");
-  const reAsk = q.includes("again") || q.includes("lost") || q.includes("remind") || q.includes("what is");
-
-  if (asksContact && reAsk) {
-    rememberContactAccess();
-    rememberTopic("contact");
-
-    const pref = getUserPreference("contactMethod");
-
-    return {
-      matched: true,
-      answerHTML:
-        "Here you go:<br><br>" +
-        `<b>Email:</b> <a href="mailto:${CONTACT.email}">${CONTACT.email}</a><br>` +
-        `<b>Phone:</b> ${CONTACT.phone}` +
-        (pref ? `<br><br><small>(I remember you prefer <b>${pref}</b>)</small>` : "")
-    };
-  }
-
-  /* Tomorrow */
-  if (q.includes("tomorrow")) {
-    const tomorrow = new Date(Date.now() + 86400000);
-    const tUK = getUKParts(tomorrow);
-
-    if (isWeekendUK(tUK.weekday)) {
-      return {
-        matched: true,
-        answerHTML:
-          `Tomorrow is <b>${tUK.weekday}</b>, so we’re closed.<br>Hours: <b>Mon–Fri 8:30–17:00</b>.`
-      };
-    }
-
-    return {
-      matched: true,
-      answerHTML:
-        `Yes — tomorrow is <b>${tUK.weekday}</b>, so we’ll be open <b>08:30–17:00</b>.`
-    };
-  }
-
-  /* Parking */
-  if (q.includes("parking") || q.includes("car park")) {
-    return {
-      matched: true,
-      answerHTML:
-        "Yes — we offer visitor parking near our Nuneaton office. Spaces may be limited."
-    };
-  }
-
-  /* Coventry distance */
-  if ((q.includes("coventry") || q.includes("cov")) && q.includes("far")) {
-    return {
-      matched: true,
-      answerHTML:
-        "We’re in <b>Nuneaton</b>, around <b>8 miles</b> from Coventry — roughly a <b>15–20 minute</b> drive."
-    };
-  }
-
-  /* Availability Now */
-  if (q.includes("available") || q.includes("open now") || q.includes("right now")) {
-    const uk = getUKParts();
-    const timeNow = `${String(uk.hour).padStart(2,"0")}:${String(uk.minute).padStart(2,"0")}`;
-
-    const isWk = isWeekendUK(uk.weekday);
-    const afterOpen = uk.hour > HOURS.openHour ||
-      (uk.hour === HOURS.openHour && uk.minute >= HOURS.openMinute);
-    const beforeClose = uk.hour < HOURS.closeHour;
-
-    if (!isWk && afterOpen && beforeClose) {
-      return {
-        matched: true,
-        answerHTML:
-          `Yes — we’re <b>open</b> right now.<br>` +
-          `UK time: <b>${uk.weekday} ${timeNow}</b><br>` +
-          `Hours: <b>Mon–Fri 8:30–17:00</b>.`
-      };
-    }
-
-    const next = getNextOpenInfo();
-
-    return {
-      matched: true,
-      answerHTML:
-        `We’re currently <b>closed</b> (UK time: <b>${uk.weekday} ${timeNow}</b>).<br>` +
-        `We open <b>in ${next.minutes} minutes</b> on <b>${next.nextWeekday}</b> at <b>${next.nextTime}</b>.<br>` +
-        `Hours: <b>Mon–Fri 8:30–17:00</b>.`
-    };
-  }
-
-  return null;
+function fieldBoost(allFieldsNorm, qNorm) {
+  if (!qNorm) return 0;
+  if (allFieldsNorm === qNorm) return SETTINGS.boostExactPhrase;
+  if (allFieldsNorm.includes(qNorm)) return SETTINGS.boostSubstring;
+  return 0;
 }
 
-/* -------------------------------------------------------
-   FAQ MATCHING
----------------------------------------------------------- */
-function matchFAQ(query) {
+function scoreItem(query, item) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
 
-  const results = FAQS.map(item => {
-    const scoreQ = jaccard(qTokens, tokenSet(item.question));
-    const scoreSyn = item.synonyms?.length
-      ? Math.max(...item.synonyms.map(s => jaccard(qTokens, tokenSet(s))))
-      : 0;
-    const scoreKeys = item.canonicalKeywords?.length
-      ? Math.max(...item.canonicalKeywords.map(k => jaccard(qTokens, tokenSet(k))))
-      : 0;
-    const scoreTags = item.tags?.length
-      ? Math.max(...item.tags.map(t => jaccard(qTokens, tokenSet(t))))
-      : 0;
+  const question = item.question ?? "";
+  const syns = (item.synonyms ?? []);
+  const tags = (item.tags ?? []);
 
-    const fieldsJoined = [item.question, ...(item.synonyms||[]), ...(item.canonicalKeywords||[]), ...(item.tags||[])]
-      .join(" ");
-    const boost = normalize(fieldsJoined).includes(qNorm) ? SETTINGS.boostSubstring : 0;
+  const scoreTokenQ = jaccard(qTokens, tokenSet(question));
+  const scorePhraseQ = diceCoefficient(query, question);
+  const scoreEditQ = editSimilarity(query, question);
 
-    return {
-      item,
-      score:
-        (0.55 * scoreQ) +
-        (0.25 * scoreSyn) +
-        (0.12 * scoreKeys) +
-        (0.08 * scoreTags) +
-        boost
-    };
-  });
+  const synScore = syns.length
+    ? Math.max(...syns.map(s => (
+        0.55 * jaccard(qTokens, tokenSet(s)) +
+        0.30 * diceCoefficient(query, s) +
+        0.15 * editSimilarity(query, s)
+      )))
+    : 0;
 
-  results.sort((a, b) => b.score - a.score);
+  const tagScore = tags.length
+    ? Math.max(...tags.map(t => jaccard(qTokens, tokenSet(t))))
+    : 0;
 
-  if (!results[0] || results[0].score < SETTINGS.minConfidence) {
+  const allFieldsNorm = normalize([question, ...syns, ...tags].join(" "));
+  const boost = fieldBoost(allFieldsNorm, qNorm);
+
+  // Weighted blend
+  const score =
+    0.42 * scoreTokenQ +
+    0.34 * scorePhraseQ +
+    0.10 * scoreEditQ +
+    0.10 * synScore +
+    0.04 * tagScore +
+    boost;
+
+  return score;
+}
+
+function matchFAQ(query) {
+  const results = FAQS.map(item => ({
+    item,
+    score: scoreItem(query, item)
+  })).sort((a, b) => b.score - a.score);
+
+  const top = results[0];
+
+  if (!top || top.score < SETTINGS.minConfidence) {
     return {
       matched: false,
       suggestions: results.slice(0, SETTINGS.topSuggestions).map(r => r.item.question)
@@ -429,78 +212,222 @@ function matchFAQ(query) {
 
   return {
     matched: true,
-    answerHTML: results[0].item.answer,
-    question: results[0].item.question,
-    followUps: results[0].item.followUps || []
+    answerHTML: top.item.answer,
+    question: top.item.question,
+    confidence: top.score,
+    suggestions: results.slice(1, SETTINGS.topSuggestions + 1).map(r => r.item.question)
   };
 }
 
-/* -------------------------------------------------------
-   UI (Auto-scroll FIX)
----------------------------------------------------------- */
+// ---------------------------
+// HTML sanitiser (allowlist)
+// ---------------------------
+function sanitizeHTML(html) {
+  const allowedTags = new Set([
+    "A","B","STRONG","I","EM","BR","P","UL","OL","LI","SMALL","CODE","SPAN"
+  ]);
 
-const chatWindow = document.getElementById("chatWindow");
-const input = document.getElementById("chatInput");
-const sendBtn = document.getElementById("sendBtn");
+  const allowedAttrs = {
+    "A": new Set(["href","target","rel"])
+  };
 
-function scrollToBottom() {
-  requestAnimationFrame(() => {
-    const last = chatWindow.lastElementChild;
-    if (last) {
-      last.scrollIntoView({ behavior: "smooth", block: "end" });
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(String(html ?? ""), "text/html");
+
+  // Remove dangerous nodes
+  doc.querySelectorAll("script, style, iframe, object, embed").forEach(n => n.remove());
+
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null);
+  const toProcess = [];
+  while (walker.nextNode()) toProcess.push(walker.currentNode);
+
+  for (const el of toProcess) {
+    if (!allowedTags.has(el.tagName)) {
+      // Replace disallowed element with its text content
+      const text = doc.createTextNode(el.textContent || "");
+      el.replaceWith(text);
+      continue;
     }
-  });
+
+    // Strip attributes (except allowlist)
+    [...el.attributes].forEach(attr => {
+      const tagAllowed = allowedAttrs[el.tagName];
+      if (!tagAllowed || !tagAllowed.has(attr.name.toLowerCase())) {
+        el.removeAttribute(attr.name);
+      }
+    });
+
+    // Safe link handling
+    if (el.tagName === "A") {
+      const href = el.getAttribute("href") || "";
+      const safe = /^(https?:\/\/|mailto:|tel:)/i.test(href);
+      if (!safe) el.removeAttribute("href");
+      el.setAttribute("target", "_blank");
+      el.setAttribute("rel", "noopener noreferrer");
+    }
+  }
+
+  return doc.body.innerHTML;
 }
 
-function addBubble(text, type = "bot", isHTML = false) {
-  const bubble = document.createElement("div");
-  bubble.className = "bubble " + type;
+// ---------------------------
+// UI helpers
+// ---------------------------
+function timeStamp() {
+  const d = new Date();
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
-  const content = document.createElement("div");
-  content.className = "bubble-content";
-  if (isHTML) content.innerHTML = text;
-  else content.textContent = text;
+function addBubble(text, type = "bot", isHTML = false, persist = true) {
+  const div = document.createElement("div");
+  div.className = "bubble " + type;
 
-  const timestamp = document.createElement("div");
-  timestamp.className = "timestamp";
-  timestamp.textContent = getUKTimeHHMM();
+  if (isHTML) {
+    div.innerHTML = sanitizeHTML(text);
+  } else {
+    div.textContent = text;
+  }
 
-  bubble.appendChild(content);
-  bubble.appendChild(timestamp);
+  const meta = document.createElement("span");
+  meta.className = "meta";
+  meta.textContent = timeStamp();
+  div.appendChild(meta);
 
-  chatWindow.appendChild(bubble);
-  scrollToBottom();
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  if (persist) saveToHistory({ type, text, isHTML });
 }
 
 function addTyping() {
   const div = document.createElement("div");
   div.className = "bubble bot";
-  div.dataset.typing = "true";
-
-  const content = document.createElement("div");
-  content.className = "bubble-content";
-  content.innerHTML = `Typing <span class="typing"><span></span><span></span><span></span></span>`;
-
-  div.appendChild(content);
+  div.setAttribute("data-typing", "true");
+  div.innerHTML = `Typing <span class="typing"><span></span><span></span><span></span></span>`;
   chatWindow.appendChild(div);
-  scrollToBottom();
+  chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function removeTyping() {
   const t = chatWindow.querySelector('[data-typing="true"]');
   if (t) t.remove();
-  scrollToBottom();
 }
 
-/* -------------------------------------------------------
-   MAIN MESSAGE HANDLER
----------------------------------------------------------- */
-function handleUserMessage(text) {
-  if (!text) return;
+function addSuggestions(suggestions) {
+  if (!suggestions || !suggestions.length) return;
 
-  rememberUserMessage(text);
-  addBubble(text, "user");
+  const wrap = document.createElement("div");
+  wrap.className = "bubble bot";
+  wrap.innerHTML = sanitizeHTML(
+    `${SETTINGS.fallback}<br><br>` +
+    suggestions.map(s => `• <a href="#" data-suggest="${encodeURIComponent(s)}">${s}</a>`).join("<br>")
+  );
+
+  wrap.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-suggest]");
+    if (!a) return;
+    e.preventDefault();
+    const q = decodeURIComponent(a.getAttribute("data-suggest"));
+    handleUserMessage(q);
+  });
+
+  const meta = document.createElement("span");
+  meta.className = "meta";
+  meta.textContent = timeStamp();
+  wrap.appendChild(meta);
+
+  chatWindow.appendChild(wrap);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  saveToHistory({ type: "bot", text: wrap.innerHTML, isHTML: true });
+}
+
+// ---------------------------
+// Chips (quick replies)
+// ---------------------------
+function buildChips() {
+  chipRow.innerHTML = "";
+  if (!FAQS.length) return;
+
+  const top = FAQS.slice(0, 3).map(f => f.question);
+  top.forEach(q => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.type = "button";
+    b.textContent = q;
+    b.addEventListener("click", () => handleUserMessage(q));
+    chipRow.appendChild(b);
+  });
+}
+
+// ---------------------------
+// History (localStorage)
+// ---------------------------
+const HISTORY_KEY = "welfare_support_chat_history_v2";
+
+function saveToHistory(msg) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    arr.push({ ...msg, ts: Date.now() });
+    const trimmed = arr.slice(-SETTINGS.maxHistory);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+  } catch (_) {}
+}
+
+function restoreHistory() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    if (!Array.isArray(arr) || !arr.length) return false;
+
+    arr.forEach(m => addBubble(m.text, m.type, !!m.isHTML, false));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function clearHistory() {
+  try { localStorage.removeItem(HISTORY_KEY); } catch (_) {}
+  chatWindow.innerHTML = "";
+}
+
+// ---------------------------
+// Message handler
+// ---------------------------
+function handleUserMessage(text) {
+  const cleaned = (text ?? "").trim();
+  if (!cleaned) return;
+
+  addBubble(cleaned, "user", false);
   input.value = "";
+
+  const cmd = normalize(cleaned);
+  if (cmd === "clear") {
+    addTyping();
+    setTimeout(() => {
+      removeTyping();
+      clearHistory();
+      addBubble("Cleared. What would you like to ask?", "bot", false);
+    }, 250);
+    return;
+  }
+
+  if (cmd === "help") {
+    addTyping();
+    setTimeout(() => {
+      removeTyping();
+      addBubble(SETTINGS.helpText, "bot", true);
+    }, SETTINGS.typingDelayMs);
+    return;
+  }
+
+  if (cmd === "restart") {
+    addTyping();
+    setTimeout(() => {
+      removeTyping();
+      addBubble(SETTINGS.greeting, "bot", true);
+    }, SETTINGS.typingDelayMs);
+    return;
+  }
 
   addTyping();
 
@@ -512,61 +439,42 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1. Context inference
-    const ctx = inferContext(text);
-    if (ctx?.matched) {
-      addBubble(ctx.answerHTML, "bot", true);
+    if (!FAQS.length) {
+      addBubble("I can’t answer yet because the FAQ list didn’t load.", "bot");
       return;
     }
 
-    // 2. AI-ish reasoning
-    const logic = aiReasoning(text);
-    if (logic?.matched) {
-      addBubble(logic.answerHTML, "bot", true);
-      return;
-    }
+    const res = matchFAQ(cleaned);
 
-    // 3. FAQ matching
-    const res = matchFAQ(text);
     if (res.matched) {
-      updateTopic(res.question);
-      rememberTopic(res.question);
       addBubble(res.answerHTML, "bot", true);
-
-      if (res.followUps.length) {
-        addBubble(
-          "You can also ask:<br>" +
-          res.followUps.map(f => "• " + f).join("<br>"),
-          "bot",
-            );
+      // Optional: show secondary suggestions after a match
+      if (res.suggestions && res.suggestions.length) {
+        addSuggestions(res.suggestions);
       }
     } else {
-      addBubble(
-        "I’m not sure. Did you mean:<br>• " +
-        res.suggestions.join("<br>• "),
-        "bot",
-        true
-      );
+      addSuggestions(res.suggestions);
     }
-  }, 400);
+  }, SETTINGS.typingDelayMs);
 }
 
-/* -------------------------------------------------------
-   EVENT LISTENERS
----------------------------------------------------------- */
 function sendChat() {
-  handleUserMessage(input.value.trim());
+  handleUserMessage(input.value);
 }
 
-input.addEventListener("keydown", e => {
+// Enter key to send
+input.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     sendChat();
   }
 });
 
+// Button click
 sendBtn.addEventListener("click", sendChat);
 
+// Initial greeting + restore history
 window.addEventListener("DOMContentLoaded", () => {
-  addBubble(SETTINGS.greeting, "bot", true);
+  const restored = restoreHistory();
+  if (!restored) addBubble(SETTINGS.greeting, "bot", true);
 });
