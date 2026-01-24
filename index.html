@@ -5,7 +5,6 @@
   <meta charset="UTF-8" />
   <title>Welfare Support Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <link rel="stylesheet" href="./public/chat.css" />
   <script defer src="./public/chat.js"></script>
 </head>
@@ -19,9 +18,20 @@
         alt="Welfare Support bot"
       />
       <h1>Welfare Support</h1>
+
+      <button id="clearBtn" class="clear-btn" type="button" aria-label="Clear chat">
+        Clear
+      </button>
     </header>
 
-    <div id="chatWindow" class="chat-window" aria-live="polite" aria-atomic="false"></div>
+    <div
+      id="chatWindow"
+      class="chat-window"
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions"
+      aria-atomic="false"
+    ></div>
 
     <div class="input-area">
       <input
@@ -36,3 +46,5 @@
   </div>
 </body>
 </html>
+``
+
