@@ -8,6 +8,7 @@
  - Helpful feedback buttons (👍/👎)
  - Guided fallback (category clarification)
  - Quiet spelling correction (auto-corrects typos without asking)
+ - Distance-to-Nuneaton flow (miles + travel mode chips)
 ------------------------------------------------------- */
 
 const SETTINGS = {
@@ -18,7 +19,7 @@ const SETTINGS = {
   chipClickCooldownMs: 900,
   suggestionLimit: 4,
   greeting:
-    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, or where we’re located."
+    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from Nuneaton."
 };
 
 let FAQS = [];
@@ -49,6 +50,9 @@ let missCount = 0; // in-session only; resets on refresh
 // suggestion keyboard state
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
+
+// distance flow context (in-memory only; resets on refresh)
+let distanceCtx = null;
 
 // ---------- Helpers ----------
 const normalize = (s) =>
@@ -450,6 +454,7 @@ function renderDrawer(selectedKey) {
   });
 }
 
+// Mobile close fix: close on click + touchstart
 function bindClose(el) {
   if (!el) return;
 
@@ -631,6 +636,63 @@ input.addEventListener("keydown", function (e) {
   }
 });
 
+// ---------- Distance helper: how far from Nuneaton? ----------
+// Expand this list any time by adding more places.
+const NUNEATON = { lat: 52.5230, lon: -1.4652 };
+
+const PLACES = {
+  "birmingham": { lat: 52.4895, lon: -1.8980 },
+  "coventry":   { lat: 52.4068, lon: -1.5197 },
+  "leicester":  { lat: 52.6369, lon: -1.1398 },
+  "london":     { lat: 51.5074, lon: -0.1278 },
+  "wolverhampton": { lat: 52.5862, lon: -2.1286 }
+};
+
+function toRad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+function distanceMiles(a, b) {
+  // Haversine distance (straight-line)
+  const R = 3958.8; // Earth radius in miles
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+
+  return R * (2 * Math.asin(Math.sqrt(h)));
+}
+
+function titleCase(s) {
+  return (s || "").charAt(0).toUpperCase() + (s || "").slice(1);
+}
+
+function parseTravelMode(q) {
+  // returns: car | train | bus | walk | null
+  if (q.includes("train") || q.includes("rail")) return "train";
+  if (q.includes("bus") || q.includes("coach")) return "bus";
+  if (q.includes("walk") || q.includes("walking")) return "walk";
+  if (q.includes("car") || q.includes("drive") || q.includes("driving")) return "car";
+  return null;
+}
+
+function estimateMinutes(miles, mode) {
+  // Rough averages (not route-based):
+  // car ~35 mph overall, train ~55 mph, bus ~20 mph, walk ~3 mph
+  const mphMap = { car: 35, train: 55, bus: 20, walk: 3 };
+  const mph = mphMap[mode] || 35;
+  return Math.round((miles / mph) * 60);
+}
+
+function modeLabel(mode) {
+  const map = { car: "by car", train: "by train", bus: "by bus", walk: "walking" };
+  return map[mode] || "by car";
+}
+
 // ---------- Opening hours + special cases ----------
 function getUKParts(date) {
   const d = date || new Date();
@@ -691,6 +753,89 @@ function willBeOpenTomorrowUK() {
 function specialCases(query) {
   const q = normalize(query);
 
+  // ---- Distance follow-up: if user clicks travel mode chips after a distance result ----
+  if (distanceCtx && (q === "by car" || q === "by train" || q === "by bus" || q === "walking")) {
+    const mode = (q === "walking") ? "walk" : q.replace("by ", "");
+    const minutes = estimateMinutes(distanceCtx.miles, mode);
+
+    return {
+      matched: true,
+      answerHTML:
+        "From <b>" + titleCase(distanceCtx.origin) + "</b> to <b>Nuneaton</b> is approximately <b>" +
+        Math.round(distanceCtx.miles) + " miles</b>." +
+        "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary).",
+      chips: ["By car", "By train", "By bus", "Walking"]
+    };
+  }
+
+  // ---- Distance: how far from Nuneaton (with mode options) ----
+  if (q.includes("how far") && q.includes("nuneaton")) {
+    // Find origin place mentioned
+    let origin = null;
+    for (const name in PLACES) {
+      if (Object.prototype.hasOwnProperty.call(PLACES, name) && q.includes(name)) {
+        origin = name;
+        break;
+      }
+    }
+
+    // If origin not found, ask for it with example chips
+    if (!origin) {
+      return {
+        matched: true,
+        answerHTML:
+          "Certainly — I can estimate that. Which town or city are you travelling from?",
+        chips: ["Coventry", "Birmingham", "Leicester", "London"]
+      };
+    }
+
+    const miles = distanceMiles(PLACES[origin], NUNEATON);
+    distanceCtx = { origin: origin, miles: miles, at: Date.now() };
+
+    const mode = parseTravelMode(q);
+
+    // If mode already mentioned in the user's message, include time immediately
+    if (mode) {
+      const minutes = estimateMinutes(miles, mode);
+      return {
+        matched: true,
+        answerHTML:
+          "From <b>" + titleCase(origin) + "</b> to <b>Nuneaton</b> is approximately <b>" +
+          Math.round(miles) + " miles</b>." +
+          "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary).",
+        chips: ["By car", "By train", "By bus", "Walking"]
+      };
+    }
+
+    // Otherwise ask how they are travelling (chips)
+    return {
+      matched: true,
+      answerHTML:
+        "From <b>" + titleCase(origin) + "</b> to <b>Nuneaton</b> is approximately <b>" +
+        Math.round(miles) + " miles</b>." +
+        "<br>How are you travelling?",
+      chips: ["By car", "By train", "By bus", "Walking"]
+    };
+  }
+
+  // ---- Respond if user supplies a city after the bot asked “where are you travelling from?” ----
+  // Example: user taps “Birmingham” chip or types “Birmingham”
+  for (const name2 in PLACES) {
+    if (Object.prototype.hasOwnProperty.call(PLACES, name2) && q === name2) {
+      const miles2 = distanceMiles(PLACES[name2], NUNEATON);
+      distanceCtx = { origin: name2, miles: miles2, at: Date.now() };
+      return {
+        matched: true,
+        answerHTML:
+          "Thanks — from <b>" + titleCase(name2) + "</b> to <b>Nuneaton</b> is approximately <b>" +
+          Math.round(miles2) + " miles</b>." +
+          "<br>How are you travelling?",
+        chips: ["By car", "By train", "By bus", "Walking"]
+      };
+    }
+  }
+
+  // ---- Existing special cases ----
   if (q.includes("tomorrow")) {
     return willBeOpenTomorrowUK()
       ? { matched: true, answerHTML: "Yes — tomorrow is a weekday, so we’ll be open <b>8:30–17:00</b>." }
@@ -707,9 +852,7 @@ function specialCases(query) {
     return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b> near our Nuneaton office. Spaces can be limited during busy times." };
   }
 
-  if (q.includes("coventry") || (q.includes("cov") && q.includes("far"))) {
-    return { matched: true, answerHTML: "We’re in <b>Nuneaton</b>, about <b>8 miles</b> from Coventry — around a <b>15–20 minute drive</b>." };
-  }
+  // NOTE: Coventry-only special case removed (replaced by generic distance feature). [1](blob:https://m365.cloud.microsoft/a7eb9fac-df21-4489-80f0-96d67d2b5fcd)
 
   return null;
 }
@@ -827,6 +970,7 @@ function handleUserMessage(text) {
       return;
     }
 
+    // 1) Special cases (includes distance flow)
     const special = specialCases(text);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", {
@@ -835,13 +979,19 @@ function handleUserMessage(text) {
         feedback: true,
         feedbackMeta: { type: "special", query: text }
       });
+
+      // If special case includes chips (distance flow), show them
+      if (special.chips && special.chips.length) {
+        addChips(special.chips);
+      }
+
       missCount = 0;
       isResponding = false;
       setUIEnabled(true);
       return;
     }
 
-    // FAQ match with quiet spelling correction
+    // 2) FAQ match with quiet spelling correction
     let res = matchFAQ(text);
     if (!res.matched) {
       const corr = correctQueryTokens(text);
@@ -909,6 +1059,7 @@ input.addEventListener("keydown", function (e) {
 clearBtn.addEventListener("click", function () {
   chatWindow.innerHTML = "";
   missCount = 0;
+  distanceCtx = null;
   init();
 });
 
