@@ -21,8 +21,8 @@ const SETTINGS = {
 
 let FAQS = [];
 let faqsLoaded = false;
-let categories = [];              // [{key, label, count}]
-let categoryIndex = new Map();    // key -> [faqItems]
+let categories = [];
+let categoryIndex = new Map();
 
 // ---------- DOM ----------
 const chatWindow = document.getElementById("chatWindow");
@@ -42,7 +42,7 @@ const drawerQuestionsEl = document.getElementById("drawerQuestions");
 // ---------- UI State ----------
 let isResponding = false;
 let lastChipClickAt = 0;
-let missCount = 0; // in-session only; resets on refresh
+let missCount = 0;
 
 // suggestion keyboard state
 let activeSuggestionIndex = -1;
@@ -72,7 +72,6 @@ const normalize = (s) =>
     .replace(/[̀-ͯ]/g, "")
     .replace(/[“”‘’]/g, '"')
     .replace(/[–—]/g, "-")
-    // Broad compatibility: keep letters/numbers/spaces/hyphens (ASCII)
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -138,7 +137,7 @@ function sanitizeHTML(html) {
   return template.innerHTML;
 }
 
-// ---------- UK time (24-hour) for timestamps ----------
+// ---------- UK time (24-hour) ----------
 const UK_TZ = "Europe/London";
 
 function formatUKTime(date) {
@@ -161,9 +160,6 @@ function scrollToBottom() {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-/**
- * addBubble(text, type, { html, ts, feedback, feedbackMeta })
- */
 function addBubble(text, type = "bot", opts = {}) {
   const { html = false, ts = new Date(), feedback = false, feedbackMeta = null } = opts;
 
@@ -179,9 +175,7 @@ function addBubble(text, type = "bot", opts = {}) {
   if (html) bubble.innerHTML = sanitizeHTML(text);
   else bubble.textContent = text;
 
-  if (feedback && type === "bot") {
-    bubble.appendChild(buildFeedbackUI(feedbackMeta));
-  }
+  if (feedback && type === "bot") bubble.appendChild(buildFeedbackUI(feedbackMeta));
 
   const time = document.createElement("div");
   time.className = "timestamp";
@@ -245,7 +239,7 @@ function addChips(questions = [], onClick) {
   scrollToBottom();
 }
 
-// ---------- Feedback UI (👍/👎) ----------
+// ---------- Feedback UI ----------
 function buildFeedbackUI(meta) {
   const wrap = document.createElement("div");
   wrap.className = "feedback";
@@ -274,9 +268,7 @@ function buildFeedbackUI(meta) {
     thanks.hidden = false;
     thanks.textContent = "Thanks!";
 
-    // No backend required: log it for now
-    const payload = { value, at: new Date().toISOString(), meta };
-    console.log("feedback", payload);
+    console.log("feedback", { value, at: new Date().toISOString(), meta });
   }
 
   up.addEventListener("click", () => submit("up"));
@@ -299,7 +291,6 @@ function buildCategoryIndex() {
     categoryIndex.get(key).push(item);
   }
 
-  // friendly labels
   const labelMap = {
     general: "General",
     support: "Support",
@@ -331,8 +322,6 @@ function closeDrawer() {
 }
 
 function renderDrawer(selectedKey = null) {
-  if (!drawerCategoriesEl || !drawerQuestionsEl) return;
-
   drawerCategoriesEl.innerHTML = "";
   drawerQuestionsEl.innerHTML = "";
 
@@ -343,10 +332,7 @@ function renderDrawer(selectedKey = null) {
     pill.textContent = `${c.label} (${c.count})`;
     pill.setAttribute("aria-selected", String(c.key === selectedKey));
 
-    pill.addEventListener("click", () => {
-      renderDrawer(c.key);
-    });
-
+    pill.addEventListener("click", () => renderDrawer(c.key));
     drawerCategoriesEl.appendChild(pill);
   });
 
@@ -367,20 +353,51 @@ function renderDrawer(selectedKey = null) {
   });
 }
 
-// Drawer events
+/* ✅ MOBILE FIX: bind close on both click + touchstart */
+function bindClose(el) {
+  if (!el) return;
+
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeDrawer();
+  });
+
+  el.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault();
+      closeDrawer();
+    },
+    { passive: false }
+  );
+}
+
 topicsBtn?.addEventListener("click", () => {
   if (!faqsLoaded) return;
   openDrawer();
 });
 
-drawerCloseBtn?.addEventListener("click", closeDrawer);
-overlay?.addEventListener("click", closeDrawer);
+// stop taps inside drawer from acting like outside taps
+drawer?.addEventListener("click", (e) => e.stopPropagation());
+drawer?.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+
+bindClose(drawerCloseBtn);
+bindClose(overlay);
 
 document.addEventListener("keydown", (e) => {
   if (!drawer.hidden && e.key === "Escape") closeDrawer();
 });
 
-// ---------- Suggestions (search-as-you-type) ----------
+// ---------- Suggestions (typeahead) ----------
+function escapeHTML(s) {
+  return (s || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function showSuggestions(items) {
   currentSuggestions = items;
   activeSuggestionIndex = -1;
@@ -402,24 +419,19 @@ function showSuggestions(items) {
     div.innerHTML = `${escapeHTML(it.question)}<small>${escapeHTML(it.categoryLabel)}</small>`;
 
     div.addEventListener("mousedown", (ev) => {
-      // mousedown so it triggers before input blur
       ev.preventDefault();
       pickSuggestion(idx);
     });
+
+    div.addEventListener("touchstart", (ev) => {
+      ev.preventDefault();
+      pickSuggestion(idx);
+    }, { passive: false });
 
     suggestionsEl.appendChild(div);
   });
 
   suggestionsEl.hidden = false;
-}
-
-function escapeHTML(s) {
-  return (s || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 function updateSuggestionSelection() {
@@ -430,10 +442,12 @@ function updateSuggestionSelection() {
 function pickSuggestion(index) {
   const picked = currentSuggestions[index];
   if (!picked) return;
+
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
   currentSuggestions = [];
   activeSuggestionIndex = -1;
+
   handleUserMessage(picked.question);
 }
 
@@ -468,7 +482,6 @@ function computeSuggestions(query) {
 
   return scored.map((s) => ({
     question: s.item.question,
-    category: (s.item.category || "general").toLowerCase(),
     categoryLabel: labelMap.get((s.item.category || "general").toLowerCase()) || "General"
   }));
 }
@@ -479,7 +492,6 @@ input.addEventListener("input", () => {
 });
 
 input.addEventListener("blur", () => {
-  // hide suggestions shortly after blur to allow click
   setTimeout(() => { suggestionsEl.hidden = true; }, 120);
 });
 
@@ -509,7 +521,7 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-// ---------- Special cases + opening hours ----------
+// ---------- Opening hours + special cases ----------
 function getUKParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: UK_TZ,
@@ -622,7 +634,7 @@ function matchFAQ(query) {
   return { matched: true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps || [] };
 }
 
-// ---------- Guided fallback (clarification by category) ----------
+// ---------- Guided fallback ----------
 function getTopCategoriesFor(query) {
   const qTokens = tokenSet(query);
 
@@ -661,7 +673,6 @@ function showQuestionsForCategory(key, includeIntro = false) {
 function handleUserMessage(text) {
   if (!text) return;
 
-  // Hide suggestions once user sends
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
   currentSuggestions = [];
@@ -709,7 +720,7 @@ function handleUserMessage(text) {
       });
       missCount = 0;
 
-      if (res.followUps.length) {
+      if (res.followUps?.length) {
         addBubble("You can also ask:", "bot", { ts: new Date() });
         addChips(res.followUps);
       }
