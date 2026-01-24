@@ -8,7 +8,7 @@
   --panel:#ffffff;
 }
 
-/* IMPORTANT: ensure hidden attribute truly hides everywhere */
+/* Ensure hidden attribute truly hides everywhere */
 [hidden]{ display:none !important; }
 
 *{ box-sizing:border-box; }
@@ -67,6 +67,7 @@ body{
   padding:8px 10px;
   cursor:pointer;
 }
+
 .header-btn:hover,.header-btn:focus,
 .clear-btn:hover,.clear-btn:focus{
   background:rgba(255,255,255,0.26);
@@ -255,11 +256,13 @@ body{
   font-size:14px;
   border-bottom:1px solid rgba(15,23,42,0.06);
 }
+
 .suggestion-item:last-child{ border-bottom:none; }
 .suggestion-item:hover,
 .suggestion-item[aria-selected="true"]{
   background:#f2f7ff;
 }
+
 .suggestion-item small{
   display:block;
   opacity:0.72;
@@ -307,8 +310,6 @@ body{
   inset:0;
   background:rgba(15,23,42,0.40);
   z-index:99998;
-
-  /* Ensure taps register on mobile */
   pointer-events:auto;
   touch-action:manipulation;
 }
@@ -325,8 +326,6 @@ body{
   border-left:1px solid rgba(15,23,42,0.12);
   display:flex;
   flex-direction:column;
-
-  /* Allow vertical scroll inside drawer */
   touch-action:pan-y;
 }
 
@@ -334,10 +333,7 @@ body{
   display:flex;
   align-items:center;
   justify-content:space-between;
-
-  /* Safe area for notches */
   padding: calc(14px + env(safe-area-inset-top)) 14px 14px;
-
   border-bottom:1px solid rgba(15,23,42,0.10);
 }
 .drawer-header h2{ margin:0; font-size:16px; }
@@ -369,6 +365,7 @@ body{
   cursor:pointer;
   font-size:13px;
 }
+
 .cat-pill[aria-selected="true"]{
   background:#e8f1ff;
   border-color:#8ab6ff;
@@ -389,6 +386,7 @@ body{
   cursor:pointer;
   font-size:14px;
 }
+
 .drawer-q:hover,.drawer-q:focus{
   border-color:#8ab6ff;
   box-shadow:0 0 0 3px rgba(0,120,255,.10);
