@@ -1,5 +1,4 @@
 
-
 /* ---------------------------------------------------------
  Welfare Support – Static FAQ Chatbot (Polished + Human-like)
 
@@ -29,8 +28,9 @@ const SETTINGS = {
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
 
-  // Transcript settings (avoid huge mailto bodies)
-  ticketTranscriptMessages: 20, // last N messages (user + bot)
+  // Keep mailto size safe
+  ticketTranscriptMessages: 12,  // last N messages (user + bot)
+  ticketTranscriptMaxLine: 140,  // max chars per transcript line
 
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
@@ -76,7 +76,7 @@ let distanceCtx = null;
 let clarifyCtx = null; // { stage: "needCategory", originalQuery: "..." }
 
 // ticket/request flow context
-let ticketCtx = null; // { stage, type, name, email, description, urgency }
+let ticketCtx = null; // { stage, type, name, email, phone, description, urgency }
 
 // in-memory transcript log (latest messages for ticket emails)
 let CHAT_LOG = []; // { role: "User"|"Bot", text: string, ts: number }
@@ -163,6 +163,11 @@ function htmlToPlainText(html) {
   const template = document.createElement("template");
   template.innerHTML = html ?? "";
   return (template.content.textContent ?? "").replace(/\s+\n/g, "\n").trim();
+}
+
+// Safely embed URLs in HTML attributes
+function escapeAttrUrl(url) {
+  return String(url ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
 // ---------------------------------------------------------
@@ -408,17 +413,21 @@ function pushToTranscript(type, text, opts) {
   const role = (type === "bot") ? "Bot" : "User";
   if (plain) CHAT_LOG.push({ role, text: plain, ts });
 
-  const keep = Math.max(SETTINGS.ticketTranscriptMessages ?? 20, 20) * 3;
+  // keep transcript from growing endlessly
+  const keep = Math.max(SETTINGS.ticketTranscriptMessages ?? 12, 12) * 4;
   if (CHAT_LOG.length > keep) CHAT_LOG = CHAT_LOG.slice(-keep);
 }
 
-function buildTranscript(limit = 20) {
+function buildTranscript(limit = 12) {
   const take = Math.max(1, limit);
   const slice = CHAT_LOG.slice(-take);
+  const MAX_LINE = Math.max(40, SETTINGS.ticketTranscriptMaxLine ?? 140);
+
   return slice.map((m) => {
     const time = formatUKTime(new Date(m.ts));
     const msg = (m.text ?? "").replace(/\s+/g, " ").trim();
-    return `[${time}] ${m.role}: ${msg}`;
+    const clipped = msg.length > MAX_LINE ? msg.slice(0, MAX_LINE - 1) + "…" : msg;
+    return `[${time}] ${m.role}: ${clipped}`;
   }).join("\n");
 }
 
@@ -608,13 +617,7 @@ document.addEventListener("keydown", (e) => {
 // ---------------------------------------------------------
 function escapeHTML(s) {
   const str = String(s ?? "");
-  const map = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  };
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
   return str.replace(/[&<>"']/g, (ch) => map[ch]);
 }
 
@@ -643,14 +646,10 @@ function showSuggestions(items) {
       pickSuggestion(idx);
     });
 
-    div.addEventListener(
-      "touchstart",
-      (ev) => {
-        ev.preventDefault();
-        pickSuggestion(idx);
-      },
-      { passive: false }
-    );
+    div.addEventListener("touchstart", (ev) => {
+      ev.preventDefault();
+      pickSuggestion(idx);
+    }, { passive: false });
 
     suggestionsEl.appendChild(div);
   });
@@ -849,6 +848,22 @@ function matchFAQFromList(query, list) {
 }
 
 // ---------------------------------------------------------
+// Ticket field validation (new phone step)
+// ---------------------------------------------------------
+function normalizePhoneForValidation(raw) {
+  // allow +, spaces, brackets, dashes - but validate by digit count
+  const s = String(raw ?? "").trim();
+  const digits = s.replace(/[^\d]/g, "");
+  return { original: s, digits };
+}
+
+function isValidPhone(raw) {
+  const { digits } = normalizePhoneForValidation(raw);
+  // 8 to 16 digits is a decent generic range for UK/international
+  return digits.length >= 8 && digits.length <= 16;
+}
+
+// ---------------------------------------------------------
 // SPECIAL CASES (category clarification + ticket + depot + parking)
 // ---------------------------------------------------------
 function specialCases(query) {
@@ -881,7 +896,7 @@ function specialCases(query) {
     }
   }
 
-  // (5) Ticket / request flow (mailto + transcript)
+  // (5) Ticket / request flow (mailto + transcript + phone)
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -925,6 +940,20 @@ function specialCases(query) {
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       if (!ok) return { matched: true, answerHTML: "That doesn’t look like an email — can you retype it?" };
       ticketCtx.email = email;
+      ticketCtx.stage = "needPhone";
+      return { matched: true, answerHTML: "Thanks — what’s the best contact number for you?" };
+    }
+
+    // ✅ NEW required step: phone number
+    if (ticketCtx.stage === "needPhone") {
+      const phone = query.trim();
+      if (!isValidPhone(phone)) {
+        return {
+          matched: true,
+          answerHTML: "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)."
+        };
+      }
+      ticketCtx.phone = phone;
       ticketCtx.stage = "needDescription";
       return { matched: true, answerHTML: "Briefly describe the issue (1–3 sentences is perfect)." };
     }
@@ -942,11 +971,13 @@ function specialCases(query) {
     if (ticketCtx.stage === "needUrgency") {
       ticketCtx.urgency = query.trim();
 
-      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 20);
+      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 12);
+
       const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
       const body = encodeURIComponent(
         `Name: ${ticketCtx.name}\n` +
         `Email: ${ticketCtx.email}\n` +
+        `Contact number: ${ticketCtx.phone}\n` +
         `Urgency: ${ticketCtx.urgency}\n` +
         `Type: ${ticketCtx.type}\n\n` +
         `Description:\n${ticketCtx.description}\n\n` +
@@ -955,15 +986,16 @@ function specialCases(query) {
       );
 
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
+      const safeMailtoAttr = escapeAttrUrl(mailtoHref);
 
-      // ✅ FIX: Make the mailto clickable with a proper <a href="...">
       const summary =
         `<b>Request summary</b><br>` +
         `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
         `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
         `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
-        `Email: <b>${escapeHTML(ticketCtx.email)}</b><br><br>` +
-        `<a href="${mailtoHref}">Click here to email support with this request (includes chat transcript)</a><br>` +
+        `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
+        `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
+        `<a href="${safeMailtoAttr}">Email support with this request (includes transcript)</a><br>` +
         `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
         `Want to start another?`;
 
@@ -984,8 +1016,8 @@ function specialCases(query) {
       const depot = DEPOTS[distanceCtx.depotKey];
       const minutes = estimateMinutes(distanceCtx.miles, mode);
       const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
+      const safeUrlAttr = escapeAttrUrl(url);
 
-      // ✅ FIX: Make directions a real clickable <a href="...">
       return {
         matched: true,
         answerHTML:
@@ -993,7 +1025,7 @@ function specialCases(query) {
           "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
           Math.round(distanceCtx.miles) + " miles</b>." +
           "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br><a href="${url}">Get directions in Google Maps</a>`,
+          `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1037,8 +1069,8 @@ function specialCases(query) {
     if (modeInText) {
       const minutes = estimateMinutes(closest.miles, modeInText);
       const url = googleDirectionsURL(titleCase(originKey), depot, modeInText);
+      const safeUrlAttr = escapeAttrUrl(url);
 
-      // ✅ FIX: clickable link
       return {
         matched: true,
         answerHTML:
@@ -1046,7 +1078,7 @@ function specialCases(query) {
           "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
           Math.round(closest.miles) + " miles</b>." +
           "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br><a href="${url}">Get directions in Google Maps</a>`,
+          `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1125,7 +1157,7 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases first
+    // 1) Special cases first (ticket + depot + category clarification)
     const special = specialCases(text);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", { html: true, ts: new Date() });
@@ -1171,11 +1203,11 @@ function handleUserMessage(text) {
         addChips(res.suggestions ?? []);
       }
 
-      // Escalate after repeated misses
+      // Escalate after repeated misses (clickable mailto)
       if (missCount >= 2) {
-        // ✅ FIX: proper clickable mailto anchor
+        const mail = `mailto:${SETTINGS.supportEmail}`;
         addBubble(
-          `If you’d like, you can contact support at <a href="mailto:${SETTINGS.supportEmail}">${SETTINGS.supportEmail}</a> or call <b>${SETTINGS.supportPhone}</b>.`,
+          `If you’d like, you can contact support at <a href="${escapeAttrUrl(mail)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
           "bot",
           { html: true, ts: new Date() }
         );
@@ -1201,9 +1233,6 @@ sendBtn.addEventListener("click", sendChat);
 input.addEventListener("keydown", (e) => {
   if (!suggestionsEl.hidden) return;
   if (e.key === "Enter") {
-    e.preventDefault();
-    sendChat();
-  }
 });
 
 clearBtn.addEventListener("click", () => {
@@ -1248,3 +1277,4 @@ if (document.readyState === "loading") {
 } else {
   init();
 }
+
