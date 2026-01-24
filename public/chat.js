@@ -32,6 +32,7 @@ const SETTINGS = {
   ticketTranscriptMessages: 12,  // last N messages (user + bot)
   ticketTranscriptMaxLine: 140,  // max chars per transcript line
 
+  // ✅ Use real HTML tags (not &lt;...&gt;)
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
 };
@@ -167,7 +168,9 @@ function htmlToPlainText(html) {
 
 // Safely embed URLs in HTML attributes
 function escapeAttrUrl(url) {
-  return String(url ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  return String(url ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;");
 }
 
 // ---------------------------------------------------------
@@ -187,15 +190,15 @@ function formatUKTime(date) {
 // DEPOTS + ORIGIN PLACES (EDIT THESE)
 // ---------------------------------------------------------
 const DEPOTS = {
-  "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
+  nuneaton: { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
 
 const PLACES = {
-  "coventry": { lat: 52.4068, lon: -1.5197 },
-  "birmingham": { lat: 52.4895, lon: -1.8980 },
-  "leicester": { lat: 52.6369, lon: -1.1398 },
-  "london": { lat: 51.5074, lon: -0.1278 },
-  "wolverhampton": { lat: 52.5862, lon: -2.1286 }
+  coventry: { lat: 52.4068, lon: -1.5197 },
+  birmingham: { lat: 52.4895, lon: -1.8980 },
+  leicester: { lat: 52.6369, lon: -1.1398 },
+  london: { lat: 51.5074, lon: -0.1278 },
+  wolverhampton: { lat: 52.5862, lon: -2.1286 }
 };
 
 function titleCase(s) {
@@ -260,7 +263,7 @@ function findClosestDepot(originLatLon) {
   return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
 }
 
-// Google Maps directions link
+// Google Maps directions link (✅ use raw '&' in JS)
 function googleDirectionsURL(originText, depot, mode) {
   const origin = encodeURIComponent(originText);
   const destination = encodeURIComponent(`${depot.lat},${depot.lon}`);
@@ -985,6 +988,7 @@ function specialCases(query) {
         `— Sent from Welfare Support chatbot`
       );
 
+      // ✅ use '&' not '&amp;' in JS
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
       const safeMailtoAttr = escapeAttrUrl(mailtoHref);
 
@@ -1021,10 +1025,9 @@ function specialCases(query) {
       return {
         matched: true,
         answerHTML:
-          "Your closest depot is <b>" + depot.label + "</b>." +
-          "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
-          Math.round(distanceCtx.miles) + " miles</b>." +
-          "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
+          `<br>From <b>${escapeHTML(titleCase(distanceCtx.originKey))}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.` +
+          `<br>Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b> (traffic and services can vary).` +
           `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
@@ -1074,10 +1077,9 @@ function specialCases(query) {
       return {
         matched: true,
         answerHTML:
-          "Your closest depot is <b>" + depot.label + "</b>." +
-          "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
-          Math.round(closest.miles) + " miles</b>." +
-          "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
+          `<br>From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.` +
+          `<br>Estimated time ${escapeHTML(modeLabel(modeInText))} is around <b>${minutes} minutes</b> (traffic and services can vary).` +
           `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
@@ -1086,10 +1088,9 @@ function specialCases(query) {
     return {
       matched: true,
       answerHTML:
-        "Your closest depot is <b>" + depot.label + "</b>." +
-        "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
-        Math.round(closest.miles) + " miles</b>." +
-        "<br>How are you travelling?",
+        `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
+        `<br>From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.` +
+        `<br>How are you travelling?`,
       chips: ["By car", "By train", "By bus", "Walking"]
     };
   }
@@ -1111,10 +1112,9 @@ function specialCases(query) {
       return {
         matched: true,
         answerHTML:
-          "Thanks — your closest depot is <b>" + depot2.label + "</b>." +
-          "<br>From <b>" + titleCase(originKey2) + "</b> it’s approximately <b>" +
-          Math.round(closest2.miles) + " miles</b>." +
-          "<br>How are you travelling?",
+          `Thanks — your closest depot is <b>${escapeHTML(depot2.label)}</b>.` +
+          `<br>From <b>${escapeHTML(titleCase(originKey2))}</b> it’s approximately <b>${Math.round(closest2.miles)} miles</b>.` +
+          `<br>How are you travelling?`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1229,11 +1229,6 @@ function sendChat() {
 }
 
 sendBtn.addEventListener("click", sendChat);
-
-input.addEventListener("keydown", (e) => {
-  if (!suggestionsEl.hidden) return;
-  if (e.key === "Enter") {
-});
 
 clearBtn.addEventListener("click", () => {
   chatWindow.innerHTML = "";
