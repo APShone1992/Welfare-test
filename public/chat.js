@@ -1,16 +1,20 @@
 
-/* -------------------------------------------------------
+/* ---------------------------------------------------------
  Welfare Support – Static FAQ Chatbot (Polished + Human-like)
- Features:
- - No saved memory (refresh resets)
+
+ Includes:
  - Topics drawer (browse by category)
- - Search-as-you-type suggestions
+ - Search-as-you-type suggestions (with safe escaping)
  - Helpful feedback buttons (👍/👎)
  - Guided fallback (category clarification)
- - Quiet spelling correction (auto-corrects typos without asking)
- - Closest depot (Option A): based on origin town/city user provides
- - Travel-mode chips: By car / By train / By bus / Walking
-------------------------------------------------------- */
+ - Quiet spelling correction (auto-corrects typos)
+ - Closest depot flow (origin -> choose travel mode)
+ - Ticket/request flow (prefilled email + transcript)
+ - Google Maps directions link for depot answers
+
+ NOTE: Static hosting (GitHub Pages) cannot send emails directly.
+ Ticket flow uses mailto: (opens user's email app with prefilled content).
+--------------------------------------------------------- */
 
 const SETTINGS = {
   minConfidence: 0.20,
@@ -19,6 +23,13 @@ const SETTINGS = {
   chipLimit: 6,
   chipClickCooldownMs: 900,
   suggestionLimit: 4,
+
+  supportEmail: "support@Kelly.co.uk",
+  supportPhone: "01234 567890",
+
+  // Transcript settings (avoid huge mailto bodies)
+  ticketTranscriptMessages: 20, // last N messages (user + bot)
+
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
 };
@@ -28,7 +39,9 @@ let faqsLoaded = false;
 let categories = [];
 let categoryIndex = new Map();
 
-// ---------- DOM ----------
+// ---------------------------------------------------------
+// DOM
+// ---------------------------------------------------------
 const chatWindow = document.getElementById("chatWindow");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
@@ -43,7 +56,9 @@ const drawerCloseBtn = document.getElementById("drawerCloseBtn");
 const drawerCategoriesEl = document.getElementById("drawerCategories");
 const drawerQuestionsEl = document.getElementById("drawerQuestions");
 
-// ---------- UI State ----------
+// ---------------------------------------------------------
+// UI State
+// ---------------------------------------------------------
 let isResponding = false;
 let lastChipClickAt = 0;
 let missCount = 0;
@@ -55,12 +70,20 @@ let currentSuggestions = [];
 // distance flow context (in-memory only; refresh resets)
 let distanceCtx = null;
 
-/* =======================================================
-   NORMALISATION + MATCHING
-======================================================= */
+// category clarification flow context
+let clarifyCtx = null; // { stage: "needCategory", originalQuery: "..." }
 
+// ticket/request flow context
+let ticketCtx = null; // { stage, type, name, email, description, urgency }
+
+// in-memory transcript log (latest messages for ticket emails)
+let CHAT_LOG = []; // { role: "User"|"Bot", text: string, ts: number }
+
+// ---------------------------------------------------------
+// NORMALISATION + MATCHING
+// ---------------------------------------------------------
 const normalize = (s) =>
-  (s || "")
+  (s ?? "")
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
@@ -72,8 +95,8 @@ const normalize = (s) =>
     .trim();
 
 const STOP_WORDS = new Set([
-  "what", "are", "your", "do", "you", "we", "is", "the", "a", "an", "to", "of", "and",
-  "in", "on", "for", "with", "please", "can", "i", "me", "my"
+  "what","are","your","do","you","we","is","the","a","an","to","of","and",
+  "in","on","for","with","please","can","i","me","my"
 ]);
 
 function stem(token) {
@@ -96,10 +119,9 @@ const jaccard = (a, b) => {
   return union ? inter / union : 0;
 };
 
-/* =======================================================
-   SAFE HTML RENDERING
-======================================================= */
-
+// ---------------------------------------------------------
+// SAFE HTML RENDERING
+// ---------------------------------------------------------
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -110,7 +132,6 @@ function sanitizeHTML(html) {
 
   while (walker.nextNode()) {
     const el = walker.currentNode;
-
     if (!allowedTags.has(el.tagName)) {
       toReplace.push(el);
       continue;
@@ -123,7 +144,7 @@ function sanitizeHTML(html) {
     });
 
     if (el.tagName === "A") {
-      const href = el.getAttribute("href") || "";
+      const href = el.getAttribute("href") ?? "";
       const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href);
       if (!safe) el.removeAttribute("href");
       el.setAttribute("rel", "noopener noreferrer");
@@ -135,12 +156,17 @@ function sanitizeHTML(html) {
   return template.innerHTML;
 }
 
-/* =======================================================
-   TIMESTAMPS (UK, 24-HOUR)
-======================================================= */
+// Convert HTML to plain text (for email transcript)
+function htmlToPlainText(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html ?? "";
+  return (template.content.textContent ?? "").replace(/\s+\n/g, "\n").trim();
+}
 
+// ---------------------------------------------------------
+// TIMESTAMPS (UK, 24-HOUR)
+// ---------------------------------------------------------
 const UK_TZ = "Europe/London";
-
 function formatUKTime(date) {
   return new Intl.DateTimeFormat("en-GB", {
     timeZone: UK_TZ,
@@ -150,33 +176,23 @@ function formatUKTime(date) {
   }).format(date);
 }
 
-/* =======================================================
-   DEPOTS + ORIGIN PLACES (EDIT THESE)
-   - DEPOTS: depots you want to compare (multiple)
-   - PLACES: origin towns/cities users might type
-======================================================= */
-
-// ✅ Add/remove depots here. The bot will choose the closest depot.
+// ---------------------------------------------------------
+// DEPOTS + ORIGIN PLACES (EDIT THESE)
+// ---------------------------------------------------------
 const DEPOTS = {
   "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
-  // Add more depots if you want:
-  // "coventry": { label: "Coventry Depot", lat: 52.4068, lon: -1.5197 },
-  // "birmingham": { label: "Birmingham Depot", lat: 52.4895, lon: -1.8980 }
 };
 
-// ✅ Add origin places here. (Keys must be in lowercase; multi-word is fine.)
 const PLACES = {
   "coventry": { lat: 52.4068, lon: -1.5197 },
   "birmingham": { lat: 52.4895, lon: -1.8980 },
   "leicester": { lat: 52.6369, lon: -1.1398 },
   "london": { lat: 51.5074, lon: -0.1278 },
   "wolverhampton": { lat: 52.5862, lon: -2.1286 }
-  // Example multi-word:
-  // "milton keynes": { lat: 52.0406, lon: -0.7594 }
 };
 
 function titleCase(s) {
-  const t = (s || "").trim();
+  const t = (s ?? "").trim();
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 
@@ -185,38 +201,34 @@ function toRad(deg) {
 }
 
 function distanceMiles(a, b) {
-  // Haversine straight-line distance (miles)
   const R = 3958.8;
   const dLat = toRad(b.lat - a.lat);
   const dLon = toRad(b.lon - a.lon);
   const lat1 = toRad(a.lat);
   const lat2 = toRad(b.lat);
-
   const h =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-
   return R * (2 * Math.asin(Math.sqrt(h)));
 }
 
-function parseTravelMode(q) {
-  if (q.includes("train") || q.includes("rail")) return "train";
-  if (q.includes("bus") || q.includes("coach")) return "bus";
-  if (q.includes("walk") || q.includes("walking")) return "walk";
-  if (q.includes("car") || q.includes("drive") || q.includes("driving")) return "car";
+function parseTravelMode(qNorm) {
+  if (qNorm.includes("train") || qNorm.includes("rail")) return "train";
+  if (qNorm.includes("bus") || qNorm.includes("coach")) return "bus";
+  if (qNorm.includes("walk") || qNorm.includes("walking")) return "walk";
+  if (qNorm.includes("car") || qNorm.includes("drive") || qNorm.includes("driving")) return "car";
   return null;
 }
 
 function estimateMinutes(miles, mode) {
-  // Rough averages (not route-based)
   const mphMap = { car: 35, train: 55, bus: 20, walk: 3 };
-  const mph = mphMap[mode] || 35;
+  const mph = mphMap[mode] ?? 35;
   return Math.round((miles / mph) * 60);
 }
 
 function modeLabel(mode) {
   const map = { car: "by car", train: "by train", bus: "by bus", walk: "walking" };
-  return map[mode] || "by car";
+  return map[mode] ?? "by car";
 }
 
 function findPlaceKey(qNorm) {
@@ -230,7 +242,6 @@ function findPlaceKey(qNorm) {
 function findClosestDepot(originLatLon) {
   let bestKey = null;
   let bestMiles = Infinity;
-
   for (const key in DEPOTS) {
     if (!Object.prototype.hasOwnProperty.call(DEPOTS, key)) continue;
     const miles = distanceMiles(originLatLon, DEPOTS[key]);
@@ -239,23 +250,29 @@ function findClosestDepot(originLatLon) {
       bestKey = key;
     }
   }
-
   return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
 }
 
-/* =======================================================
-   QUIET SPELLING CORRECTION (WITH FIX)
-   ✅ Fix included: PROTECTED_TOKENS prevents Walking -> Parking
-======================================================= */
+// Google Maps directions link
+function googleDirectionsURL(originText, depot, mode) {
+  const origin = encodeURIComponent(originText);
+  const destination = encodeURIComponent(`${depot.lat},${depot.lon}`);
+  let travelmode = "driving";
+  if (mode === "walk") travelmode = "walking";
+  if (mode === "train" || mode === "bus") travelmode = "transit";
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${travelmode}`;
+}
 
+// ---------------------------------------------------------
+// QUIET SPELLING CORRECTION
+// ---------------------------------------------------------
 let VOCAB = new Set();
 
-// ✅ Tokens we NEVER want to spell-correct (chips/system words)
 const PROTECTED_TOKENS = new Set([
-  "walking", "walk",
-  "by", "car", "train", "bus",
-  "rail", "coach",
-  "depot", "depots",
+  "walking","walk",
+  "by","car","train","bus",
+  "rail","coach",
+  "depot","depots",
   "closest"
 ]);
 
@@ -291,20 +308,15 @@ function levenshtein(a, b, maxDist) {
     if (minInRow > maxDist) return maxDist + 1;
     for (let j = 0; j <= bl; j++) prev[j] = curr[j];
   }
-
   return prev[bl];
 }
 
 function bestVocabMatch(token) {
-  // ✅ critical fix: do NOT correct travel-mode/chip words
   if (PROTECTED_TOKENS.has(token)) return null;
-
   if (shouldSkipToken(token)) return null;
   if (VOCAB.has(token)) return null;
 
-  // Conservative correction
   const maxDist = token.length <= 7 ? 1 : 2;
-
   let best = null;
   let bestDist = maxDist + 1;
 
@@ -317,20 +329,18 @@ function bestVocabMatch(token) {
       if (bestDist === 1) break;
     }
   }
-
   return bestDist <= maxDist ? best : null;
 }
 
 function buildVocabFromFAQs() {
   const vocab = new Set();
 
-  // FAQ fields
   for (const item of FAQS) {
     const fields = [
       item.question,
-      ...(item.synonyms || []),
-      ...(item.canonicalKeywords || []),
-      ...(item.tags || []),
+      ...(item.synonyms ?? []),
+      ...(item.canonicalKeywords ?? []),
+      ...(item.tags ?? []),
       item.category
     ];
 
@@ -342,7 +352,6 @@ function buildVocabFromFAQs() {
     }
   }
 
-  // Also include depot + place tokens so misspellings like “nuneaton” can be corrected
   for (const dk in DEPOTS) {
     if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
@@ -354,16 +363,13 @@ function buildVocabFromFAQs() {
     normalize(pk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
   }
 
-  // ✅ add common system words too
   ["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"].forEach((w) => vocab.add(w));
-
   VOCAB = vocab;
 }
 
 function correctQueryTokens(rawText) {
   const norm = normalize(rawText);
   if (!norm) return { corrected: norm, changed: false };
-
   const tokens = norm.split(" ").filter(Boolean);
   let changed = false;
 
@@ -376,25 +382,50 @@ function correctQueryTokens(rawText) {
     return t;
   });
 
-  return { corrected: correctedTokens.join(" "), changed: changed };
+  return { corrected: correctedTokens.join(" "), changed };
 }
 
-/* =======================================================
-   UI / BUBBLES
-======================================================= */
-
+// ---------------------------------------------------------
+// UI / BUBBLES + TRANSCRIPT
+// ---------------------------------------------------------
 function setUIEnabled(enabled) {
   input.disabled = !enabled;
   sendBtn.disabled = !enabled;
   chatWindow.querySelectorAll(".chip-btn").forEach((b) => (b.disabled = !enabled));
 }
 
+function pushToTranscript(type, text, opts) {
+  const options = opts ?? {};
+  const tsDate = options.ts ?? new Date();
+  const ts = tsDate.getTime();
+
+  let plain = "";
+  if (options.html) plain = htmlToPlainText(text);
+  else plain = String(text ?? "").trim();
+
+  const role = (type === "bot") ? "Bot" : "User";
+  if (plain) CHAT_LOG.push({ role, text: plain, ts });
+
+  const keep = Math.max(SETTINGS.ticketTranscriptMessages ?? 20, 20) * 3;
+  if (CHAT_LOG.length > keep) CHAT_LOG = CHAT_LOG.slice(-keep);
+}
+
+function buildTranscript(limit = 20) {
+  const take = Math.max(1, limit);
+  const slice = CHAT_LOG.slice(-take);
+  return slice.map((m) => {
+    const time = formatUKTime(new Date(m.ts));
+    const msg = (m.text ?? "").replace(/\s+/g, " ").trim();
+    return `[${time}] ${m.role}: ${msg}`;
+  }).join("\n");
+}
+
 function addBubble(text, type, opts) {
-  const options = opts || {};
+  const options = opts ?? {};
   const html = !!options.html;
-  const ts = options.ts || new Date();
+  const ts = options.ts ?? new Date();
   const feedback = !!options.feedback;
-  const feedbackMeta = options.feedbackMeta || null;
+  const feedbackMeta = options.feedbackMeta ?? null;
 
   const row = document.createElement("div");
   row.className = "msg " + type;
@@ -408,9 +439,7 @@ function addBubble(text, type, opts) {
   if (html) bubble.innerHTML = sanitizeHTML(text);
   else bubble.textContent = text;
 
-  if (feedback && type === "bot") {
-    bubble.appendChild(buildFeedbackUI(feedbackMeta));
-  }
+  if (feedback && type === "bot") bubble.appendChild(buildFeedbackUI(feedbackMeta));
 
   const time = document.createElement("div");
   time.className = "timestamp";
@@ -420,6 +449,8 @@ function addBubble(text, type, opts) {
   row.appendChild(time);
   chatWindow.appendChild(row);
   chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  pushToTranscript(type, html ? sanitizeHTML(text) : text, { ts, html });
 }
 
 function addTyping() {
@@ -442,7 +473,7 @@ function removeTyping() {
 }
 
 function addChips(questions, onClick) {
-  const qs = questions || [];
+  const qs = questions ?? [];
   if (!qs.length) return;
 
   const wrap = document.createElement("div");
@@ -463,6 +494,7 @@ function addChips(questions, onClick) {
       wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
       if (typeof onClick === "function") onClick(q);
       else handleUserMessage(q);
+
       input.focus();
     });
 
@@ -474,10 +506,9 @@ function addChips(questions, onClick) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-/* =======================================================
-   FEEDBACK
-======================================================= */
-
+// ---------------------------------------------------------
+// FEEDBACK
+// ---------------------------------------------------------
 function buildFeedbackUI(meta) {
   const wrap = document.createElement("div");
   wrap.className = "feedback";
@@ -505,7 +536,7 @@ function buildFeedbackUI(meta) {
     down.disabled = true;
     thanks.hidden = false;
     thanks.textContent = "Thanks!";
-    console.log("feedback", { value: value, at: new Date().toISOString(), meta: meta });
+    console.log("feedback", { value, at: new Date().toISOString(), meta });
   }
 
   up.addEventListener("click", () => submit("up"));
@@ -518,15 +549,13 @@ function buildFeedbackUI(meta) {
   return wrap;
 }
 
-/* =======================================================
-   TOPICS DRAWER
-======================================================= */
-
+// ---------------------------------------------------------
+// TOPICS DRAWER
+// ---------------------------------------------------------
 function buildCategoryIndex() {
   categoryIndex = new Map();
-
   FAQS.forEach((item) => {
-    const key = (item.category || "general").toLowerCase();
+    const key = (item.category ?? "general").toLowerCase();
     if (!categoryIndex.has(key)) categoryIndex.set(key, []);
     categoryIndex.get(key).push(item);
   });
@@ -535,14 +564,15 @@ function buildCategoryIndex() {
     general: "General",
     support: "Support",
     location: "Location",
-    opening: "Opening times"
+    opening: "Opening times",
+    actions: "Actions"
   };
 
   categories = Array.from(categoryIndex.keys())
     .sort()
     .map((key) => ({
       key,
-      label: labelMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
+      label: labelMap[key] ?? (key.charAt(0).toUpperCase() + key.slice(1)),
       count: categoryIndex.get(key).length
     }));
 }
@@ -562,7 +592,7 @@ function closeDrawer() {
 }
 
 function renderDrawer(selectedKey) {
-  const selected = selectedKey || null;
+  const selected = selectedKey ?? null;
   drawerCategoriesEl.innerHTML = "";
   drawerQuestionsEl.innerHTML = "";
 
@@ -592,12 +622,10 @@ function renderDrawer(selectedKey) {
 
 function bindClose(el) {
   if (!el) return;
-
   el.addEventListener("click", (e) => {
     e.preventDefault();
     closeDrawer();
   });
-
   el.addEventListener(
     "touchstart",
     (e) => {
@@ -612,28 +640,28 @@ topicsBtn?.addEventListener("click", () => {
   if (!faqsLoaded) return;
   openDrawer();
 });
-
 drawer?.addEventListener("click", (e) => e.stopPropagation());
 drawer?.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
-
 bindClose(drawerCloseBtn);
 bindClose(overlay);
-
 document.addEventListener("keydown", (e) => {
   if (!drawer.hidden && e.key === "Escape") closeDrawer();
 });
 
-/* =======================================================
-   TYPEAHEAD SUGGESTIONS
-======================================================= */
-
+// ---------------------------------------------------------
+// TYPEAHEAD SUGGESTIONS
+// ---------------------------------------------------------
+// ✅ FIXED escaping (suggestions use innerHTML)
 function escapeHTML(s) {
-  return (s || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  const str = String(s ?? "");
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  };
+  return str.replace(/[&<>"']/g, (ch) => map[ch]);
 }
 
 function showSuggestions(items) {
@@ -703,10 +731,10 @@ function computeSuggestions(query) {
   const qTokens = tokenSet(q);
 
   const scored = FAQS.map((item) => {
-    const question = item.question || "";
-    const syns = item.synonyms || [];
-    const keys = item.canonicalKeywords || [];
-    const tags = item.tags || [];
+    const question = item.question ?? "";
+    const syns = item.synonyms ?? [];
+    const keys = item.canonicalKeywords ?? [];
+    const tags = item.tags ?? [];
 
     const scoreQ = jaccard(qTokens, tokenSet(question));
     const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
@@ -727,7 +755,7 @@ function computeSuggestions(query) {
 
   return scored.map((s) => ({
     question: s.item.question,
-    categoryLabel: labelMap.get((s.item.category || "general").toLowerCase()) || "General"
+    categoryLabel: labelMap.get((s.item.category ?? "general").toLowerCase()) ?? "General"
   }));
 }
 
@@ -766,21 +794,241 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-/* =======================================================
-   SPECIAL CASES (INCLUDING CLOSEST DEPOT FLOW)
-======================================================= */
+// ---------------------------------------------------------
+// FAQ MATCHING
+// ---------------------------------------------------------
+function matchFAQ(query) {
+  const qNorm = normalize(query);
+  const qTokens = tokenSet(query);
 
+  const scored = FAQS
+    .map((item) => {
+      const question = item.question ?? "";
+      const syns = item.synonyms ?? [];
+      const keys = item.canonicalKeywords ?? [];
+      const tags = item.tags ?? [];
+
+      const scoreQ = jaccard(qTokens, tokenSet(question));
+      const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
+      const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
+      const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
+
+      const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
+      const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
+
+      const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
+      return { item, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const top = scored[0];
+  if (!top || top.score < SETTINGS.minConfidence) {
+    return {
+      matched: false,
+      suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
+    };
+  }
+
+  return {
+    matched: true,
+    item: top.item,
+    answerHTML: top.item.answer,
+    followUps: top.item.followUps ?? []
+  };
+}
+
+// Category clarification helpers
+function categoryKeyFromLabelOrKey(textNorm) {
+  for (const c of categories) {
+    const keyNorm = normalize(c.key);
+    const labelNorm = normalize(c.label);
+    if (
+      textNorm === keyNorm ||
+      textNorm === labelNorm ||
+      textNorm.includes(keyNorm) ||
+      textNorm.includes(labelNorm)
+    ) {
+      return c.key;
+    }
+  }
+  return null;
+}
+
+function matchFAQFromList(query, list) {
+  const qNorm = normalize(query);
+  const qTokens = tokenSet(query);
+
+  const scored = (list || [])
+    .map((item) => {
+      const question = item.question ?? "";
+      const syns = item.synonyms ?? [];
+      const keys = item.canonicalKeywords ?? [];
+      const tags = item.tags ?? [];
+
+      const scoreQ = jaccard(qTokens, tokenSet(question));
+      const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
+      const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
+      const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
+
+      const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
+      const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
+
+      const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
+      return { item, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const top = scored[0];
+  if (!top || top.score < SETTINGS.minConfidence) {
+    return {
+      matched: false,
+      suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
+    };
+  }
+
+  return {
+    matched: true,
+    item: top.item,
+    answerHTML: top.item.answer,
+    followUps: top.item.followUps ?? []
+  };
+}
+
+// ---------------------------------------------------------
+// SPECIAL CASES (category clarification + ticket + depot + parking)
+// ---------------------------------------------------------
 function specialCases(query) {
-  // Use normalized query; correction is safe because PROTECTED_TOKENS blocks chips like walking.
   const corr = correctQueryTokens(query);
   const q = corr.changed && corr.corrected ? corr.corrected : normalize(query);
 
-  // --- Closest depot: travel-mode chips ---
+  // (4) Category clarification flow
+  if (clarifyCtx && clarifyCtx.stage === "needCategory") {
+    const pickedKey = categoryKeyFromLabelOrKey(q);
+
+    if (pickedKey && categoryIndex.has(pickedKey)) {
+      const list = categoryIndex.get(pickedKey);
+      const res = matchFAQFromList(clarifyCtx.originalQuery, list);
+
+      clarifyCtx = null;
+
+      if (res.matched) {
+        return {
+          matched: true,
+          answerHTML: res.answerHTML,
+          chips: (res.followUps && res.followUps.length) ? res.followUps : null
+        };
+      }
+
+      return {
+        matched: true,
+        answerHTML: `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`,
+        chips: res.suggestions ?? []
+      };
+    }
+  }
+
+  // (5) Ticket / request flow (mailto + transcript)
+  const wantsTicket =
+    q.includes("raise a request") ||
+    q.includes("create a ticket") ||
+    q.includes("open a ticket") ||
+    q.includes("log a ticket") ||
+    q.includes("submit a request") ||
+    q === "ticket";
+
+  if (!ticketCtx && wantsTicket) {
+    ticketCtx = { stage: "needType" };
+    return {
+      matched: true,
+      answerHTML: "Sure — what do you need help with?",
+      chips: ["Access / Login", "Pay / Payroll", "Benefits", "General query", "Something else"]
+    };
+  }
+
+  if (ticketCtx) {
+    if (q === "cancel" || q === "stop" || q === "restart") {
+      ticketCtx = null;
+      return {
+        matched: true,
+        answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>."
+      };
+    }
+
+    if (ticketCtx.stage === "needType") {
+      ticketCtx.type = query.trim();
+      ticketCtx.stage = "needName";
+      return { matched: true, answerHTML: "Thanks — what’s your name?" };
+    }
+
+    if (ticketCtx.stage === "needName") {
+      ticketCtx.name = query.trim();
+      ticketCtx.stage = "needEmail";
+      return { matched: true, answerHTML: "And what email should we reply to?" };
+    }
+
+    if (ticketCtx.stage === "needEmail") {
+      const email = query.trim();
+      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!ok) return { matched: true, answerHTML: "That doesn’t look like an email — can you retype it?" };
+      ticketCtx.email = email;
+      ticketCtx.stage = "needDescription";
+      return { matched: true, answerHTML: "Briefly describe the issue (1–3 sentences is perfect)." };
+    }
+
+    if (ticketCtx.stage === "needDescription") {
+      ticketCtx.description = query.trim();
+      ticketCtx.stage = "needUrgency";
+      return {
+        matched: true,
+        answerHTML: "How urgent is this?",
+        chips: ["Low", "Normal", "High", "Critical"]
+      };
+    }
+
+    if (ticketCtx.stage === "needUrgency") {
+      ticketCtx.urgency = query.trim();
+
+      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 20);
+      const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
+      const body = encodeURIComponent(
+        `Name: ${ticketCtx.name}\n` +
+        `Email: ${ticketCtx.email}\n` +
+        `Urgency: ${ticketCtx.urgency}\n` +
+        `Type: ${ticketCtx.type}\n\n` +
+        `Description:\n${ticketCtx.description}\n\n` +
+        `Chat transcript (latest messages):\n${transcript}\n\n` +
+        `— Sent from Welfare Support chatbot`
+      );
+
+      const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
+
+      const summary =
+        `<b>Request summary</b><br>` +
+        `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
+        `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
+        `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
+        `Email: <b>${escapeHTML(ticketCtx.email)}</b><br><br>` +
+        `<a href="${mailtoHref}">Click here to email support with this request (includes chat transcript)</a><br>` +
+        `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
+        `Want to start another?`;
+
+      ticketCtx = null;
+
+      return {
+        matched: true,
+        answerHTML: summary,
+        chips: ["Raise a request (create a ticket)"]
+      };
+    }
+  }
+
+  // Depot flow: after closest depot is known, user picks travel mode
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
       const depot = DEPOTS[distanceCtx.depotKey];
       const minutes = estimateMinutes(distanceCtx.miles, mode);
+      const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
 
       return {
         matched: true,
@@ -788,14 +1036,20 @@ function specialCases(query) {
           "Your closest depot is <b>" + depot.label + "</b>." +
           "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
           Math.round(distanceCtx.miles) + " miles</b>." +
-          "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary).",
+          "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
+          `<br><a href="${url}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
   }
 
-  // --- Closest depot: main trigger ---
-  if (q.includes("how far") || q.includes("distance") || q.includes("closest depot") || (q.includes("depot") && q.includes("closest"))) {
+  // Depot flow: main trigger
+  if (
+    q.includes("how far") ||
+    q.includes("distance") ||
+    q.includes("closest depot") ||
+    (q.includes("depot") && q.includes("closest"))
+  ) {
     const originKey = findPlaceKey(q);
 
     if (!originKey) {
@@ -826,13 +1080,16 @@ function specialCases(query) {
     const modeInText = parseTravelMode(q);
     if (modeInText) {
       const minutes = estimateMinutes(closest.miles, modeInText);
+      const url = googleDirectionsURL(titleCase(originKey), depot, modeInText);
+
       return {
         matched: true,
         answerHTML:
           "Your closest depot is <b>" + depot.label + "</b>." +
           "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
           Math.round(closest.miles) + " miles</b>." +
-          "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary).",
+          "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
+          `<br><a href="${url}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -848,7 +1105,7 @@ function specialCases(query) {
     };
   }
 
-  // --- If bot asked for origin and user replies with a city (typed or chip) ---
+  // If bot asked for origin and user replies with a city
   if (distanceCtx && distanceCtx.stage === "needOrigin") {
     const originKey2 = findPlaceKey(q) || (PLACES[q] ? q : null);
     if (originKey2) {
@@ -874,7 +1131,7 @@ function specialCases(query) {
     }
   }
 
-  // --- Parking special case ---
+  // Parking special case
   if (q.includes("parking") || q.includes("car park")) {
     return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
@@ -882,54 +1139,9 @@ function specialCases(query) {
   return null;
 }
 
-/* =======================================================
-   FAQ MATCHING
-======================================================= */
-
-function matchFAQ(query) {
-  const qNorm = normalize(query);
-  const qTokens = tokenSet(query);
-
-  const scored = FAQS
-    .map((item) => {
-      const question = item.question || "";
-      const syns = item.synonyms || [];
-      const keys = item.canonicalKeywords || [];
-      const tags = item.tags || [];
-
-      const scoreQ = jaccard(qTokens, tokenSet(question));
-      const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
-      const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
-      const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
-
-      const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
-      const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
-
-      const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
-      return { item, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  const top = scored[0];
-  if (!top || top.score < SETTINGS.minConfidence) {
-    return {
-      matched: false,
-      suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
-    };
-  }
-
-  return {
-    matched: true,
-    item: top.item,
-    answerHTML: top.item.answer,
-    followUps: top.item.followUps || []
-  };
-}
-
-/* =======================================================
-   MAIN HANDLER
-======================================================= */
-
+// ---------------------------------------------------------
+// MAIN HANDLER
+// ---------------------------------------------------------
 function handleUserMessage(text) {
   if (!text) return;
 
@@ -956,10 +1168,16 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases (includes closest depot flow)
+    // 1) Special cases first
     const special = specialCases(text);
     if (special && special.matched) {
-      addBubble(special.answerHTML, "bot", { html: true, ts: new Date(), feedback: true, feedbackMeta: { type: "special", query: text } });
+      addBubble(special.answerHTML, "bot", {
+        html: true,
+        ts: new Date(),
+        feedback: true,
+        feedbackMeta: { type: "special", query: text }
+      });
+
       if (special.chips && special.chips.length) addChips(special.chips);
       missCount = 0;
       isResponding = false;
@@ -974,7 +1192,7 @@ function handleUserMessage(text) {
       if (corr.changed && corr.corrected) {
         const res2 = matchFAQ(corr.corrected);
         if (res2.matched) res = res2;
-        else if ((res2.suggestions || []).length > (res.suggestions || []).length) res = res2;
+        else if ((res2.suggestions ?? []).length > (res.suggestions ?? []).length) res = res2;
       }
     }
 
@@ -983,7 +1201,7 @@ function handleUserMessage(text) {
         html: true,
         ts: new Date(),
         feedback: true,
-        feedbackMeta: { type: "faq", question: res.item.question, category: res.item.category || "general" }
+        feedbackMeta: { type: "faq", question: res.item.question, category: res.item.category ?? "general" }
       });
 
       if (res.followUps && res.followUps.length) {
@@ -992,18 +1210,29 @@ function handleUserMessage(text) {
       }
 
       missCount = 0;
+      clarifyCtx = null;
     } else {
       missCount++;
-      addBubble("I’m not sure. Did you mean:", "bot", { ts: new Date() });
-      addChips(res.suggestions || []);
 
+      // (4) Category clarification first on the first miss
+      if (missCount === 1 && categories.length) {
+        clarifyCtx = { stage: "needCategory", originalQuery: text };
+        addBubble("Quick check — what is this about?", "bot", { ts: new Date() });
+        addChips(categories.map((c) => c.label));
+      } else {
+        addBubble("I’m not sure. Did you mean:", "bot", { ts: new Date() });
+        addChips(res.suggestions ?? []);
+      }
+
+      // Escalate after repeated misses
       if (missCount >= 2) {
         addBubble(
-          "If you’d like, you can contact support at <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
+          `If you’d like, you can contact support at <a href="mailto:${SETTINGS.supportEmail}">${SETTINGS.supportEmail}</a> or call <b>${SETTINGS.supportPhone}</b>.`,
           "bot",
           { html: true, ts: new Date(), feedback: true, feedbackMeta: { type: "escalation" } }
         );
         missCount = 0;
+        clarifyCtx = null;
       }
     }
 
@@ -1033,13 +1262,15 @@ clearBtn.addEventListener("click", () => {
   chatWindow.innerHTML = "";
   missCount = 0;
   distanceCtx = null;
+  clarifyCtx = null;
+  ticketCtx = null;
+  CHAT_LOG = [];
   init();
 });
 
-/* =======================================================
-   LOAD FAQS (SINGLE FETCH)
-======================================================= */
-
+// ---------------------------------------------------------
+// LOAD FAQS (SINGLE FETCH)
+// ---------------------------------------------------------
 fetch("./public/config/faqs.json")
   .then((res) => res.json())
   .then((data) => {
@@ -1057,10 +1288,9 @@ fetch("./public/config/faqs.json")
     renderDrawer();
   });
 
-/* =======================================================
-   INIT
-======================================================= */
-
+// ---------------------------------------------------------
+// INIT
+// ---------------------------------------------------------
 function init() {
   addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date(), feedback: false });
 }
