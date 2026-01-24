@@ -8,7 +8,7 @@
  - Helpful feedback buttons (👍/👎)
  - Guided fallback (category clarification)
  - Quiet spelling correction (auto-corrects typos without asking)
- - Distance-to-Nuneaton flow (miles + travel mode chips)
+ - Closest-depot distance flow (based on origin town/city user provides)
 ------------------------------------------------------- */
 
 const SETTINGS = {
@@ -19,7 +19,7 @@ const SETTINGS = {
   chipClickCooldownMs: 900,
   suggestionLimit: 4,
   greeting:
-    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from Nuneaton."
+    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
 };
 
 let FAQS = [];
@@ -45,16 +45,19 @@ const drawerQuestionsEl = document.getElementById("drawerQuestions");
 // ---------- UI State ----------
 let isResponding = false;
 let lastChipClickAt = 0;
-let missCount = 0; // in-session only; resets on refresh
+let missCount = 0;
 
 // suggestion keyboard state
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 
-// distance flow context (in-memory only; resets on refresh)
+// in-session distance flow context (resets on refresh)
 let distanceCtx = null;
 
-// ---------- Helpers ----------
+/* =======================================================
+   NORMALISATION + MATCHING HELPERS
+======================================================= */
+
 const normalize = (s) =>
   (s || "")
     .toLowerCase()
@@ -92,7 +95,10 @@ const jaccard = (a, b) => {
   return union ? inter / union : 0;
 };
 
-// ---------- Safe HTML rendering (allowlist sanitizer) ----------
+/* =======================================================
+   SAFE HTML RENDERING
+======================================================= */
+
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -128,7 +134,10 @@ function sanitizeHTML(html) {
   return template.innerHTML;
 }
 
-// ---------- UK time (24-hour) for timestamps ----------
+/* =======================================================
+   TIMESTAMPS (UK, 24-HOUR)
+======================================================= */
+
 const UK_TZ = "Europe/London";
 
 function formatUKTime(date) {
@@ -140,9 +149,107 @@ function formatUKTime(date) {
   }).format(date);
 }
 
-// -----------------------------
-// Spelling correction (quiet mode)
-// -----------------------------
+/* =======================================================
+   DEPOTS + PLACES (EDIT THESE)
+   - DEPOTS: destinations you want to compare (multiple depots)
+   - PLACES: towns/cities users may type as origin
+======================================================= */
+
+// ✅ Add / remove depots here (these are the ones it will choose the closest from)
+const DEPOTS = {
+  "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
+
+  // Example extra depots (uncomment + edit if you want):
+  // "coventry": { label: "Coventry Depot", lat: 52.4068, lon: -1.5197 },
+  // "birmingham": { label: "Birmingham Depot", lat: 52.4895, lon: -1.8980 }
+};
+
+// ✅ Add more origin towns/cities here anytime
+const PLACES = {
+  "coventry": { lat: 52.4068, lon: -1.5197 },
+  "birmingham": { lat: 52.4895, lon: -1.8980 },
+  "leicester": { lat: 52.6369, lon: -1.1398 },
+  "london": { lat: 51.5074, lon: -0.1278 },
+  "wolverhampton": { lat: 52.5862, lon: -2.1286 }
+
+  // You can add multi-word keys too (normalize keeps spaces):
+  // "milton keynes": { lat: 52.0406, lon: -0.7594 }
+};
+
+function titleCase(s) {
+  const t = (s || "").trim();
+  return t ? (t.charAt(0).toUpperCase() + t.slice(1)) : t;
+}
+
+function toRad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+function distanceMiles(a, b) {
+  // Haversine straight-line distance (miles)
+  const R = 3958.8;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+
+  return R * (2 * Math.asin(Math.sqrt(h)));
+}
+
+function parseTravelMode(q) {
+  if (q.includes("train") || q.includes("rail")) return "train";
+  if (q.includes("bus") || q.includes("coach")) return "bus";
+  if (q.includes("walk") || q.includes("walking")) return "walk";
+  if (q.includes("car") || q.includes("drive") || q.includes("driving")) return "car";
+  return null;
+}
+
+function estimateMinutes(miles, mode) {
+  // Rough averages (not route-based):
+  // car ~35 mph overall, train ~55 mph, bus ~20 mph, walk ~3 mph
+  const mphMap = { car: 35, train: 55, bus: 20, walk: 3 };
+  const mph = mphMap[mode] || 35;
+  return Math.round((miles / mph) * 60);
+}
+
+function modeLabel(mode) {
+  const map = { car: "by car", train: "by train", bus: "by bus", walk: "walking" };
+  return map[mode] || "by car";
+}
+
+function findPlaceKey(qNorm) {
+  // Find any origin place mentioned in a query
+  for (const key in PLACES) {
+    if (!Object.prototype.hasOwnProperty.call(PLACES, key)) continue;
+    if (qNorm.includes(key)) return key;
+  }
+  return null;
+}
+
+function findClosestDepot(originLatLon) {
+  let bestKey = null;
+  let bestMiles = Infinity;
+
+  for (const key in DEPOTS) {
+    if (!Object.prototype.hasOwnProperty.call(DEPOTS, key)) continue;
+    const miles = distanceMiles(originLatLon, DEPOTS[key]);
+    if (miles < bestMiles) {
+      bestMiles = miles;
+      bestKey = key;
+    }
+  }
+
+  return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
+}
+
+/* =======================================================
+   QUIET SPELLING CORRECTION
+======================================================= */
+
 let VOCAB = new Set();
 
 function shouldSkipToken(tok) {
@@ -205,6 +312,7 @@ function bestVocabMatch(token) {
 function buildVocabFromFAQs() {
   const vocab = new Set();
 
+  // From FAQ content
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -221,6 +329,16 @@ function buildVocabFromFAQs() {
       }
     }
   }
+
+  // Also include depot + place tokens to help correct typos like “nuneaton”, “coventry”, etc.
+  Object.keys(DEPOTS).forEach((k) => {
+    normalize(k).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
+    normalize(DEPOTS[k].label).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
+  });
+
+  Object.keys(PLACES).forEach((k) => {
+    normalize(k).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
+  });
 
   VOCAB = vocab;
 }
@@ -244,15 +362,14 @@ function correctQueryTokens(rawText) {
   return { corrected: correctedTokens.join(" "), changed: changed };
 }
 
-// ---------- UI ----------
+/* =======================================================
+   UI HELPERS
+======================================================= */
+
 function setUIEnabled(enabled) {
   input.disabled = !enabled;
   sendBtn.disabled = !enabled;
   chatWindow.querySelectorAll(".chip-btn").forEach((b) => (b.disabled = !enabled));
-}
-
-function scrollToBottom() {
-  chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function addBubble(text, type, opts) {
@@ -285,7 +402,7 @@ function addBubble(text, type, opts) {
   row.appendChild(bubble);
   row.appendChild(time);
   chatWindow.appendChild(row);
-  scrollToBottom();
+  chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function addTyping() {
@@ -299,7 +416,7 @@ function addTyping() {
 
   row.appendChild(bubble);
   chatWindow.appendChild(row);
-  scrollToBottom();
+  chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 function removeTyping() {
@@ -337,10 +454,13 @@ function addChips(questions, onClick) {
 
   if (isResponding) wrap.querySelectorAll(".chip-btn").forEach(function (btn) { btn.disabled = true; });
   chatWindow.appendChild(wrap);
-  scrollToBottom();
+  chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// ---------- Feedback UI ----------
+/* =======================================================
+   FEEDBACK UI
+======================================================= */
+
 function buildFeedbackUI(meta) {
   const wrap = document.createElement("div");
   wrap.className = "feedback";
@@ -381,7 +501,10 @@ function buildFeedbackUI(meta) {
   return wrap;
 }
 
-// ---------- Topics Drawer ----------
+/* =======================================================
+   TOPICS DRAWER
+======================================================= */
+
 function buildCategoryIndex() {
   categoryIndex = new Map();
 
@@ -492,7 +615,10 @@ document.addEventListener("keydown", function (e) {
   if (!drawer.hidden && e.key === "Escape") closeDrawer();
 });
 
-// ---------- Suggestions (typeahead) ----------
+/* =======================================================
+   SUGGESTIONS (TYPEAHEAD)
+======================================================= */
+
 function escapeHTML(s) {
   return (s || "")
     .replaceAll("&", "&amp;")
@@ -636,64 +762,10 @@ input.addEventListener("keydown", function (e) {
   }
 });
 
-// ---------- Distance helper: how far from Nuneaton? ----------
-// Expand this list any time by adding more places.
-const NUNEATON = { lat: 52.5230, lon: -1.4652 };
+/* =======================================================
+   UK OPENING-TIME HELPERS
+======================================================= */
 
-const PLACES = {
-  "birmingham": { lat: 52.4895, lon: -1.8980 },
-  "coventry":   { lat: 52.4068, lon: -1.5197 },
-  "leicester":  { lat: 52.6369, lon: -1.1398 },
-  "london":     { lat: 51.5074, lon: -0.1278 },
-  "wolverhampton": { lat: 52.5862, lon: -2.1286 }
-};
-
-function toRad(deg) {
-  return (deg * Math.PI) / 180;
-}
-
-function distanceMiles(a, b) {
-  // Haversine distance (straight-line)
-  const R = 3958.8; // Earth radius in miles
-  const dLat = toRad(b.lat - a.lat);
-  const dLon = toRad(b.lon - a.lon);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-
-  return R * (2 * Math.asin(Math.sqrt(h)));
-}
-
-function titleCase(s) {
-  return (s || "").charAt(0).toUpperCase() + (s || "").slice(1);
-}
-
-function parseTravelMode(q) {
-  // returns: car | train | bus | walk | null
-  if (q.includes("train") || q.includes("rail")) return "train";
-  if (q.includes("bus") || q.includes("coach")) return "bus";
-  if (q.includes("walk") || q.includes("walking")) return "walk";
-  if (q.includes("car") || q.includes("drive") || q.includes("driving")) return "car";
-  return null;
-}
-
-function estimateMinutes(miles, mode) {
-  // Rough averages (not route-based):
-  // car ~35 mph overall, train ~55 mph, bus ~20 mph, walk ~3 mph
-  const mphMap = { car: 35, train: 55, bus: 20, walk: 3 };
-  const mph = mphMap[mode] || 35;
-  return Math.round((miles / mph) * 60);
-}
-
-function modeLabel(mode) {
-  const map = { car: "by car", train: "by train", bus: "by bus", walk: "walking" };
-  return map[mode] || "by car";
-}
-
-// ---------- Opening hours + special cases ----------
 function getUKParts(date) {
   const d = date || new Date();
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -750,92 +822,117 @@ function willBeOpenTomorrowUK() {
   return !isWeekend;
 }
 
+/* =======================================================
+   SPECIAL CASES (INCLUDING CLOSEST DEPOT)
+======================================================= */
+
 function specialCases(query) {
-  const q = normalize(query);
+  const qRaw = query || "";
+  const corr = correctQueryTokens(qRaw);
+  const q = corr.changed && corr.corrected ? corr.corrected : normalize(qRaw);
 
-  // ---- Distance follow-up: if user clicks travel mode chips after a distance result ----
-  if (distanceCtx && (q === "by car" || q === "by train" || q === "by bus" || q === "walking")) {
-    const mode = (q === "walking") ? "walk" : q.replace("by ", "");
-    const minutes = estimateMinutes(distanceCtx.miles, mode);
+  // --- Closest depot flow: travel mode selection ---
+  if (distanceCtx && distanceCtx.stage === "haveClosest") {
+    if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
+      const mode = (q === "walking") ? "walk" : q.replace("by ", "");
+      const depot = DEPOTS[distanceCtx.depotKey];
+      const minutes = estimateMinutes(distanceCtx.miles, mode);
 
-    return {
-      matched: true,
-      answerHTML:
-        "From <b>" + titleCase(distanceCtx.origin) + "</b> to <b>Nuneaton</b> is approximately <b>" +
-        Math.round(distanceCtx.miles) + " miles</b>." +
-        "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary).",
-      chips: ["By car", "By train", "By bus", "Walking"]
-    };
-  }
-
-  // ---- Distance: how far from Nuneaton (with mode options) ----
-  if (q.includes("how far") && q.includes("nuneaton")) {
-    // Find origin place mentioned
-    let origin = null;
-    for (const name in PLACES) {
-      if (Object.prototype.hasOwnProperty.call(PLACES, name) && q.includes(name)) {
-        origin = name;
-        break;
-      }
-    }
-
-    // If origin not found, ask for it with example chips
-    if (!origin) {
       return {
         matched: true,
         answerHTML:
-          "Certainly — I can estimate that. Which town or city are you travelling from?",
-        chips: ["Coventry", "Birmingham", "Leicester", "London"]
-      };
-    }
-
-    const miles = distanceMiles(PLACES[origin], NUNEATON);
-    distanceCtx = { origin: origin, miles: miles, at: Date.now() };
-
-    const mode = parseTravelMode(q);
-
-    // If mode already mentioned in the user's message, include time immediately
-    if (mode) {
-      const minutes = estimateMinutes(miles, mode);
-      return {
-        matched: true,
-        answerHTML:
-          "From <b>" + titleCase(origin) + "</b> to <b>Nuneaton</b> is approximately <b>" +
-          Math.round(miles) + " miles</b>." +
+          "Your closest depot is <b>" + depot.label + "</b>." +
+          "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
+          Math.round(distanceCtx.miles) + " miles</b>." +
           "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary).",
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
+  }
 
-    // Otherwise ask how they are travelling (chips)
+  // --- Closest depot flow: main trigger ---
+  if (q.includes("how far") || q.includes("distance") || q.includes("closest depot")) {
+    const originKey = findPlaceKey(q);
+
+    // If origin missing, ask for it
+    if (!originKey) {
+      distanceCtx = { stage: "needOrigin" };
+      return {
+        matched: true,
+        answerHTML: "Certainly — what town or city are you travelling from?",
+        chips: ["Coventry", "Birmingham", "Leicester", "London"]
+      };
+    }
+
+    // Find closest depot
+    const closest = findClosestDepot(PLACES[originKey]);
+    if (!closest) {
+      return {
+        matched: true,
+        answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?"
+      };
+    }
+
+    const depot = DEPOTS[closest.depotKey];
+    distanceCtx = {
+      stage: "haveClosest",
+      originKey: originKey,
+      depotKey: closest.depotKey,
+      miles: closest.miles
+    };
+
+    const modeInText = parseTravelMode(q);
+    if (modeInText) {
+      const minutes = estimateMinutes(closest.miles, modeInText);
+      return {
+        matched: true,
+        answerHTML:
+          "Your closest depot is <b>" + depot.label + "</b>." +
+          "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
+          Math.round(closest.miles) + " miles</b>." +
+          "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary).",
+        chips: ["By car", "By train", "By bus", "Walking"]
+      };
+    }
+
     return {
       matched: true,
       answerHTML:
-        "From <b>" + titleCase(origin) + "</b> to <b>Nuneaton</b> is approximately <b>" +
-        Math.round(miles) + " miles</b>." +
+        "Your closest depot is <b>" + depot.label + "</b>." +
+        "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
+        Math.round(closest.miles) + " miles</b>." +
         "<br>How are you travelling?",
       chips: ["By car", "By train", "By bus", "Walking"]
     };
   }
 
-  // ---- Respond if user supplies a city after the bot asked “where are you travelling from?” ----
-  // Example: user taps “Birmingham” chip or types “Birmingham”
-  for (const name2 in PLACES) {
-    if (Object.prototype.hasOwnProperty.call(PLACES, name2) && q === name2) {
-      const miles2 = distanceMiles(PLACES[name2], NUNEATON);
-      distanceCtx = { origin: name2, miles: miles2, at: Date.now() };
+  // --- If bot asked for origin and user replies with a city (typed or chip) ---
+  if (distanceCtx && distanceCtx.stage === "needOrigin") {
+    const originKey2 = findPlaceKey(q) || (PLACES[q] ? q : null);
+    if (originKey2) {
+      const closest2 = findClosestDepot(PLACES[originKey2]);
+      const depot2 = DEPOTS[closest2.depotKey];
+
+      distanceCtx = {
+        stage: "haveClosest",
+        originKey: originKey2,
+        depotKey: closest2.depotKey,
+        miles: closest2.miles
+      };
+
       return {
         matched: true,
         answerHTML:
-          "Thanks — from <b>" + titleCase(name2) + "</b> to <b>Nuneaton</b> is approximately <b>" +
-          Math.round(miles2) + " miles</b>." +
+          "Thanks — your closest depot is <b>" + depot2.label + "</b>." +
+          "<br>From <b>" + titleCase(originKey2) + "</b> it’s approximately <b>" +
+          Math.round(closest2.miles) + " miles</b>." +
           "<br>How are you travelling?",
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
   }
 
-  // ---- Existing special cases ----
+  // --- Other special cases ---
   if (q.includes("tomorrow")) {
     return willBeOpenTomorrowUK()
       ? { matched: true, answerHTML: "Yes — tomorrow is a weekday, so we’ll be open <b>8:30–17:00</b>." }
@@ -849,15 +946,16 @@ function specialCases(query) {
   }
 
   if (q.includes("parking") || q.includes("car park")) {
-    return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b> near our Nuneaton office. Spaces can be limited during busy times." };
+    return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b> near our Nuneaton location. Spaces can be limited during busy times." };
   }
-
-  // NOTE: Coventry-only special case removed (replaced by generic distance feature). [1](blob:https://m365.cloud.microsoft/a7eb9fac-df21-4489-80f0-96d67d2b5fcd)
 
   return null;
 }
 
-// ---------- FAQ matching ----------
+/* =======================================================
+   FAQ MATCHING
+======================================================= */
+
 function matchFAQ(query) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
@@ -896,7 +994,10 @@ function matchFAQ(query) {
   };
 }
 
-// ---------- Guided fallback ----------
+/* =======================================================
+   GUIDED FALLBACK
+======================================================= */
+
 function getTopCategoriesFor(query) {
   const qTokens = tokenSet(query);
 
@@ -943,7 +1044,10 @@ function showQuestionsForCategory(key, includeIntro) {
   addChips(qs, function (q) { handleUserMessage(q); });
 }
 
-// ---------- Main handler ----------
+/* =======================================================
+   MAIN HANDLER
+======================================================= */
+
 function handleUserMessage(text) {
   if (!text) return;
 
@@ -970,7 +1074,7 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases (includes distance flow)
+    // 1) Special cases (includes closest-depot flow)
     const special = specialCases(text);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", {
@@ -980,10 +1084,7 @@ function handleUserMessage(text) {
         feedbackMeta: { type: "special", query: text }
       });
 
-      // If special case includes chips (distance flow), show them
-      if (special.chips && special.chips.length) {
-        addChips(special.chips);
-      }
+      if (special.chips && special.chips.length) addChips(special.chips);
 
       missCount = 0;
       isResponding = false;
@@ -994,9 +1095,9 @@ function handleUserMessage(text) {
     // 2) FAQ match with quiet spelling correction
     let res = matchFAQ(text);
     if (!res.matched) {
-      const corr = correctQueryTokens(text);
-      if (corr.changed && corr.corrected) {
-        const res2 = matchFAQ(corr.corrected);
+      const corr2 = correctQueryTokens(text);
+      if (corr2.changed && corr2.corrected) {
+        const res2 = matchFAQ(corr2.corrected);
         if (res2.matched) res = res2;
         else if ((res2.suggestions || []).length > (res.suggestions || []).length) res = res2;
       }
@@ -1063,7 +1164,10 @@ clearBtn.addEventListener("click", function () {
   init();
 });
 
-// ---------- Load FAQs (single fetch) ----------
+/* =======================================================
+   LOAD FAQS (SINGLE FETCH)
+======================================================= */
+
 fetch("./public/config/faqs.json")
   .then(function (res) { return res.json(); })
   .then(function (data) {
@@ -1081,7 +1185,10 @@ fetch("./public/config/faqs.json")
     renderDrawer();
   });
 
-// ---------- Init ----------
+/* =======================================================
+   INIT
+======================================================= */
+
 function init() {
   addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date() });
 }
