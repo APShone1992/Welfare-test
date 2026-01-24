@@ -5,7 +5,6 @@
  Includes:
  - Topics drawer (browse by category)
  - Search-as-you-type suggestions (with safe escaping)
- - Helpful feedback buttons (👍/👎)
  - Guided fallback (category clarification)
  - Quiet spelling correction (auto-corrects typos)
  - Closest depot flow (origin -> choose travel mode)
@@ -14,6 +13,8 @@
 
  NOTE: Static hosting (GitHub Pages) cannot send emails directly.
  Ticket flow uses mailto: (opens user's email app with prefilled content).
+
+ NOTE: Feedback thumbs (👍/👎) REMOVED as requested.
 --------------------------------------------------------- */
 
 const SETTINGS = {
@@ -386,7 +387,7 @@ function correctQueryTokens(rawText) {
 }
 
 // ---------------------------------------------------------
-// UI / BUBBLES + TRANSCRIPT
+// UI / BUBBLES + TRANSCRIPT (No feedback UI)
 // ---------------------------------------------------------
 function setUIEnabled(enabled) {
   input.disabled = !enabled;
@@ -424,8 +425,6 @@ function addBubble(text, type, opts) {
   const options = opts ?? {};
   const html = !!options.html;
   const ts = options.ts ?? new Date();
-  const feedback = !!options.feedback;
-  const feedbackMeta = options.feedbackMeta ?? null;
 
   const row = document.createElement("div");
   row.className = "msg " + type;
@@ -438,8 +437,6 @@ function addBubble(text, type, opts) {
 
   if (html) bubble.innerHTML = sanitizeHTML(text);
   else bubble.textContent = text;
-
-  if (feedback && type === "bot") bubble.appendChild(buildFeedbackUI(feedbackMeta));
 
   const time = document.createElement("div");
   time.className = "timestamp";
@@ -504,49 +501,6 @@ function addChips(questions, onClick) {
   if (isResponding) wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
   chatWindow.appendChild(wrap);
   chatWindow.scrollTop = chatWindow.scrollHeight;
-}
-
-// ---------------------------------------------------------
-// FEEDBACK
-// ---------------------------------------------------------
-function buildFeedbackUI(meta) {
-  const wrap = document.createElement("div");
-  wrap.className = "feedback";
-
-  const label = document.createElement("span");
-  label.className = "label";
-  label.textContent = "Helpful?";
-
-  const up = document.createElement("button");
-  up.type = "button";
-  up.textContent = "👍";
-  up.setAttribute("aria-label", "Helpful");
-
-  const down = document.createElement("button");
-  down.type = "button";
-  down.textContent = "👎";
-  down.setAttribute("aria-label", "Not helpful");
-
-  const thanks = document.createElement("span");
-  thanks.className = "thanks";
-  thanks.hidden = true;
-
-  function submit(value) {
-    up.disabled = true;
-    down.disabled = true;
-    thanks.hidden = false;
-    thanks.textContent = "Thanks!";
-    console.log("feedback", { value, at: new Date().toISOString(), meta });
-  }
-
-  up.addEventListener("click", () => submit("up"));
-  down.addEventListener("click", () => submit("down"));
-
-  wrap.appendChild(label);
-  wrap.appendChild(up);
-  wrap.appendChild(down);
-  wrap.appendChild(thanks);
-  return wrap;
 }
 
 // ---------------------------------------------------------
@@ -651,7 +605,6 @@ document.addEventListener("keydown", (e) => {
 // ---------------------------------------------------------
 // TYPEAHEAD SUGGESTIONS
 // ---------------------------------------------------------
-// ✅ FIXED escaping (suggestions use innerHTML)
 function escapeHTML(s) {
   const str = String(s ?? "");
   const map = {
@@ -1008,7 +961,7 @@ function specialCases(query) {
         `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
         `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br><br>` +
-        `<a href="${mailtoHref}">Click here to email support with this request (includes chat transcript)</a><br>` +
+        `${mailtoHref}Click here to email support with this request (includes chat transcript)</a><br>` +
         `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
         `Want to start another?`;
 
@@ -1037,7 +990,7 @@ function specialCases(query) {
           "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
           Math.round(distanceCtx.miles) + " miles</b>." +
           "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br><a href="${url}">Get directions in Google Maps</a>`,
+          `<br>${url}Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1089,7 +1042,7 @@ function specialCases(query) {
           "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
           Math.round(closest.miles) + " miles</b>." +
           "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br><a href="${url}">Get directions in Google Maps</a>`,
+          `<br>${url}Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1171,14 +1124,9 @@ function handleUserMessage(text) {
     // 1) Special cases first
     const special = specialCases(text);
     if (special && special.matched) {
-      addBubble(special.answerHTML, "bot", {
-        html: true,
-        ts: new Date(),
-        feedback: true,
-        feedbackMeta: { type: "special", query: text }
-      });
-
+      addBubble(special.answerHTML, "bot", { html: true, ts: new Date() });
       if (special.chips && special.chips.length) addChips(special.chips);
+
       missCount = 0;
       isResponding = false;
       setUIEnabled(true);
@@ -1197,12 +1145,7 @@ function handleUserMessage(text) {
     }
 
     if (res.matched) {
-      addBubble(res.answerHTML, "bot", {
-        html: true,
-        ts: new Date(),
-        feedback: true,
-        feedbackMeta: { type: "faq", question: res.item.question, category: res.item.category ?? "general" }
-      });
+      addBubble(res.answerHTML, "bot", { html: true, ts: new Date() });
 
       if (res.followUps && res.followUps.length) {
         addBubble("You can also ask:", "bot", { ts: new Date() });
@@ -1214,7 +1157,7 @@ function handleUserMessage(text) {
     } else {
       missCount++;
 
-      // (4) Category clarification first on the first miss
+      // Category clarification first on the first miss
       if (missCount === 1 && categories.length) {
         clarifyCtx = { stage: "needCategory", originalQuery: text };
         addBubble("Quick check — what is this about?", "bot", { ts: new Date() });
@@ -1229,7 +1172,7 @@ function handleUserMessage(text) {
         addBubble(
           `If you’d like, you can contact support at <a href="mailto:${SETTINGS.supportEmail}">${SETTINGS.supportEmail}</a> or call <b>${SETTINGS.supportPhone}</b>.`,
           "bot",
-          { html: true, ts: new Date(), feedback: true, feedbackMeta: { type: "escalation" } }
+          { html: true, ts: new Date() }
         );
         missCount = 0;
         clarifyCtx = null;
@@ -1292,12 +1235,11 @@ fetch("./public/config/faqs.json")
 // INIT
 // ---------------------------------------------------------
 function init() {
-  addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date(), feedback: false });
+  addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date() });
 }
 
 if (document.readyState === "loading") {
-  window.addEventListener("DOMContentLoaded", init);
+  window.adder("DOMContentLoaded", init);
 } else {
   init();
 }
-
