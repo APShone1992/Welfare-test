@@ -974,7 +974,7 @@ function specialCases(query) {
     if (ticketCtx.stage === "needUrgency") {
       ticketCtx.urgency = query.trim();
 
-      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 12);
+      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
 
       const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
       const body = encodeURIComponent(
