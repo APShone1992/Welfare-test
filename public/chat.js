@@ -8,8 +8,8 @@
  - Guided fallback (category clarification)
  - Quiet spelling correction (auto-corrects typos)
  - Closest depot flow:
-     - GPS "Use my location" option (permission-based, HTTPS required)
-     - Fallback: self-hosted UK cities list (uk-cities.json)
+     - GPS "Use my location" option (permission-based)
+     - Fallback: your own PLACES list ONLY
  - Ticket/request flow (prefilled email + transcript + contact number)
  - Google Maps directions link (clickable)
  - Feedback thumbs REMOVED
@@ -29,9 +29,6 @@ const SETTINGS = {
   // Keep mailto size safe
   ticketTranscriptMessages: 12,  // last N messages (user + bot)
   ticketTranscriptMaxLine: 140,  // max chars per transcript line
-
-  // ✅ Self-hosted UK cities file (put it in /public/config/uk-cities.json)
-  UK_PLACES_URL: "./public/config/uk-cities.json",
 
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
@@ -189,45 +186,20 @@ function formatUKTime(date) {
 }
 
 // ---------------------------------------------------------
-// DEPOTS + PLACES
+// DEPOTS + ORIGIN PLACES (YOUR OWN LIST)
 // ---------------------------------------------------------
 const DEPOTS = {
   "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
 
-// Fallback places (works even if uk-cities.json fails to load)
-let PLACES = {
+// ✅ Your own list (edit/add here whenever you want)
+const PLACES = {
   "coventry": { lat: 52.4068, lon: -1.5197 },
   "birmingham": { lat: 52.4895, lon: -1.8980 },
   "leicester": { lat: 52.6369, lon: -1.1398 },
   "london": { lat: 51.5074, lon: -0.1278 },
   "wolverhampton": { lat: 52.5862, lon: -2.1286 }
 };
-
-let placesLoaded = false;
-
-async function loadUKPlaces() {
-  try {
-    const res = await fetch(SETTINGS.UK_PLACES_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error("places fetch failed");
-    const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("places json not array");
-
-    data.forEach((row) => {
-      const name = row?.city;
-      const lat = parseFloat(row?.lat);
-      const lng = parseFloat(row?.lng);
-      if (!name || Number.isNaN(lat) || Number.isNaN(lng)) return;
-      const key = normalize(name);
-      if (!key) return;
-      PLACES[key] = { lat, lon: lng };
-    });
-
-    placesLoaded = true;
-  } catch (e) {
-    placesLoaded = false;
-  }
-}
 
 function titleCase(s) {
   const t = (s ?? "").trim();
@@ -270,7 +242,9 @@ function modeLabel(mode) {
 }
 
 function findPlaceKey(qNorm) {
+  // direct match
   if (PLACES[qNorm]) return qNorm;
+  // contains match
   for (const key in PLACES) {
     if (!Object.prototype.hasOwnProperty.call(PLACES, key)) continue;
     if (qNorm.includes(key)) return key;
@@ -369,6 +343,7 @@ function bestVocabMatch(token) {
 function buildVocabFromFAQsAndPlaces() {
   const vocab = new Set();
 
+  // FAQ fields
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -383,6 +358,7 @@ function buildVocabFromFAQsAndPlaces() {
     }
   }
 
+  // depot + place tokens
   for (const dk in DEPOTS) {
     if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
@@ -659,7 +635,6 @@ function showSuggestions(items) {
       ev.preventDefault();
       pickSuggestion(idx);
     });
-
     div.addEventListener("touchstart", (ev) => {
       ev.preventDefault();
       pickSuggestion(idx);
@@ -924,7 +899,7 @@ function requestUserLocationAndRespond() {
       input.focus();
     },
     () => {
-      addBubble("No problem — I won’t use location. Please type your town/city (e.g., Coventry).", "bot", { ts: new Date() });
+      addBubble("No problem — I won’t use location. Please type your town/city from the supported list.", "bot", { ts: new Date() });
       distanceCtx = { stage: "needOrigin" };
     },
     { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
@@ -953,7 +928,7 @@ function specialCases(query) {
     }
   }
 
-  // Ticket flow
+  // Ticket flow trigger
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -1058,7 +1033,7 @@ function specialCases(query) {
     q.includes("get directions");
 
   // user chooses GPS
-  if (q === "use my location" || q === "use my gps location" || q === "share location") {
+  if (q === "use my location" || q === "share location" || q === "use gps") {
     requestUserLocationAndRespond();
     return { matched: true, answerHTML: "Okay — requesting location now…", chips: null };
   }
@@ -1066,10 +1041,10 @@ function specialCases(query) {
   // user chooses typing city
   if (q === "type a town/city" || q === "type a city" || q === "enter a city") {
     distanceCtx = { stage: "needOrigin" };
-    return { matched: true, answerHTML: "No problem — what town or city are you travelling from?" };
+    return { matched: true, answerHTML: "No problem — type one of the supported places (e.g., Coventry, London)." };
   }
 
-  // if waiting for travel mode
+  // travel mode stage (after closest known)
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
@@ -1091,16 +1066,15 @@ function specialCases(query) {
     }
   }
 
-  // if depot question asked: offer GPS first (unless a city is already included)
+  // depot question asked: offer GPS choice unless city already present
   if (askedDepot && (!distanceCtx || distanceCtx.stage !== "needOrigin")) {
     const originKey = findPlaceKey(q);
 
-    // user already typed city in question
+    // If they included a known city in the question, compute directly
     if (originKey) {
       const closest = findClosestDepot(PLACES[originKey]);
-      if (!closest) return { matched: true, answerHTML: "I couldn’t calculate that right now. Try another city?" };
-
       const depot = DEPOTS[closest.depotKey];
+
       distanceCtx = {
         stage: "haveClosest",
         originKey,
@@ -1135,11 +1109,11 @@ function specialCases(query) {
       };
     }
 
-    // otherwise offer GPS choice
+    // Otherwise offer GPS and fallback
     distanceCtx = { stage: "needLocationChoice" };
     const gpsHint = canUseGeolocation()
       ? "Would you like to use your current location?"
-      : "Location isn’t available here (needs HTTPS). Please type your town/city.";
+      : "Location isn’t available here (needs HTTPS). Please type your town/city from the supported list.";
 
     return {
       matched: true,
@@ -1148,7 +1122,7 @@ function specialCases(query) {
     };
   }
 
-  // user reply with typed origin city
+  // waiting for typed origin
   if (distanceCtx && distanceCtx.stage === "needOrigin") {
     const originKey2 = findPlaceKey(q);
     if (originKey2) {
@@ -1172,7 +1146,13 @@ function specialCases(query) {
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
-    return { matched: true, answerHTML: "I didn’t recognise that place. Try a nearby city (e.g., London, Birmingham)?" };
+
+    // Not recognized: show your supported list as chips
+    return {
+      matched: true,
+      answerHTML: "I didn’t recognise that place. Please choose one of these supported locations:",
+      chips: Object.keys(PLACES).map(titleCase)
+    };
   }
 
   // parking
@@ -1260,9 +1240,8 @@ function handleUserMessage(text) {
 
       // Escalation after repeated misses (clickable mailto)
       if (missCount >= 2) {
-        const mailto = `mailto:${SETTINGS.supportEmail}`;
         addBubble(
-          `If you’d like, you can contact support at <a href="${escapeAttr(mailto)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
+          `If you’d like, you can contact support at <a href="${escapeAttr(`mailto:${SETTINGS.supportEmail}`)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
           "bot",
           { html: true, ts: new Date() }
         );
@@ -1272,11 +1251,7 @@ function handleUserMessage(text) {
     }
 
     isResponding = false;
-    setUIEnabled(true);
-  }, 300);
-}
-
-function sendChat() {
+   sendChat() {
   if (isResponding) return;
   const text = input.value.trim();
   if (!text) return;
@@ -1304,27 +1279,20 @@ clearBtn.addEventListener("click", () => {
 });
 
 // ---------------------------------------------------------
-// LOAD FAQS + PLACES (and then build vocab/index)
+// LOAD FAQS
 // ---------------------------------------------------------
 fetch("./public/config/faqs.json")
-  .then(async (res) => {
-    const data = await res.json();
+  .then((res) => res.json())
+  .then((data) => {
     FAQS = Array.isArray(data) ? data : [];
     faqsLoaded = true;
-
-    // Load UK cities (self-hosted)
-    await loadUKPlaces();
-
     buildCategoryIndex();
     buildVocabFromFAQsAndPlaces();
     renderDrawer();
   })
-  .catch(async () => {
+  .catch(() => {
     FAQS = [];
     faqsLoaded = true;
-
-    await loadUKPlaces();
-
     buildCategoryIndex();
     buildVocabFromFAQsAndPlaces();
     renderDrawer();
