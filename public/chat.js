@@ -1,18 +1,6 @@
 
 /* ---------------------------------------------------------
- Welfare Support – Static FAQ Chatbot (Manual + Stable)
-
- Includes:
- - Topics drawer (browse by category)
- - Search-as-you-type suggestions (safe escaping)
- - Quiet spelling correction (auto-corrects typos)
- - Manual closest depot flow (origin -> choose travel mode)
-   + Clickable Google Maps directions link
- - Ticket/request flow (prefilled email + transcript + contact number)
- - Feedback thumbs removed
-
- Note: This is a STATIC site. Tickets are sent via mailto link:
- the user clicks -> email app opens -> user presses Send.
+ Welfare Support – Manual + Stable (Ticket + Maps)
 --------------------------------------------------------- */
 
 const SETTINGS = {
@@ -26,7 +14,6 @@ const SETTINGS = {
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
 
-  // Transcript (keep small so mailto links don't get huge)
   ticketTranscriptMessages: 12,
   ticketTranscriptMaxLine: 140,
 
@@ -39,14 +26,11 @@ let faqsLoaded = false;
 let categories = [];
 let categoryIndex = new Map();
 
-// ---------------------------------------------------------
 // DOM
-// ---------------------------------------------------------
 const chatWindow = document.getElementById("chatWindow");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
-
 const suggestionsEl = document.getElementById("suggestions");
 
 const topicsBtn = document.getElementById("topicsBtn");
@@ -56,29 +40,20 @@ const drawerCloseBtn = document.getElementById("drawerCloseBtn");
 const drawerCategoriesEl = document.getElementById("drawerCategories");
 const drawerQuestionsEl = document.getElementById("drawerQuestions");
 
-// ---------------------------------------------------------
-// UI State
-// ---------------------------------------------------------
+// UI state
 let isResponding = false;
 let lastChipClickAt = 0;
 let missCount = 0;
 
-// suggestion keyboard state
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 
-// distance flow context
-let distanceCtx = null; // { stage: "needOrigin"|"haveClosest", originKey, depotKey, miles }
+let distanceCtx = null; // { stage:"needOrigin"|"haveClosest", originKey, depotKey, miles }
+let ticketCtx = null;   // { stage, type, name, email, phone, description, urgency }
 
-// ticket flow context
-let ticketCtx = null; // { stage, type, name, email, phone, description, urgency }
+let CHAT_LOG = []; // transcript for ticket emails: { role, text, ts }
 
-// chat transcript for ticket emails
-let CHAT_LOG = []; // { role: "User"|"Bot", text: string, ts: number }
-
-// ---------------------------------------------------------
-// NORMALISATION + MATCHING
-// ---------------------------------------------------------
+// ---------------- Normalisation & Matching ----------------
 const normalize = (s) =>
   (s ?? "")
     .toLowerCase()
@@ -115,9 +90,7 @@ const jaccard = (a, b) => {
   return union ? inter / union : 0;
 };
 
-// ---------------------------------------------------------
-// SAFE HTML RENDERING + ESCAPING
-// ---------------------------------------------------------
+// ---------------- Safe HTML + Escaping ----------------
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -148,10 +121,7 @@ function sanitizeHTML(html) {
     }
   }
 
-  toReplace.forEach((node) =>
-    node.replaceWith(document.createTextNode(node.textContent))
-  );
-
+  toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent)));
   return template.innerHTML;
 }
 
@@ -171,9 +141,7 @@ function escapeAttr(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
-// ---------------------------------------------------------
-// TIMESTAMPS (UK, 24-HOUR)
-// ---------------------------------------------------------
+// ---------------- UK Time stamps ----------------
 const UK_TZ = "Europe/London";
 function formatUKTime(date) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -184,14 +152,12 @@ function formatUKTime(date) {
   }).format(date);
 }
 
-// ---------------------------------------------------------
-// DEPOTS + ORIGIN PLACES (EDIT THESE)
-// ---------------------------------------------------------
+// ---------------- Depots & Places ----------------
 const DEPOTS = {
   "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
 
-// ✅ Add towns/cities here (keys must be lowercase)
+// EDIT THIS LIST
 const PLACES = {
   "coventry": { lat: 52.4068, lon: -1.5197 },
   "birmingham": { lat: 52.4895, lon: -1.8980 },
@@ -205,9 +171,7 @@ function titleCase(s) {
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 
-function toRad(deg) {
-  return (deg * Math.PI) / 180;
-}
+function toRad(deg) { return (deg * Math.PI) / 180; }
 
 function distanceMiles(a, b) {
   const R = 3958.8;
@@ -263,7 +227,6 @@ function findClosestDepot(originLatLon) {
   return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
 }
 
-// Clickable directions link
 function googleDirectionsURL(originText, depot, mode) {
   const origin = encodeURIComponent(originText);
   const destination = encodeURIComponent(`${depot.lat},${depot.lon}`);
@@ -273,15 +236,9 @@ function googleDirectionsURL(originText, depot, mode) {
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${travelmode}`;
 }
 
-// ---------------------------------------------------------
-// QUIET SPELLING CORRECTION
-// ---------------------------------------------------------
+// ---------------- Spelling correction vocab ----------------
 let VOCAB = new Set();
-
-const PROTECTED_TOKENS = new Set([
-  "walking","walk","by","car","train","bus",
-  "rail","coach","depot","depots","closest"
-]);
+const PROTECTED_TOKENS = new Set(["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"]);
 
 function shouldSkipToken(tok) {
   if (!tok) return true;
@@ -305,13 +262,11 @@ function levenshtein(a, b, maxDist) {
     curr[0] = i;
     let minInRow = curr[0];
     const ai = a.charCodeAt(i - 1);
-
     for (let j = 1; j <= bl; j++) {
       const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
       curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
       if (curr[j] < minInRow) minInRow = curr[j];
     }
-
     if (minInRow > maxDist) return maxDist + 1;
     for (let j = 0; j <= bl; j++) prev[j] = curr[j];
   }
@@ -324,8 +279,7 @@ function bestVocabMatch(token) {
   if (VOCAB.has(token)) return null;
 
   const maxDist = token.length <= 7 ? 1 : 2;
-  let best = null;
-  let bestDist = maxDist + 1;
+  let best = null, bestDist = maxDist + 1;
 
   for (const w of VOCAB) {
     if (Math.abs(w.length - token.length) > maxDist) continue;
@@ -342,7 +296,6 @@ function bestVocabMatch(token) {
 function buildVocab() {
   const vocab = new Set();
 
-  // FAQs
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -358,7 +311,6 @@ function buildVocab() {
     }
   }
 
-  // depots + places
   for (const dk in DEPOTS) {
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
     normalize(DEPOTS[dk].label).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
@@ -367,9 +319,7 @@ function buildVocab() {
     normalize(pk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
   }
 
-  // common system words
   ["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"].forEach((w) => vocab.add(w));
-
   VOCAB = vocab;
 }
 
@@ -389,9 +339,7 @@ function correctQueryTokens(rawText) {
   return { corrected: correctedTokens.join(" "), changed };
 }
 
-// ---------------------------------------------------------
-// UI / BUBBLES + TRANSCRIPT
-// ---------------------------------------------------------
+// ---------------- UI helpers ----------------
 function setUIEnabled(enabled) {
   input.disabled = !enabled;
   sendBtn.disabled = !enabled;
@@ -400,9 +348,7 @@ function setUIEnabled(enabled) {
 
 function pushToTranscript(type, text, opts) {
   const options = opts ?? {};
-  const tsDate = options.ts ?? new Date();
-  const ts = tsDate.getTime();
-
+  const ts = (options.ts ?? new Date()).getTime();
   const plain = options.html ? htmlToPlainText(text) : String(text ?? "").trim();
   const role = (type === "bot") ? "Bot" : "User";
 
@@ -435,8 +381,6 @@ function addBubble(text, type, opts) {
 
   const bubble = document.createElement("div");
   bubble.className = "bubble " + type;
-  bubble.setAttribute("role", "article");
-  bubble.setAttribute("aria-label", type === "bot" ? "Bot message" : "Your message");
 
   if (html) bubble.innerHTML = sanitizeHTML(text);
   else bubble.textContent = text;
@@ -500,14 +444,11 @@ function addChips(items, onClick) {
     wrap.appendChild(b);
   });
 
-  if (isResponding) wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
   chatWindow.appendChild(wrap);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// ---------------------------------------------------------
-// TOPICS DRAWER
-// ---------------------------------------------------------
+// ---------------- Topics drawer ----------------
 function buildCategoryIndex() {
   categoryIndex = new Map();
   FAQS.forEach((item) => {
@@ -536,14 +477,12 @@ function buildCategoryIndex() {
 function openDrawer() {
   overlay.hidden = false;
   drawer.hidden = false;
-  drawer.setAttribute("aria-hidden", "false");
   drawerCloseBtn?.focus();
 }
 
 function closeDrawer() {
   overlay.hidden = true;
   drawer.hidden = true;
-  drawer.setAttribute("aria-hidden", "true");
   topicsBtn?.focus();
 }
 
@@ -584,14 +523,11 @@ function bindClose(el) {
 
 topicsBtn?.addEventListener("click", () => { if (faqsLoaded) openDrawer(); });
 drawer?.addEventListener("click", (e) => e.stopPropagation());
-drawer?.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
 bindClose(drawerCloseBtn);
 bindClose(overlay);
 document.addEventListener("keydown", (e) => { if (!drawer.hidden && e.key === "Escape") closeDrawer(); });
 
-// ---------------------------------------------------------
-// TYPEAHEAD SUGGESTIONS
-// ---------------------------------------------------------
+// ---------------- Suggestions ----------------
 function showSuggestions(items) {
   currentSuggestions = items;
   activeSuggestionIndex = -1;
@@ -646,7 +582,6 @@ function computeSuggestions(query) {
   if (corr.changed && corr.corrected) q = corr.corrected;
 
   const qTokens = tokenSet(q);
-
   const labelMap = new Map(categories.map((c) => [c.key, c.label]));
 
   const scored = FAQS.map((item) => {
@@ -664,7 +599,6 @@ function computeSuggestions(query) {
     const boost = anyField.includes(q) ? SETTINGS.boostSubstring : 0;
 
     const score = 0.60 * scoreQ + 0.22 * scoreSyn + 0.12 * scoreKeys + 0.06 * scoreTags + boost;
-
     return { item, score };
   })
     .sort((a, b) => b.score - a.score)
@@ -685,7 +619,6 @@ input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); sendChat(); }
     return;
   }
-
   if (e.key === "ArrowDown") {
     e.preventDefault();
     activeSuggestionIndex = Math.min(activeSuggestionIndex + 1, currentSuggestions.length - 1);
@@ -703,9 +636,7 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-// ---------------------------------------------------------
-// FAQ MATCHING
-// ---------------------------------------------------------
+// ---------------- FAQ matching ----------------
 function matchFAQ(query) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
@@ -747,22 +678,18 @@ function matchFAQ(query) {
   };
 }
 
-// ---------------------------------------------------------
-// Ticket validation (phone)
-// ---------------------------------------------------------
+// ---------------- Ticket validation ----------------
 function isValidPhone(raw) {
   const digits = String(raw ?? "").trim().replace(/[^\d]/g, "");
   return digits.length >= 8 && digits.length <= 16;
 }
 
-// ---------------------------------------------------------
-// SPECIAL CASES (Ticket + Depot + Parking)
-// ---------------------------------------------------------
+// ---------------- Special cases: Ticket + Depot + Parking ----------------
 function specialCases(text) {
   const corr = correctQueryTokens(text);
   const q = corr.changed && corr.corrected ? corr.corrected : normalize(text);
 
-  // ---- Ticket trigger ----
+  // Ticket trigger
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -821,7 +748,6 @@ function specialCases(text) {
       ticketCtx.urgency = text.trim();
 
       const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 12);
-
       const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
       const body = encodeURIComponent(
         `Name: ${ticketCtx.name}\n` +
@@ -852,7 +778,7 @@ function specialCases(text) {
     }
   }
 
-  // ---- Closest depot flow (manual) ----
+  // Closest depot flow
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
@@ -891,10 +817,6 @@ function specialCases(text) {
     }
 
     const closest = findClosestDepot(PLACES[originKey]);
-    if (!closest) {
-      return { matched: true, answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?" };
-    }
-
     const depot = DEPOTS[closest.depotKey];
     distanceCtx = { stage: "haveClosest", originKey, depotKey: closest.depotKey, miles: closest.miles };
 
@@ -925,7 +847,7 @@ function specialCases(text) {
   }
 
   if (distanceCtx && distanceCtx.stage === "needOrigin") {
-    const originKey2 = findPlaceKey(q) || (PLACES[q] ? q : null);
+    const originKey2 = findPlaceKey(q);
     if (originKey2) {
       const closest2 = findClosestDepot(PLACES[originKey2]);
       const depot2 = DEPOTS[closest2.depotKey];
@@ -944,7 +866,6 @@ function specialCases(text) {
     return { matched: true, answerHTML: "I didn’t recognise that place. Try one of the suggested cities." };
   }
 
-  // ---- Parking special case ----
   if (q.includes("parking") || q.includes("car park")) {
     return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
@@ -952,13 +873,10 @@ function specialCases(text) {
   return null;
 }
 
-// ---------------------------------------------------------
-// MAIN HANDLER
-// ---------------------------------------------------------
+// ---------------- Main handler ----------------
 function handleUserMessage(text) {
   if (!text) return;
 
-  // hide suggestions
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
   currentSuggestions = [];
@@ -981,7 +899,6 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases (ticket + depot)
     const special = specialCases(text);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", { html: true, ts: new Date() });
@@ -992,9 +909,7 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 2) FAQ match (with quiet correction)
     let res = matchFAQ(text);
-
     if (!res.matched) {
       const corr = correctQueryTokens(text);
       if (corr.changed && corr.corrected) {
@@ -1005,12 +920,10 @@ function handleUserMessage(text) {
 
     if (res.matched) {
       addBubble(res.answerHTML, "bot", { html: true, ts: new Date() });
-
       if (res.followUps && res.followUps.length) {
         addBubble("You can also ask:", "bot", { ts: new Date() });
         addChips(res.followUps);
       }
-
       missCount = 0;
     } else {
       missCount++;
@@ -1019,9 +932,7 @@ function handleUserMessage(text) {
 
       if (missCount >= 2) {
         addBubble(
-          `If you’d like, you can contact support at <a href="mailto:${escapeAttr(SETTINGS.supportEmail)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
-          "bot",
-          { html: true, ts: new Date() }
+          `If you’d like, you can contact support at <a href="mailto:${escapeAttr(SETTINGS.supportEmail)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</e, ts: new Date() }
         );
         missCount = 0;
       }
@@ -1040,7 +951,6 @@ function sendChat() {
 }
 
 sendBtn.addEventListener("click", sendChat);
-
 input.addEventListener("keydown", (e) => {
   if (!suggestionsEl.hidden) return;
   if (e.key === "Enter") { e.preventDefault(); sendChat(); }
@@ -1055,9 +965,7 @@ clearBtn.addEventListener("click", () => {
   init();
 });
 
-// ---------------------------------------------------------
-// LOAD FAQS
-//--------------
+// ---------------- Load FAQs ----------------
 fetch("./public/config/faqs.json")
   .then((res) => res.json())
   .then((data) => {
@@ -1075,9 +983,7 @@ fetch("./public/config/faqs.json")
     renderDrawer();
   });
 
-// ---------------------------------------------------------
-// INIT
-// ---------------------------------------------------------
+// ---------------- Init ----------------
 function init() {
   addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date() });
 }
