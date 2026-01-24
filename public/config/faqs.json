@@ -19,13 +19,13 @@
     "category": "general",
     "followUps": [
       "Are you open tomorrow?",
-      "Are you open on weekends or bank holidays?",
-      "Is anyone available now?"
+      "Is anyone available now?",
+      "Are you open on weekends or bank holidays?"
     ]
   },
   {
     "question": "How can I contact support?",
-    "answer": "Email us at <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
+    "answer": "Email us at <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
     "synonyms": [
       "support email",
       "customer service",
@@ -42,8 +42,8 @@
     ],
     "category": "support",
     "followUps": [
-      "What’s your number again?",
-      "What is your response time?"
+      "What is your response time?",
+      "Where are you located?"
     ]
   },
   {
