@@ -8,15 +8,11 @@
  - Guided fallback (category clarification)
  - Quiet spelling correction (auto-corrects typos)
  - Closest depot flow:
-     - NEW: GPS "Use my location" option (permission-based)
-     - Fallback: UK cities list (258 prominent UK cities via Simplemaps) [1](https://www.worldcitiesdatabase.eu/United_Kingdom.php)[2](https://simplemaps.com/data/gb-cities.csv)
+     - GPS "Use my location" option (permission-based, HTTPS required)
+     - Fallback: self-hosted UK cities list (uk-cities.json)
  - Ticket/request flow (prefilled email + transcript + contact number)
- - Google Maps directions links (clickable)
-
- NOTE: Static hosting cannot send emails directly.
- Ticket flow uses mailto: (opens user's email app with prefilled content).
-
- NOTE: Feedback thumbs (👍/👎) REMOVED.
+ - Google Maps directions link (clickable)
+ - Feedback thumbs REMOVED
 --------------------------------------------------------- */
 
 const SETTINGS = {
@@ -34,8 +30,8 @@ const SETTINGS = {
   ticketTranscriptMessages: 12,  // last N messages (user + bot)
   ticketTranscriptMaxLine: 140,  // max chars per transcript line
 
-  // UK places dataset: 258 prominent UK cities (JSON) [1](https://www.worldcitiesdatabase.eu/United_Kingdom.php)[2](https://simplemaps.com/data/gb-cities.csv)
-  UK_PLACES_URL: "./public/config/uk-cities.json"
+  // ✅ Self-hosted UK cities file (put it in /public/config/uk-cities.json)
+  UK_PLACES_URL: "./public/config/uk-cities.json",
 
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
@@ -76,10 +72,6 @@ let currentSuggestions = [];
 
 // distance flow context
 // stage: "needLocationChoice" | "needOrigin" | "haveClosest"
-// originKey: string for display
-// originTextForMaps: string used in Google Maps origin (either "lat,lon" or town name)
-// miles: number
-// depotKey: string
 let distanceCtx = null;
 
 // category clarification flow context
@@ -203,7 +195,7 @@ const DEPOTS = {
   "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
 
-// Fallback places (still works if dataset fetch fails)
+// Fallback places (works even if uk-cities.json fails to load)
 let PLACES = {
   "coventry": { lat: 52.4068, lon: -1.5197 },
   "birmingham": { lat: 52.4895, lon: -1.8980 },
@@ -211,11 +203,12 @@ let PLACES = {
   "london": { lat: 51.5074, lon: -0.1278 },
   "wolverhampton": { lat: 52.5862, lon: -2.1286 }
 };
+
 let placesLoaded = false;
 
 async function loadUKPlaces() {
   try {
-    const res = await fetch(SETTINGS.UK_PLACES_URL, { cache: "force-cache" });
+    const res = await fetch(SETTINGS.UK_PLACES_URL, { cache: "no-store" });
     if (!res.ok) throw new Error("places fetch failed");
     const data = await res.json();
     if (!Array.isArray(data)) throw new Error("places json not array");
@@ -277,10 +270,7 @@ function modeLabel(mode) {
 }
 
 function findPlaceKey(qNorm) {
-  // direct match
   if (PLACES[qNorm]) return qNorm;
-
-  // contains match
   for (const key in PLACES) {
     if (!Object.prototype.hasOwnProperty.call(PLACES, key)) continue;
     if (qNorm.includes(key)) return key;
@@ -379,7 +369,6 @@ function bestVocabMatch(token) {
 function buildVocabFromFAQsAndPlaces() {
   const vocab = new Set();
 
-  // FAQ fields
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -394,7 +383,6 @@ function buildVocabFromFAQsAndPlaces() {
     }
   }
 
-  // depot + place tokens
   for (const dk in DEPOTS) {
     if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
@@ -406,9 +394,7 @@ function buildVocabFromFAQsAndPlaces() {
     normalize(pk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
   }
 
-  // system words
   ["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"].forEach((w) => vocab.add(w));
-
   VOCAB = vocab;
 }
 
@@ -552,10 +538,6 @@ function addChips(questions, onClick) {
 }
 
 // ---------------------------------------------------------
-// FEEDBACK REMOVED (no buildFeedbackUI)
-// ---------------------------------------------------------
-
-// ---------------------------------------------------------
 // TOPICS DRAWER
 // ---------------------------------------------------------
 function buildCategoryIndex() {
@@ -632,14 +614,10 @@ function bindClose(el) {
     e.preventDefault();
     closeDrawer();
   });
-  el.addEventListener(
-    "touchstart",
-    (e) => {
-      e.preventDefault();
-      closeDrawer();
-    },
-    { passive: false }
-  );
+  el.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    closeDrawer();
+  }, { passive: false });
 }
 
 topicsBtn?.addEventListener("click", () => {
@@ -682,14 +660,10 @@ function showSuggestions(items) {
       pickSuggestion(idx);
     });
 
-    div.addEventListener(
-      "touchstart",
-      (ev) => {
-        ev.preventDefault();
-        pickSuggestion(idx);
-      },
-      { passive: false }
-    );
+    div.addEventListener("touchstart", (ev) => {
+      ev.preventDefault();
+      pickSuggestion(idx);
+    }, { passive: false });
 
     suggestionsEl.appendChild(div);
   });
@@ -896,14 +870,13 @@ function isValidPhone(raw) {
 }
 
 // ---------------------------------------------------------
-// GPS helpers (NEW)
+// GPS helpers
 // ---------------------------------------------------------
 function canUseGeolocation() {
   return !!(navigator.geolocation && window.isSecureContext);
 }
 
 function requestUserLocationAndRespond() {
-  // Called when user chooses "Use my location"
   addBubble("Requesting your location… please allow it in your browser prompt.", "bot", { ts: new Date() });
 
   if (!canUseGeolocation()) {
@@ -916,6 +889,7 @@ function requestUserLocationAndRespond() {
     (pos) => {
       const lat = pos?.coords?.latitude;
       const lon = pos?.coords?.longitude;
+
       if (typeof lat !== "number" || typeof lon !== "number") {
         addBubble("I couldn’t read your location. Please type your town/city instead.", "bot", { ts: new Date() });
         distanceCtx = { stage: "needOrigin" };
@@ -930,6 +904,7 @@ function requestUserLocationAndRespond() {
       }
 
       const depot = DEPOTS[closest.depotKey];
+
       distanceCtx = {
         stage: "haveClosest",
         originKey: "your current location",
@@ -948,8 +923,7 @@ function requestUserLocationAndRespond() {
       addChips(["By car", "By train", "By bus", "Walking"]);
       input.focus();
     },
-    (err) => {
-      // User denied or error
+    () => {
       addBubble("No problem — I won’t use location. Please type your town/city (e.g., Coventry).", "bot", { ts: new Date() });
       distanceCtx = { stage: "needOrigin" };
     },
@@ -958,39 +932,28 @@ function requestUserLocationAndRespond() {
 }
 
 // ---------------------------------------------------------
-// SPECIAL CASES (category clarification + ticket + depot/GPS + parking)
+// SPECIAL CASES
 // ---------------------------------------------------------
 function specialCases(query) {
   const corr = correctQueryTokens(query);
   const q = corr.changed && corr.corrected ? corr.corrected : normalize(query);
 
-  // ---- Category clarification flow ----
+  // Category clarification flow
   if (clarifyCtx && clarifyCtx.stage === "needCategory") {
     const pickedKey = categoryKeyFromLabelOrKey(q);
-
     if (pickedKey && categoryIndex.has(pickedKey)) {
       const list = categoryIndex.get(pickedKey);
       const res = matchFAQFromList(clarifyCtx.originalQuery, list);
-
       clarifyCtx = null;
 
       if (res.matched) {
-        return {
-          matched: true,
-          answerHTML: res.answerHTML,
-          chips: (res.followUps && res.followUps.length) ? res.followUps : null
-        };
+        return { matched: true, answerHTML: res.answerHTML, chips: res.followUps?.length ? res.followUps : null };
       }
-
-      return {
-        matched: true,
-        answerHTML: `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`,
-        chips: res.suggestions ?? []
-      };
+      return { matched: true, answerHTML: `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`, chips: res.suggestions ?? [] };
     }
   }
 
-  // ---- Ticket flow ----
+  // Ticket flow
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -1055,7 +1018,6 @@ function specialCases(query) {
       ticketCtx.urgency = query.trim();
 
       const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 12);
-
       const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
       const body = encodeURIComponent(
         `Name: ${ticketCtx.name}\n` +
@@ -1086,7 +1048,7 @@ function specialCases(query) {
     }
   }
 
-  // ---- Depot/GPS flow ----
+  // Depot/GPS triggers
   const askedDepot =
     q.includes("how far") ||
     q.includes("distance") ||
@@ -1095,19 +1057,19 @@ function specialCases(query) {
     q.includes("directions") ||
     q.includes("get directions");
 
-  // If user explicitly chooses GPS
+  // user chooses GPS
   if (q === "use my location" || q === "use my gps location" || q === "share location") {
     requestUserLocationAndRespond();
     return { matched: true, answerHTML: "Okay — requesting location now…", chips: null };
   }
 
-  // If user chooses to type city instead
+  // user chooses typing city
   if (q === "type a town/city" || q === "type a city" || q === "enter a city") {
     distanceCtx = { stage: "needOrigin" };
     return { matched: true, answerHTML: "No problem — what town or city are you travelling from?" };
   }
 
-  // If bot is waiting for travel-mode choice
+  // if waiting for travel mode
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
@@ -1129,11 +1091,11 @@ function specialCases(query) {
     }
   }
 
-  // If depot question asked with no origin: offer GPS first + fallback to city typing
+  // if depot question asked: offer GPS first (unless a city is already included)
   if (askedDepot && (!distanceCtx || distanceCtx.stage !== "needOrigin")) {
     const originKey = findPlaceKey(q);
 
-    // If they already typed a city in the question, just use it (no need for GPS prompt)
+    // user already typed city in question
     if (originKey) {
       const closest = findClosestDepot(PLACES[originKey]);
       if (!closest) return { matched: true, answerHTML: "I couldn’t calculate that right now. Try another city?" };
@@ -1151,6 +1113,7 @@ function specialCases(query) {
       if (modeInText) {
         const minutes = estimateMinutes(closest.miles, modeInText);
         const url = googleDirectionsURL(distanceCtx.originTextForMaps, depot, modeInText);
+
         return {
           matched: true,
           answerHTML:
@@ -1172,7 +1135,7 @@ function specialCases(query) {
       };
     }
 
-    // Otherwise offer GPS choice first
+    // otherwise offer GPS choice
     distanceCtx = { stage: "needLocationChoice" };
     const gpsHint = canUseGeolocation()
       ? "Would you like to use your current location?"
@@ -1181,13 +1144,11 @@ function specialCases(query) {
     return {
       matched: true,
       answerHTML: gpsHint,
-      chips: canUseGeolocation()
-        ? ["Use my location", "Type a town/city"]
-        : ["Type a town/city"]
+      chips: canUseGeolocation() ? ["Use my location", "Type a town/city"] : ["Type a town/city"]
     };
   }
 
-  // If bot asked for typed origin and user replies with a city
+  // user reply with typed origin city
   if (distanceCtx && distanceCtx.stage === "needOrigin") {
     const originKey2 = findPlaceKey(q);
     if (originKey2) {
@@ -1214,7 +1175,7 @@ function specialCases(query) {
     return { matched: true, answerHTML: "I didn’t recognise that place. Try a nearby city (e.g., London, Birmingham)?" };
   }
 
-  // Parking special case
+  // parking
   if (q.includes("parking") || q.includes("car park")) {
     return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
@@ -1297,7 +1258,7 @@ function handleUserMessage(text) {
         addChips(res.suggestions ?? []);
       }
 
-      // Escalate after repeated misses (clickable mailto)
+      // Escalation after repeated misses (clickable mailto)
       if (missCount >= 2) {
         const mailto = `mailto:${SETTINGS.supportEmail}`;
         addBubble(
@@ -1343,7 +1304,7 @@ clearBtn.addEventListener("click", () => {
 });
 
 // ---------------------------------------------------------
-// LOAD FAQS + PLACES
+// LOAD FAQS + PLACES (and then build vocab/index)
 // ---------------------------------------------------------
 fetch("./public/config/faqs.json")
   .then(async (res) => {
@@ -1351,7 +1312,7 @@ fetch("./public/config/faqs.json")
     FAQS = Array.isArray(data) ? data : [];
     faqsLoaded = true;
 
-    // Load UK cities list (fallback set expands massively) [1](https://www.worldcitiesdatabase.eu/United_Kingdom.php)[2](https://simplemaps.com/data/gb-cities.csv)
+    // Load UK cities (self-hosted)
     await loadUKPlaces();
 
     buildCategoryIndex();
