@@ -4,15 +4,17 @@
 
  Includes:
  - Topics drawer (browse by category)
- - Search-as-you-type suggestions (safe escaping)
+ - Search-as-you-type suggestions (with safe escaping)
  - Guided fallback (category clarification)
  - Quiet spelling correction (auto-corrects typos)
- - Closest depot flow:
-     - GPS "Use my location" option (permission-based)
-     - Fallback: your own PLACES list ONLY
- - Ticket/request flow (prefilled email + transcript + contact number)
- - Google Maps directions link (clickable)
- - Feedback thumbs REMOVED
+ - Closest depot flow (origin -> choose travel mode)
+ - Ticket/request flow (prefilled email + transcript)
+ - Google Maps directions link for depot answers
+
+ NOTE: Static hosting (GitHub Pages) cannot send emails directly.
+ Ticket flow uses mailto: (opens user's email app with prefilled content).
+
+ NOTE: Feedback thumbs (👍/👎) REMOVED.
 --------------------------------------------------------- */
 
 const SETTINGS = {
@@ -67,8 +69,7 @@ let missCount = 0;
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 
-// distance flow context
-// stage: "needLocationChoice" | "needOrigin" | "haveClosest"
+// distance flow context (in-memory only; refresh resets)
 let distanceCtx = null;
 
 // category clarification flow context
@@ -90,6 +91,7 @@ const normalize = (s) =>
     .replace(/[̀-ͯ]/g, "")
     .replace(/[“”‘’]/g, '"')
     .replace(/[–—]/g, "-")
+    // Broad compatibility: keep letters/numbers/spaces/hyphens (ASCII)
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -120,7 +122,7 @@ const jaccard = (a, b) => {
 };
 
 // ---------------------------------------------------------
-// SAFE HTML RENDERING + ESCAPING
+// SAFE HTML RENDERING
 // ---------------------------------------------------------
 function sanitizeHTML(html) {
   const template = document.createElement("template");
@@ -156,20 +158,16 @@ function sanitizeHTML(html) {
   return template.innerHTML;
 }
 
+// Convert HTML to plain text (for email transcript)
 function htmlToPlainText(html) {
   const template = document.createElement("template");
   template.innerHTML = html ?? "";
   return (template.content.textContent ?? "").replace(/\s+\n/g, "\n").trim();
 }
 
-function escapeHTML(s) {
-  const str = String(s ?? "");
-  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
-  return str.replace(/[&<>"']/g, (ch) => map[ch]);
-}
-
-function escapeAttr(s) {
-  return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+// Safely embed URLs in HTML attributes
+function escapeAttrUrl(url) {
+  return String(url ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
 // ---------------------------------------------------------
@@ -186,13 +184,12 @@ function formatUKTime(date) {
 }
 
 // ---------------------------------------------------------
-// DEPOTS + ORIGIN PLACES (YOUR OWN LIST)
+// DEPOTS + ORIGIN PLACES (EDIT THESE)
 // ---------------------------------------------------------
 const DEPOTS = {
   "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
 
-// ✅ Your own list (edit/add here whenever you want)
 const PLACES = {
   "coventry": { lat: 52.4068, lon: -1.5197 },
   "birmingham": { lat: 52.4895, lon: -1.8980 },
@@ -242,9 +239,6 @@ function modeLabel(mode) {
 }
 
 function findPlaceKey(qNorm) {
-  // direct match
-  if (PLACES[qNorm]) return qNorm;
-  // contains match
   for (const key in PLACES) {
     if (!Object.prototype.hasOwnProperty.call(PLACES, key)) continue;
     if (qNorm.includes(key)) return key;
@@ -266,6 +260,7 @@ function findClosestDepot(originLatLon) {
   return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
 }
 
+// Google Maps directions link
 function googleDirectionsURL(originText, depot, mode) {
   const origin = encodeURIComponent(originText);
   const destination = encodeURIComponent(`${depot.lat},${depot.lon}`);
@@ -281,7 +276,11 @@ function googleDirectionsURL(originText, depot, mode) {
 let VOCAB = new Set();
 
 const PROTECTED_TOKENS = new Set([
-  "walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"
+  "walking","walk",
+  "by","car","train","bus",
+  "rail","coach",
+  "depot","depots",
+  "closest"
 ]);
 
 function shouldSkipToken(tok) {
@@ -340,10 +339,9 @@ function bestVocabMatch(token) {
   return bestDist <= maxDist ? best : null;
 }
 
-function buildVocabFromFAQsAndPlaces() {
+function buildVocabFromFAQs() {
   const vocab = new Set();
 
-  // FAQ fields
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -352,13 +350,15 @@ function buildVocabFromFAQsAndPlaces() {
       ...(item.tags ?? []),
       item.category
     ];
+
     for (const f of fields) {
       const toks = normalize(f).split(" ").filter(Boolean);
-      for (const t of toks) if (!shouldSkipToken(t)) vocab.add(t);
+      for (const t of toks) {
+        if (!shouldSkipToken(t)) vocab.add(t);
+      }
     }
   }
 
-  // depot + place tokens
   for (const dk in DEPOTS) {
     if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
@@ -377,7 +377,6 @@ function buildVocabFromFAQsAndPlaces() {
 function correctQueryTokens(rawText) {
   const norm = normalize(rawText);
   if (!norm) return { corrected: norm, changed: false };
-
   const tokens = norm.split(" ").filter(Boolean);
   let changed = false;
 
@@ -394,7 +393,7 @@ function correctQueryTokens(rawText) {
 }
 
 // ---------------------------------------------------------
-// UI / BUBBLES + TRANSCRIPT
+// UI / BUBBLES + TRANSCRIPT (No feedback UI)
 // ---------------------------------------------------------
 function setUIEnabled(enabled) {
   input.disabled = !enabled;
@@ -414,6 +413,7 @@ function pushToTranscript(type, text, opts) {
   const role = (type === "bot") ? "Bot" : "User";
   if (plain) CHAT_LOG.push({ role, text: plain, ts });
 
+  // keep transcript from growing endlessly
   const keep = Math.max(SETTINGS.ticketTranscriptMessages ?? 12, 12) * 4;
   if (CHAT_LOG.length > keep) CHAT_LOG = CHAT_LOG.slice(-keep);
 }
@@ -590,10 +590,14 @@ function bindClose(el) {
     e.preventDefault();
     closeDrawer();
   });
-  el.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    closeDrawer();
-  }, { passive: false });
+  el.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault();
+      closeDrawer();
+    },
+    { passive: false }
+  );
 }
 
 topicsBtn?.addEventListener("click", () => {
@@ -611,6 +615,12 @@ document.addEventListener("keydown", (e) => {
 // ---------------------------------------------------------
 // TYPEAHEAD SUGGESTIONS
 // ---------------------------------------------------------
+function escapeHTML(s) {
+  const str = String(s ?? "");
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+  return str.replace(/[&<>"']/g, (ch) => map[ch]);
+}
+
 function showSuggestions(items) {
   currentSuggestions = items;
   activeSuggestionIndex = -1;
@@ -635,6 +645,7 @@ function showSuggestions(items) {
       ev.preventDefault();
       pickSuggestion(idx);
     });
+
     div.addEventListener("touchstart", (ev) => {
       ev.preventDefault();
       pickSuggestion(idx);
@@ -837,98 +848,55 @@ function matchFAQFromList(query, list) {
 }
 
 // ---------------------------------------------------------
-// Ticket validation (phone)
+// Ticket field validation (new phone step)
 // ---------------------------------------------------------
+function normalizePhoneForValidation(raw) {
+  // allow +, spaces, brackets, dashes - but validate by digit count
+  const s = String(raw ?? "").trim();
+  const digits = s.replace(/[^\d]/g, "");
+  return { original: s, digits };
+}
+
 function isValidPhone(raw) {
-  const digits = String(raw ?? "").trim().replace(/[^\d]/g, "");
+  const { digits } = normalizePhoneForValidation(raw);
+  // 8 to 16 digits is a decent generic range for UK/international
   return digits.length >= 8 && digits.length <= 16;
 }
 
 // ---------------------------------------------------------
-// GPS helpers
-// ---------------------------------------------------------
-function canUseGeolocation() {
-  return !!(navigator.geolocation && window.isSecureContext);
-}
-
-function requestUserLocationAndRespond() {
-  addBubble("Requesting your location… please allow it in your browser prompt.", "bot", { ts: new Date() });
-
-  if (!canUseGeolocation()) {
-    addBubble("Location isn’t available here (needs HTTPS). Please type your town/city instead.", "bot", { ts: new Date() });
-    distanceCtx = { stage: "needOrigin" };
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const lat = pos?.coords?.latitude;
-      const lon = pos?.coords?.longitude;
-
-      if (typeof lat !== "number" || typeof lon !== "number") {
-        addBubble("I couldn’t read your location. Please type your town/city instead.", "bot", { ts: new Date() });
-        distanceCtx = { stage: "needOrigin" };
-        return;
-      }
-
-      const closest = findClosestDepot({ lat, lon });
-      if (!closest) {
-        addBubble("I couldn’t calculate the closest depot right now. Please type your town/city instead.", "bot", { ts: new Date() });
-        distanceCtx = { stage: "needOrigin" };
-        return;
-      }
-
-      const depot = DEPOTS[closest.depotKey];
-
-      distanceCtx = {
-        stage: "haveClosest",
-        originKey: "your current location",
-        originTextForMaps: `${lat},${lon}`,
-        depotKey: closest.depotKey,
-        miles: closest.miles
-      };
-
-      addBubble(
-        `Thanks — your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
-        `<br>From <b>your current location</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.` +
-        `<br>How are you travelling?`,
-        "bot",
-        { html: true, ts: new Date() }
-      );
-      addChips(["By car", "By train", "By bus", "Walking"]);
-      input.focus();
-    },
-    () => {
-      addBubble("No problem — I won’t use location. Please type your town/city from the supported list.", "bot", { ts: new Date() });
-      distanceCtx = { stage: "needOrigin" };
-    },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
-  );
-}
-
-// ---------------------------------------------------------
-// SPECIAL CASES
+// SPECIAL CASES (category clarification + ticket + depot + parking)
 // ---------------------------------------------------------
 function specialCases(query) {
   const corr = correctQueryTokens(query);
   const q = corr.changed && corr.corrected ? corr.corrected : normalize(query);
 
-  // Category clarification flow
+  // (4) Category clarification flow
   if (clarifyCtx && clarifyCtx.stage === "needCategory") {
     const pickedKey = categoryKeyFromLabelOrKey(q);
+
     if (pickedKey && categoryIndex.has(pickedKey)) {
       const list = categoryIndex.get(pickedKey);
       const res = matchFAQFromList(clarifyCtx.originalQuery, list);
+
       clarifyCtx = null;
 
       if (res.matched) {
-        return { matched: true, answerHTML: res.answerHTML, chips: res.followUps?.length ? res.followUps : null };
+        return {
+          matched: true,
+          answerHTML: res.answerHTML,
+          chips: (res.followUps && res.followUps.length) ? res.followUps : null
+        };
       }
-      return { matched: true, answerHTML: `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`, chips: res.suggestions ?? [] };
+
+      return {
+        matched: true,
+        answerHTML: `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`,
+        chips: res.suggestions ?? []
+      };
     }
   }
 
-  // Ticket flow trigger
+  // (5) Ticket / request flow (mailto + transcript + phone)
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -949,7 +917,10 @@ function specialCases(query) {
   if (ticketCtx) {
     if (q === "cancel" || q === "stop" || q === "restart") {
       ticketCtx = null;
-      return { matched: true, answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>." };
+      return {
+        matched: true,
+        answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>."
+      };
     }
 
     if (ticketCtx.stage === "needType") {
@@ -973,10 +944,14 @@ function specialCases(query) {
       return { matched: true, answerHTML: "Thanks — what’s the best contact number for you?" };
     }
 
+    // ✅ NEW required step: phone number
     if (ticketCtx.stage === "needPhone") {
       const phone = query.trim();
       if (!isValidPhone(phone)) {
-        return { matched: true, answerHTML: "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
+        return {
+          matched: true,
+          answerHTML: "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)."
+        };
       }
       ticketCtx.phone = phone;
       ticketCtx.stage = "needDescription";
@@ -986,13 +961,18 @@ function specialCases(query) {
     if (ticketCtx.stage === "needDescription") {
       ticketCtx.description = query.trim();
       ticketCtx.stage = "needUrgency";
-      return { matched: true, answerHTML: "How urgent is this?", chips: ["Low", "Normal", "High", "Critical"] };
+      return {
+        matched: true,
+        answerHTML: "How urgent is this?",
+        chips: ["Low", "Normal", "High", "Critical"]
+      };
     }
 
     if (ticketCtx.stage === "needUrgency") {
       ticketCtx.urgency = query.trim();
 
       const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 12);
+
       const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
       const body = encodeURIComponent(
         `Name: ${ticketCtx.name}\n` +
@@ -1006,6 +986,7 @@ function specialCases(query) {
       );
 
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
+      const safeMailtoAttr = escapeAttrUrl(mailtoHref);
 
       const summary =
         `<b>Request summary</b><br>` +
@@ -1014,117 +995,108 @@ function specialCases(query) {
         `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
         `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
-        `<a href="${escapeAttr(mailtoHref)}">Email support with this request (includes transcript)</a><br>` +
+        `<a href="${safeMailtoAttr}">Email support with this request (includes transcript)</a><br>` +
         `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
         `Want to start another?`;
 
       ticketCtx = null;
-      return { matched: true, answerHTML: summary, chips: ["Raise a request (create a ticket)"] };
+
+      return {
+        matched: true,
+        answerHTML: summary,
+        chips: ["Raise a request (create a ticket)"]
+      };
     }
   }
 
-  // Depot/GPS triggers
-  const askedDepot =
-    q.includes("how far") ||
-    q.includes("distance") ||
-    q.includes("closest depot") ||
-    (q.includes("depot") && q.includes("closest")) ||
-    q.includes("directions") ||
-    q.includes("get directions");
-
-  // user chooses GPS
-  if (q === "use my location" || q === "share location" || q === "use gps") {
-    requestUserLocationAndRespond();
-    return { matched: true, answerHTML: "Okay — requesting location now…", chips: null };
-  }
-
-  // user chooses typing city
-  if (q === "type a town/city" || q === "type a city" || q === "enter a city") {
-    distanceCtx = { stage: "needOrigin" };
-    return { matched: true, answerHTML: "No problem — type one of the supported places (e.g., Coventry, London)." };
-  }
-
-  // travel mode stage (after closest known)
+  // Depot flow: after closest depot is known, user picks travel mode
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
       const depot = DEPOTS[distanceCtx.depotKey];
       const minutes = estimateMinutes(distanceCtx.miles, mode);
-
-      const originForMaps = distanceCtx.originTextForMaps || titleCase(distanceCtx.originKey || "");
-      const url = googleDirectionsURL(originForMaps, depot, mode);
+      const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
+      const safeUrlAttr = escapeAttrUrl(url);
 
       return {
         matched: true,
         answerHTML:
-          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
-          `<br>From <b>${escapeHTML(titleCase(distanceCtx.originKey))}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.` +
-          `<br>Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b> (traffic and services can vary).` +
-          `<br><a href="${escapeAttr(url)}">Get directions in Google Maps</a>`,
+          "Your closest depot is <b>" + depot.label + "</b>." +
+          "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
+          Math.round(distanceCtx.miles) + " miles</b>." +
+          "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
+          `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
   }
 
-  // depot question asked: offer GPS choice unless city already present
-  if (askedDepot && (!distanceCtx || distanceCtx.stage !== "needOrigin")) {
+  // Depot flow: main trigger
+  if (
+    q.includes("how far") ||
+    q.includes("distance") ||
+    q.includes("closest depot") ||
+    (q.includes("depot") && q.includes("closest"))
+  ) {
     const originKey = findPlaceKey(q);
 
-    // If they included a known city in the question, compute directly
-    if (originKey) {
-      const closest = findClosestDepot(PLACES[originKey]);
-      const depot = DEPOTS[closest.depotKey];
-
-      distanceCtx = {
-        stage: "haveClosest",
-        originKey,
-        originTextForMaps: titleCase(originKey),
-        depotKey: closest.depotKey,
-        miles: closest.miles
+    if (!originKey) {
+      distanceCtx = { stage: "needOrigin" };
+      return {
+        matched: true,
+        answerHTML: "Certainly — what town or city are you travelling from?",
+        chips: ["Coventry", "Birmingham", "Leicester", "London"]
       };
+    }
 
-      const modeInText = parseTravelMode(q);
-      if (modeInText) {
-        const minutes = estimateMinutes(closest.miles, modeInText);
-        const url = googleDirectionsURL(distanceCtx.originTextForMaps, depot, modeInText);
+    const closest = findClosestDepot(PLACES[originKey]);
+    if (!closest) {
+      return {
+        matched: true,
+        answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?"
+      };
+    }
 
-        return {
-          matched: true,
-          answerHTML:
-            `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
-            `<br>From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.` +
-            `<br>Estimated time ${escapeHTML(modeLabel(modeInText))} is around <b>${minutes} minutes</b> (traffic and services can vary).` +
-            `<br><a href="${escapeAttr(url)}">Get directions in Google Maps</a>`,
-          chips: ["By car", "By train", "By bus", "Walking"]
-        };
-      }
+    const depot = DEPOTS[closest.depotKey];
+    distanceCtx = {
+      stage: "haveClosest",
+      originKey,
+      depotKey: closest.depotKey,
+      miles: closest.miles
+    };
+
+    const modeInText = parseTravelMode(q);
+    if (modeInText) {
+      const minutes = estimateMinutes(closest.miles, modeInText);
+      const url = googleDirectionsURL(titleCase(originKey), depot, modeInText);
+      const safeUrlAttr = escapeAttrUrl(url);
 
       return {
         matched: true,
         answerHTML:
-          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
-          `<br>From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.` +
-          `<br>How are you travelling?`,
+          "Your closest depot is <b>" + depot.label + "</b>." +
+          "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
+          Math.round(closest.miles) + " miles</b>." +
+          "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
+          `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
-
-    // Otherwise offer GPS and fallback
-    distanceCtx = { stage: "needLocationChoice" };
-    const gpsHint = canUseGeolocation()
-      ? "Would you like to use your current location?"
-      : "Location isn’t available here (needs HTTPS). Please type your town/city from the supported list.";
 
     return {
       matched: true,
-      answerHTML: gpsHint,
-      chips: canUseGeolocation() ? ["Use my location", "Type a town/city"] : ["Type a town/city"]
+      answerHTML:
+        "Your closest depot is <b>" + depot.label + "</b>." +
+        "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
+        Math.round(closest.miles) + " miles</b>." +
+        "<br>How are you travelling?",
+      chips: ["By car", "By train", "By bus", "Walking"]
     };
   }
 
-  // waiting for typed origin
+  // If bot asked for origin and user replies with a city
   if (distanceCtx && distanceCtx.stage === "needOrigin") {
-    const originKey2 = findPlaceKey(q);
+    const originKey2 = findPlaceKey(q) || (PLACES[q] ? q : null);
     if (originKey2) {
       const closest2 = findClosestDepot(PLACES[originKey2]);
       const depot2 = DEPOTS[closest2.depotKey];
@@ -1132,7 +1104,6 @@ function specialCases(query) {
       distanceCtx = {
         stage: "haveClosest",
         originKey: originKey2,
-        originTextForMaps: titleCase(originKey2),
         depotKey: closest2.depotKey,
         miles: closest2.miles
       };
@@ -1140,22 +1111,16 @@ function specialCases(query) {
       return {
         matched: true,
         answerHTML:
-          `Thanks — your closest depot is <b>${escapeHTML(depot2.label)}</b>.` +
-          `<br>From <b>${escapeHTML(titleCase(originKey2))}</b> it’s approximately <b>${Math.round(closest2.miles)} miles</b>.` +
-          `<br>How are you travelling?`,
+          "Thanks — your closest depot is <b>" + depot2.label + "</b>." +
+          "<br>From <b>" + titleCase(originKey2) + "</b> it’s approximately <b>" +
+          Math.round(closest2.miles) + " miles</b>." +
+          "<br>How are you travelling?",
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
-
-    // Not recognized: show your supported list as chips
-    return {
-      matched: true,
-      answerHTML: "I didn’t recognise that place. Please choose one of these supported locations:",
-      chips: Object.keys(PLACES).map(titleCase)
-    };
   }
 
-  // parking
+  // Parking special case
   if (q.includes("parking") || q.includes("car park")) {
     return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
@@ -1192,7 +1157,7 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases first
+    // 1) Special cases first (ticket + depot + category clarification)
     const special = specialCases(text);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", { html: true, ts: new Date() });
@@ -1238,10 +1203,11 @@ function handleUserMessage(text) {
         addChips(res.suggestions ?? []);
       }
 
-      // Escalation after repeated misses (clickable mailto)
+      // Escalate after repeated misses (clickable mailto)
       if (missCount >= 2) {
+        const mail = `mailto:${SETTINGS.supportEmail}`;
         addBubble(
-          `If you’d like, you can contact support at <a href="${escapeAttr(`mailto:${SETTINGS.supportEmail}`)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
+          `If you’d like, you can contact support at <a href="${escapeAttrUrl(mail)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
           "bot",
           { html: true, ts: new Date() }
         );
@@ -1251,7 +1217,11 @@ function handleUserMessage(text) {
     }
 
     isResponding = false;
-   sendChat() {
+    setUIEnabled(true);
+  }, 300);
+}
+
+function sendChat() {
   if (isResponding) return;
   const text = input.value.trim();
   if (!text) return;
@@ -1263,9 +1233,6 @@ sendBtn.addEventListener("click", sendChat);
 input.addEventListener("keydown", (e) => {
   if (!suggestionsEl.hidden) return;
   if (e.key === "Enter") {
-    e.preventDefault();
-    sendChat();
-  }
 });
 
 clearBtn.addEventListener("click", () => {
@@ -1279,7 +1246,7 @@ clearBtn.addEventListener("click", () => {
 });
 
 // ---------------------------------------------------------
-// LOAD FAQS
+// LOAD FAQS (SINGLE FETCH)
 // ---------------------------------------------------------
 fetch("./public/config/faqs.json")
   .then((res) => res.json())
@@ -1287,14 +1254,14 @@ fetch("./public/config/faqs.json")
     FAQS = Array.isArray(data) ? data : [];
     faqsLoaded = true;
     buildCategoryIndex();
-    buildVocabFromFAQsAndPlaces();
+    buildVocabFromFAQs();
     renderDrawer();
   })
   .catch(() => {
     FAQS = [];
     faqsLoaded = true;
     buildCategoryIndex();
-    buildVocabFromFAQsAndPlaces();
+    buildVocabFromFAQs();
     renderDrawer();
   });
 
