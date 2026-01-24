@@ -1,4 +1,5 @@
 
+
 /* ---------------------------------------------------------
  Welfare Support – Static FAQ Chatbot (Polished + Human-like)
 
@@ -14,7 +15,7 @@
  NOTE: Static hosting (GitHub Pages) cannot send emails directly.
  Ticket flow uses mailto: (opens user's email app with prefilled content).
 
- NOTE: Feedback thumbs (👍/👎) REMOVED as requested.
+ NOTE: Feedback thumbs (👍/👎) REMOVED.
 --------------------------------------------------------- */
 
 const SETTINGS = {
@@ -955,13 +956,14 @@ function specialCases(query) {
 
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
 
+      // ✅ FIX: Make the mailto clickable with a proper <a href="...">
       const summary =
         `<b>Request summary</b><br>` +
         `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
         `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
         `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br><br>` +
-        `${mailtoHref}Click here to email support with this request (includes chat transcript)</a><br>` +
+        `<a href="${mailtoHref}">Click here to email support with this request (includes chat transcript)</a><br>` +
         `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
         `Want to start another?`;
 
@@ -983,6 +985,7 @@ function specialCases(query) {
       const minutes = estimateMinutes(distanceCtx.miles, mode);
       const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
 
+      // ✅ FIX: Make directions a real clickable <a href="...">
       return {
         matched: true,
         answerHTML:
@@ -990,7 +993,7 @@ function specialCases(query) {
           "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
           Math.round(distanceCtx.miles) + " miles</b>." +
           "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br>${url}Get directions in Google Maps</a>`,
+          `<br><a href="${url}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1035,6 +1038,7 @@ function specialCases(query) {
       const minutes = estimateMinutes(closest.miles, modeInText);
       const url = googleDirectionsURL(titleCase(originKey), depot, modeInText);
 
+      // ✅ FIX: clickable link
       return {
         matched: true,
         answerHTML:
@@ -1042,7 +1046,7 @@ function specialCases(query) {
           "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
           Math.round(closest.miles) + " miles</b>." +
           "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br>${url}Get directions in Google Maps</a>`,
+          `<br><a href="${url}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1169,6 +1173,7 @@ function handleUserMessage(text) {
 
       // Escalate after repeated misses
       if (missCount >= 2) {
+        // ✅ FIX: proper clickable mailto anchor
         addBubble(
           `If you’d like, you can contact support at <a href="mailto:${SETTINGS.supportEmail}">${SETTINGS.supportEmail}</a> or call <b>${SETTINGS.supportPhone}</b>.`,
           "bot",
@@ -1239,7 +1244,7 @@ function init() {
 }
 
 if (document.readyState === "loading") {
-  window.adder("DOMContentLoaded", init);
+  window.addEventListener("DOMContentLoaded", init);
 } else {
   init();
 }
