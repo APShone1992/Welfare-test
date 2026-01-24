@@ -1,20 +1,18 @@
 
 /* ---------------------------------------------------------
- Welfare Support – Static FAQ Chatbot (Polished + Human-like)
+ Welfare Support – Static FAQ Chatbot (Manual + Stable)
 
  Includes:
  - Topics drawer (browse by category)
- - Search-as-you-type suggestions (with safe escaping)
- - Guided fallback (category clarification)
+ - Search-as-you-type suggestions (safe escaping)
  - Quiet spelling correction (auto-corrects typos)
- - Closest depot flow (origin -> choose travel mode)
- - Ticket/request flow (prefilled email + transcript)
- - Google Maps directions link for depot answers
+ - Manual closest depot flow (origin -> choose travel mode)
+   + Clickable Google Maps directions link
+ - Ticket/request flow (prefilled email + transcript + contact number)
+ - Feedback thumbs removed
 
- NOTE: Static hosting (GitHub Pages) cannot send emails directly.
- Ticket flow uses mailto: (opens user's email app with prefilled content).
-
- NOTE: Feedback thumbs (👍/👎) REMOVED.
+ Note: This is a STATIC site. Tickets are sent via mailto link:
+ the user clicks -> email app opens -> user presses Send.
 --------------------------------------------------------- */
 
 const SETTINGS = {
@@ -28,9 +26,9 @@ const SETTINGS = {
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
 
-  // Keep mailto size safe
-  ticketTranscriptMessages: 12,  // last N messages (user + bot)
-  ticketTranscriptMaxLine: 140,  // max chars per transcript line
+  // Transcript (keep small so mailto links don't get huge)
+  ticketTranscriptMessages: 12,
+  ticketTranscriptMaxLine: 140,
 
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
@@ -69,16 +67,13 @@ let missCount = 0;
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 
-// distance flow context (in-memory only; refresh resets)
-let distanceCtx = null;
+// distance flow context
+let distanceCtx = null; // { stage: "needOrigin"|"haveClosest", originKey, depotKey, miles }
 
-// category clarification flow context
-let clarifyCtx = null; // { stage: "needCategory", originalQuery: "..." }
-
-// ticket/request flow context
+// ticket flow context
 let ticketCtx = null; // { stage, type, name, email, phone, description, urgency }
 
-// in-memory transcript log (latest messages for ticket emails)
+// chat transcript for ticket emails
 let CHAT_LOG = []; // { role: "User"|"Bot", text: string, ts: number }
 
 // ---------------------------------------------------------
@@ -91,7 +86,6 @@ const normalize = (s) =>
     .replace(/[̀-ͯ]/g, "")
     .replace(/[“”‘’]/g, '"')
     .replace(/[–—]/g, "-")
-    // Broad compatibility: keep letters/numbers/spaces/hyphens (ASCII)
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -122,7 +116,7 @@ const jaccard = (a, b) => {
 };
 
 // ---------------------------------------------------------
-// SAFE HTML RENDERING
+// SAFE HTML RENDERING + ESCAPING
 // ---------------------------------------------------------
 function sanitizeHTML(html) {
   const template = document.createElement("template");
@@ -154,20 +148,27 @@ function sanitizeHTML(html) {
     }
   }
 
-  toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent)));
+  toReplace.forEach((node) =>
+    node.replaceWith(document.createTextNode(node.textContent))
+  );
+
   return template.innerHTML;
 }
 
-// Convert HTML to plain text (for email transcript)
 function htmlToPlainText(html) {
   const template = document.createElement("template");
   template.innerHTML = html ?? "";
   return (template.content.textContent ?? "").replace(/\s+\n/g, "\n").trim();
 }
 
-// Safely embed URLs in HTML attributes
-function escapeAttrUrl(url) {
-  return String(url ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+function escapeHTML(s) {
+  const str = String(s ?? "");
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+  return str.replace(/[&<>"']/g, (ch) => map[ch]);
+}
+
+function escapeAttr(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
 // ---------------------------------------------------------
@@ -190,6 +191,7 @@ const DEPOTS = {
   "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
 
+// ✅ Add towns/cities here (keys must be lowercase)
 const PLACES = {
   "coventry": { lat: 52.4068, lon: -1.5197 },
   "birmingham": { lat: 52.4895, lon: -1.8980 },
@@ -239,6 +241,7 @@ function modeLabel(mode) {
 }
 
 function findPlaceKey(qNorm) {
+  if (PLACES[qNorm]) return qNorm;
   for (const key in PLACES) {
     if (!Object.prototype.hasOwnProperty.call(PLACES, key)) continue;
     if (qNorm.includes(key)) return key;
@@ -260,7 +263,7 @@ function findClosestDepot(originLatLon) {
   return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
 }
 
-// Google Maps directions link
+// Clickable directions link
 function googleDirectionsURL(originText, depot, mode) {
   const origin = encodeURIComponent(originText);
   const destination = encodeURIComponent(`${depot.lat},${depot.lon}`);
@@ -276,11 +279,8 @@ function googleDirectionsURL(originText, depot, mode) {
 let VOCAB = new Set();
 
 const PROTECTED_TOKENS = new Set([
-  "walking","walk",
-  "by","car","train","bus",
-  "rail","coach",
-  "depot","depots",
-  "closest"
+  "walking","walk","by","car","train","bus",
+  "rail","coach","depot","depots","closest"
 ]);
 
 function shouldSkipToken(tok) {
@@ -339,9 +339,10 @@ function bestVocabMatch(token) {
   return bestDist <= maxDist ? best : null;
 }
 
-function buildVocabFromFAQs() {
+function buildVocab() {
   const vocab = new Set();
 
+  // FAQs
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -350,42 +351,38 @@ function buildVocabFromFAQs() {
       ...(item.tags ?? []),
       item.category
     ];
-
     for (const f of fields) {
-      const toks = normalize(f).split(" ").filter(Boolean);
-      for (const t of toks) {
+      normalize(f).split(" ").filter(Boolean).forEach((t) => {
         if (!shouldSkipToken(t)) vocab.add(t);
-      }
+      });
     }
   }
 
+  // depots + places
   for (const dk in DEPOTS) {
-    if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
     normalize(DEPOTS[dk].label).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
   }
-
   for (const pk in PLACES) {
-    if (!Object.prototype.hasOwnProperty.call(PLACES, pk)) continue;
     normalize(pk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
   }
 
+  // common system words
   ["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"].forEach((w) => vocab.add(w));
+
   VOCAB = vocab;
 }
 
 function correctQueryTokens(rawText) {
   const norm = normalize(rawText);
   if (!norm) return { corrected: norm, changed: false };
+
   const tokens = norm.split(" ").filter(Boolean);
   let changed = false;
 
   const correctedTokens = tokens.map((t) => {
     const fixed = bestVocabMatch(t);
-    if (fixed) {
-      changed = true;
-      return fixed;
-    }
+    if (fixed) { changed = true; return fixed; }
     return t;
   });
 
@@ -393,7 +390,7 @@ function correctQueryTokens(rawText) {
 }
 
 // ---------------------------------------------------------
-// UI / BUBBLES + TRANSCRIPT (No feedback UI)
+// UI / BUBBLES + TRANSCRIPT
 // ---------------------------------------------------------
 function setUIEnabled(enabled) {
   input.disabled = !enabled;
@@ -406,14 +403,11 @@ function pushToTranscript(type, text, opts) {
   const tsDate = options.ts ?? new Date();
   const ts = tsDate.getTime();
 
-  let plain = "";
-  if (options.html) plain = htmlToPlainText(text);
-  else plain = String(text ?? "").trim();
-
+  const plain = options.html ? htmlToPlainText(text) : String(text ?? "").trim();
   const role = (type === "bot") ? "Bot" : "User";
+
   if (plain) CHAT_LOG.push({ role, text: plain, ts });
 
-  // keep transcript from growing endlessly
   const keep = Math.max(SETTINGS.ticketTranscriptMessages ?? 12, 12) * 4;
   if (CHAT_LOG.length > keep) CHAT_LOG = CHAT_LOG.slice(-keep);
 }
@@ -438,7 +432,6 @@ function addBubble(text, type, opts) {
 
   const row = document.createElement("div");
   row.className = "msg " + type;
-  row.dataset.ts = String(ts.getTime());
 
   const bubble = document.createElement("div");
   bubble.className = "bubble " + type;
@@ -479,8 +472,8 @@ function removeTyping() {
   if (t) t.remove();
 }
 
-function addChips(questions, onClick) {
-  const qs = questions ?? [];
+function addChips(items, onClick) {
+  const qs = items ?? [];
   if (!qs.length) return;
 
   const wrap = document.createElement("div");
@@ -501,7 +494,6 @@ function addChips(questions, onClick) {
       wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
       if (typeof onClick === "function") onClick(q);
       else handleUserMessage(q);
-
       input.focus();
     });
 
@@ -586,41 +578,20 @@ function renderDrawer(selectedKey) {
 
 function bindClose(el) {
   if (!el) return;
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    closeDrawer();
-  });
-  el.addEventListener(
-    "touchstart",
-    (e) => {
-      e.preventDefault();
-      closeDrawer();
-    },
-    { passive: false }
-  );
+  el.addEventListener("click", (e) => { e.preventDefault(); closeDrawer(); });
+  el.addEventListener("touchstart", (e) => { e.preventDefault(); closeDrawer(); }, { passive: false });
 }
 
-topicsBtn?.addEventListener("click", () => {
-  if (!faqsLoaded) return;
-  openDrawer();
-});
+topicsBtn?.addEventListener("click", () => { if (faqsLoaded) openDrawer(); });
 drawer?.addEventListener("click", (e) => e.stopPropagation());
 drawer?.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
 bindClose(drawerCloseBtn);
 bindClose(overlay);
-document.addEventListener("keydown", (e) => {
-  if (!drawer.hidden && e.key === "Escape") closeDrawer();
-});
+document.addEventListener("keydown", (e) => { if (!drawer.hidden && e.key === "Escape") closeDrawer(); });
 
 // ---------------------------------------------------------
 // TYPEAHEAD SUGGESTIONS
 // ---------------------------------------------------------
-function escapeHTML(s) {
-  const str = String(s ?? "");
-  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
-  return str.replace(/[&<>"']/g, (ch) => map[ch]);
-}
-
 function showSuggestions(items) {
   currentSuggestions = items;
   activeSuggestionIndex = -1;
@@ -641,15 +612,8 @@ function showSuggestions(items) {
 
     div.innerHTML = `${escapeHTML(it.question)}<small>${escapeHTML(it.categoryLabel)}</small>`;
 
-    div.addEventListener("mousedown", (ev) => {
-      ev.preventDefault();
-      pickSuggestion(idx);
-    });
-
-    div.addEventListener("touchstart", (ev) => {
-      ev.preventDefault();
-      pickSuggestion(idx);
-    }, { passive: false });
+    div.addEventListener("mousedown", (ev) => { ev.preventDefault(); pickSuggestion(idx); });
+    div.addEventListener("touchstart", (ev) => { ev.preventDefault(); pickSuggestion(idx); }, { passive: false });
 
     suggestionsEl.appendChild(div);
   });
@@ -683,6 +647,8 @@ function computeSuggestions(query) {
 
   const qTokens = tokenSet(q);
 
+  const labelMap = new Map(categories.map((c) => [c.key, c.label]));
+
   const scored = FAQS.map((item) => {
     const question = item.question ?? "";
     const syns = item.synonyms ?? [];
@@ -698,13 +664,12 @@ function computeSuggestions(query) {
     const boost = anyField.includes(q) ? SETTINGS.boostSubstring : 0;
 
     const score = 0.60 * scoreQ + 0.22 * scoreSyn + 0.12 * scoreKeys + 0.06 * scoreTags + boost;
+
     return { item, score };
   })
     .sort((a, b) => b.score - a.score)
     .slice(0, SETTINGS.suggestionLimit)
     .filter((x) => x.score > 0);
-
-  const labelMap = new Map(categories.map((c) => [c.key, c.label]));
 
   return scored.map((s) => ({
     question: s.item.question,
@@ -712,21 +677,12 @@ function computeSuggestions(query) {
   }));
 }
 
-input.addEventListener("input", () => {
-  if (!faqsLoaded) return;
-  showSuggestions(computeSuggestions(input.value));
-});
-
-input.addEventListener("blur", () => {
-  setTimeout(() => { suggestionsEl.hidden = true; }, 120);
-});
+input.addEventListener("input", () => { if (faqsLoaded) showSuggestions(computeSuggestions(input.value)); });
+input.addEventListener("blur", () => { setTimeout(() => { suggestionsEl.hidden = true; }, 120); });
 
 input.addEventListener("keydown", (e) => {
   if (suggestionsEl.hidden) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      sendChat();
-    }
+    if (e.key === "Enter") { e.preventDefault(); sendChat(); }
     return;
   }
 
@@ -775,63 +731,7 @@ function matchFAQ(query) {
     .sort((a, b) => b.score - a.score);
 
   const top = scored[0];
-  if (!top || top.score < SETTINGS.minConfidence) {
-    return {
-      matched: false,
-      suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
-    };
-  }
 
-  return {
-    matched: true,
-    item: top.item,
-    answerHTML: top.item.answer,
-    followUps: top.item.followUps ?? []
-  };
-}
-
-// Category clarification helpers
-function categoryKeyFromLabelOrKey(textNorm) {
-  for (const c of categories) {
-    const keyNorm = normalize(c.key);
-    const labelNorm = normalize(c.label);
-    if (
-      textNorm === keyNorm ||
-      textNorm === labelNorm ||
-      textNorm.includes(keyNorm) ||
-      textNorm.includes(labelNorm)
-    ) {
-      return c.key;
-    }
-  }
-  return null;
-}
-
-function matchFAQFromList(query, list) {
-  const qNorm = normalize(query);
-  const qTokens = tokenSet(query);
-
-  const scored = (list || [])
-    .map((item) => {
-      const question = item.question ?? "";
-      const syns = item.synonyms ?? [];
-      const keys = item.canonicalKeywords ?? [];
-      const tags = item.tags ?? [];
-
-      const scoreQ = jaccard(qTokens, tokenSet(question));
-      const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
-      const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
-      const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
-
-      const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
-      const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
-
-      const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
-      return { item, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  const top = scored[0];
   if (!top || top.score < SETTINGS.minConfidence) {
     return {
       matched: false,
@@ -848,55 +748,21 @@ function matchFAQFromList(query, list) {
 }
 
 // ---------------------------------------------------------
-// Ticket field validation (new phone step)
+// Ticket validation (phone)
 // ---------------------------------------------------------
-function normalizePhoneForValidation(raw) {
-  // allow +, spaces, brackets, dashes - but validate by digit count
-  const s = String(raw ?? "").trim();
-  const digits = s.replace(/[^\d]/g, "");
-  return { original: s, digits };
-}
-
 function isValidPhone(raw) {
-  const { digits } = normalizePhoneForValidation(raw);
-  // 8 to 16 digits is a decent generic range for UK/international
+  const digits = String(raw ?? "").trim().replace(/[^\d]/g, "");
   return digits.length >= 8 && digits.length <= 16;
 }
 
 // ---------------------------------------------------------
-// SPECIAL CASES (category clarification + ticket + depot + parking)
+// SPECIAL CASES (Ticket + Depot + Parking)
 // ---------------------------------------------------------
-function specialCases(query) {
-  const corr = correctQueryTokens(query);
-  const q = corr.changed && corr.corrected ? corr.corrected : normalize(query);
+function specialCases(text) {
+  const corr = correctQueryTokens(text);
+  const q = corr.changed && corr.corrected ? corr.corrected : normalize(text);
 
-  // (4) Category clarification flow
-  if (clarifyCtx && clarifyCtx.stage === "needCategory") {
-    const pickedKey = categoryKeyFromLabelOrKey(q);
-
-    if (pickedKey && categoryIndex.has(pickedKey)) {
-      const list = categoryIndex.get(pickedKey);
-      const res = matchFAQFromList(clarifyCtx.originalQuery, list);
-
-      clarifyCtx = null;
-
-      if (res.matched) {
-        return {
-          matched: true,
-          answerHTML: res.answerHTML,
-          chips: (res.followUps && res.followUps.length) ? res.followUps : null
-        };
-      }
-
-      return {
-        matched: true,
-        answerHTML: `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`,
-        chips: res.suggestions ?? []
-      };
-    }
-  }
-
-  // (5) Ticket / request flow (mailto + transcript + phone)
+  // ---- Ticket trigger ----
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -907,36 +773,29 @@ function specialCases(query) {
 
   if (!ticketCtx && wantsTicket) {
     ticketCtx = { stage: "needType" };
-    return {
-      matched: true,
-      answerHTML: "Sure — what do you need help with?",
-      chips: ["Access / Login", "Pay / Payroll", "Benefits", "General query", "Something else"]
-    };
+    return { matched: true, answerHTML: "Sure — what do you need help with?", chips: ["Access / Login", "Pay / Payroll", "Benefits", "General query", "Something else"] };
   }
 
   if (ticketCtx) {
     if (q === "cancel" || q === "stop" || q === "restart") {
       ticketCtx = null;
-      return {
-        matched: true,
-        answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>."
-      };
+      return { matched: true, answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>." };
     }
 
     if (ticketCtx.stage === "needType") {
-      ticketCtx.type = query.trim();
+      ticketCtx.type = text.trim();
       ticketCtx.stage = "needName";
       return { matched: true, answerHTML: "Thanks — what’s your name?" };
     }
 
     if (ticketCtx.stage === "needName") {
-      ticketCtx.name = query.trim();
+      ticketCtx.name = text.trim();
       ticketCtx.stage = "needEmail";
       return { matched: true, answerHTML: "And what email should we reply to?" };
     }
 
     if (ticketCtx.stage === "needEmail") {
-      const email = query.trim();
+      const email = text.trim();
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       if (!ok) return { matched: true, answerHTML: "That doesn’t look like an email — can you retype it?" };
       ticketCtx.email = email;
@@ -944,32 +803,22 @@ function specialCases(query) {
       return { matched: true, answerHTML: "Thanks — what’s the best contact number for you?" };
     }
 
-    // ✅ NEW required step: phone number
     if (ticketCtx.stage === "needPhone") {
-      const phone = query.trim();
-      if (!isValidPhone(phone)) {
-        return {
-          matched: true,
-          answerHTML: "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)."
-        };
-      }
+      const phone = text.trim();
+      if (!isValidPhone(phone)) return { matched: true, answerHTML: "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
       ticketCtx.phone = phone;
       ticketCtx.stage = "needDescription";
       return { matched: true, answerHTML: "Briefly describe the issue (1–3 sentences is perfect)." };
     }
 
     if (ticketCtx.stage === "needDescription") {
-      ticketCtx.description = query.trim();
+      ticketCtx.description = text.trim();
       ticketCtx.stage = "needUrgency";
-      return {
-        matched: true,
-        answerHTML: "How urgent is this?",
-        chips: ["Low", "Normal", "High", "Critical"]
-      };
+      return { matched: true, answerHTML: "How urgent is this?", chips: ["Low", "Normal", "High", "Critical"] };
     }
 
     if (ticketCtx.stage === "needUrgency") {
-      ticketCtx.urgency = query.trim();
+      ticketCtx.urgency = text.trim();
 
       const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 12);
 
@@ -986,7 +835,6 @@ function specialCases(query) {
       );
 
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
-      const safeMailtoAttr = escapeAttrUrl(mailtoHref);
 
       const summary =
         `<b>Request summary</b><br>` +
@@ -995,43 +843,36 @@ function specialCases(query) {
         `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
         `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
-        `<a href="${safeMailtoAttr}">Email support with this request (includes transcript)</a><br>` +
+        `<a href="${escapeAttr(mailtoHref)}">Email support with this request (includes transcript)</a><br>` +
         `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
         `Want to start another?`;
 
       ticketCtx = null;
-
-      return {
-        matched: true,
-        answerHTML: summary,
-        chips: ["Raise a request (create a ticket)"]
-      };
+      return { matched: true, answerHTML: summary, chips: ["Raise a request (create a ticket)"] };
     }
   }
 
-  // Depot flow: after closest depot is known, user picks travel mode
+  // ---- Closest depot flow (manual) ----
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
       const depot = DEPOTS[distanceCtx.depotKey];
       const minutes = estimateMinutes(distanceCtx.miles, mode);
+
       const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
-      const safeUrlAttr = escapeAttrUrl(url);
 
       return {
         matched: true,
         answerHTML:
-          "Your closest depot is <b>" + depot.label + "</b>." +
-          "<br>From <b>" + titleCase(distanceCtx.originKey) + "</b> it’s approximately <b>" +
-          Math.round(distanceCtx.miles) + " miles</b>." +
-          "<br>Estimated time " + modeLabel(mode) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
+          `<br>From <b>${escapeHTML(titleCase(distanceCtx.originKey))}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.` +
+          `<br>Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b> (traffic and services can vary).` +
+          `<br><a href="${escapeAttr(url)}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
   }
 
-  // Depot flow: main trigger
   if (
     q.includes("how far") ||
     q.includes("distance") ||
@@ -1051,34 +892,24 @@ function specialCases(query) {
 
     const closest = findClosestDepot(PLACES[originKey]);
     if (!closest) {
-      return {
-        matched: true,
-        answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?"
-      };
+      return { matched: true, answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?" };
     }
 
     const depot = DEPOTS[closest.depotKey];
-    distanceCtx = {
-      stage: "haveClosest",
-      originKey,
-      depotKey: closest.depotKey,
-      miles: closest.miles
-    };
+    distanceCtx = { stage: "haveClosest", originKey, depotKey: closest.depotKey, miles: closest.miles };
 
     const modeInText = parseTravelMode(q);
     if (modeInText) {
       const minutes = estimateMinutes(closest.miles, modeInText);
       const url = googleDirectionsURL(titleCase(originKey), depot, modeInText);
-      const safeUrlAttr = escapeAttrUrl(url);
 
       return {
         matched: true,
         answerHTML:
-          "Your closest depot is <b>" + depot.label + "</b>." +
-          "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
-          Math.round(closest.miles) + " miles</b>." +
-          "<br>Estimated time " + modeLabel(modeInText) + " is around <b>" + minutes + " minutes</b> (traffic and services can vary)." +
-          `<br><a href="${safeUrlAttr}">Get directions in Google Maps</a>`,
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
+          `<br>From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.` +
+          `<br>Estimated time ${escapeHTML(modeLabel(modeInText))} is around <b>${minutes} minutes</b> (traffic and services can vary).` +
+          `<br><a href="${escapeAttr(url)}">Get directions in Google Maps</a>`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
@@ -1086,41 +917,34 @@ function specialCases(query) {
     return {
       matched: true,
       answerHTML:
-        "Your closest depot is <b>" + depot.label + "</b>." +
-        "<br>From <b>" + titleCase(originKey) + "</b> it’s approximately <b>" +
-        Math.round(closest.miles) + " miles</b>." +
-        "<br>How are you travelling?",
+        `Your closest depot is <b>${escapeHTML(depot.label)}</b>.` +
+        `<br>From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.` +
+        `<br>How are you travelling?`,
       chips: ["By car", "By train", "By bus", "Walking"]
     };
   }
 
-  // If bot asked for origin and user replies with a city
   if (distanceCtx && distanceCtx.stage === "needOrigin") {
     const originKey2 = findPlaceKey(q) || (PLACES[q] ? q : null);
     if (originKey2) {
       const closest2 = findClosestDepot(PLACES[originKey2]);
       const depot2 = DEPOTS[closest2.depotKey];
 
-      distanceCtx = {
-        stage: "haveClosest",
-        originKey: originKey2,
-        depotKey: closest2.depotKey,
-        miles: closest2.miles
-      };
+      distanceCtx = { stage: "haveClosest", originKey: originKey2, depotKey: closest2.depotKey, miles: closest2.miles };
 
       return {
         matched: true,
         answerHTML:
-          "Thanks — your closest depot is <b>" + depot2.label + "</b>." +
-          "<br>From <b>" + titleCase(originKey2) + "</b> it’s approximately <b>" +
-          Math.round(closest2.miles) + " miles</b>." +
-          "<br>How are you travelling?",
+          `Thanks — your closest depot is <b>${escapeHTML(depot2.label)}</b>.` +
+          `<br>From <b>${escapeHTML(titleCase(originKey2))}</b> it’s approximately <b>${Math.round(closest2.miles)} miles</b>.` +
+          `<br>How are you travelling?`,
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
+    return { matched: true, answerHTML: "I didn’t recognise that place. Try one of the suggested cities." };
   }
 
-  // Parking special case
+  // ---- Parking special case ----
   if (q.includes("parking") || q.includes("car park")) {
     return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
@@ -1134,7 +958,7 @@ function specialCases(query) {
 function handleUserMessage(text) {
   if (!text) return;
 
-  // Hide suggestions once user sends
+  // hide suggestions
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
   currentSuggestions = [];
@@ -1157,26 +981,25 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases first (ticket + depot + category clarification)
+    // 1) Special cases (ticket + depot)
     const special = specialCases(text);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", { html: true, ts: new Date() });
       if (special.chips && special.chips.length) addChips(special.chips);
-
       missCount = 0;
       isResponding = false;
       setUIEnabled(true);
       return;
     }
 
-    // 2) FAQ match with quiet spelling correction
+    // 2) FAQ match (with quiet correction)
     let res = matchFAQ(text);
+
     if (!res.matched) {
       const corr = correctQueryTokens(text);
       if (corr.changed && corr.corrected) {
         const res2 = matchFAQ(corr.corrected);
         if (res2.matched) res = res2;
-        else if ((res2.suggestions ?? []).length > (res.suggestions ?? []).length) res = res2;
       }
     }
 
@@ -1189,30 +1012,18 @@ function handleUserMessage(text) {
       }
 
       missCount = 0;
-      clarifyCtx = null;
     } else {
       missCount++;
+      addBubble("I’m not sure. Did you mean:", "bot", { ts: new Date() });
+      addChips(res.suggestions ?? []);
 
-      // Category clarification first on the first miss
-      if (missCount === 1 && categories.length) {
-        clarifyCtx = { stage: "needCategory", originalQuery: text };
-        addBubble("Quick check — what is this about?", "bot", { ts: new Date() });
-        addChips(categories.map((c) => c.label));
-      } else {
-        addBubble("I’m not sure. Did you mean:", "bot", { ts: new Date() });
-        addChips(res.suggestions ?? []);
-      }
-
-      // Escalate after repeated misses (clickable mailto)
       if (missCount >= 2) {
-        const mail = `mailto:${SETTINGS.supportEmail}`;
         addBubble(
-          `If you’d like, you can contact support at <a href="${escapeAttrUrl(mail)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
+          `If you’d like, you can contact support at <a href="mailto:${escapeAttr(SETTINGS.supportEmail)}">${escapeHTML(SETTINGS.supportEmail)}</a> or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
           "bot",
           { html: true, ts: new Date() }
         );
         missCount = 0;
-        clarifyCtx = null;
       }
     }
 
@@ -1232,36 +1043,35 @@ sendBtn.addEventListener("click", sendChat);
 
 input.addEventListener("keydown", (e) => {
   if (!suggestionsEl.hidden) return;
-  if (e.key === "Enter") {
+  if (e.key === "Enter") { e.preventDefault(); sendChat(); }
 });
 
 clearBtn.addEventListener("click", () => {
   chatWindow.innerHTML = "";
   missCount = 0;
   distanceCtx = null;
-  clarifyCtx = null;
   ticketCtx = null;
   CHAT_LOG = [];
   init();
 });
 
 // ---------------------------------------------------------
-// LOAD FAQS (SINGLE FETCH)
-// ---------------------------------------------------------
+// LOAD FAQS
+//--------------
 fetch("./public/config/faqs.json")
   .then((res) => res.json())
   .then((data) => {
     FAQS = Array.isArray(data) ? data : [];
     faqsLoaded = true;
     buildCategoryIndex();
-    buildVocabFromFAQs();
+    buildVocab();
     renderDrawer();
   })
   .catch(() => {
     FAQS = [];
     faqsLoaded = true;
     buildCategoryIndex();
-    buildVocabFromFAQs();
+    buildVocab();
     renderDrawer();
   });
 
