@@ -62,18 +62,21 @@
       "where is your office",
       "location",
       "directions",
-      "how do i get there"
+      "how do i get there",
+      "depot address",
+      "where is your depot"
     ],
     "canonicalKeywords": [
       "address",
       "map",
       "office",
       "directions",
-      "parking"
+      "parking",
+      "depot"
     ],
     "category": "general",
     "followUps": [
-      "How far away am I from Nuneaton?",
+      "How far am I from my closest depot?",
       "Is there parking?"
     ]
   }
