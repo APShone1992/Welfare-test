@@ -8,7 +8,8 @@
  - Helpful feedback buttons (👍/👎)
  - Guided fallback (category clarification)
  - Quiet spelling correction (auto-corrects typos without asking)
- - Closest-depot distance flow (based on origin town/city user provides)
+ - Closest depot (Option A): based on origin town/city user provides
+ - Travel-mode chips: By car / By train / By bus / Walking
 ------------------------------------------------------- */
 
 const SETTINGS = {
@@ -24,8 +25,8 @@ const SETTINGS = {
 
 let FAQS = [];
 let faqsLoaded = false;
-let categories = [];              // [{key, label, count}]
-let categoryIndex = new Map();    // key -> [faqItems]
+let categories = [];
+let categoryIndex = new Map();
 
 // ---------- DOM ----------
 const chatWindow = document.getElementById("chatWindow");
@@ -51,11 +52,11 @@ let missCount = 0;
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 
-// in-session distance flow context (resets on refresh)
+// distance flow context (in-memory only; refresh resets)
 let distanceCtx = null;
 
 /* =======================================================
-   NORMALISATION + MATCHING HELPERS
+   NORMALISATION + MATCHING
 ======================================================= */
 
 const normalize = (s) =>
@@ -71,8 +72,8 @@ const normalize = (s) =>
     .trim();
 
 const STOP_WORDS = new Set([
-  "what","are","your","do","you","we","is","the","a","an","to","of","and",
-  "in","on","for","with","please","can","i","me","my"
+  "what", "are", "your", "do", "you", "we", "is", "the", "a", "an", "to", "of", "and",
+  "in", "on", "for", "with", "please", "can", "i", "me", "my"
 ]);
 
 function stem(token) {
@@ -103,7 +104,7 @@ function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
 
-  const allowedTags = new Set(["B","STRONG","I","EM","BR","A","SMALL"]);
+  const allowedTags = new Set(["B", "STRONG", "I", "EM", "BR", "A", "SMALL"]);
   const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
   const toReplace = [];
 
@@ -150,35 +151,33 @@ function formatUKTime(date) {
 }
 
 /* =======================================================
-   DEPOTS + PLACES (EDIT THESE)
-   - DEPOTS: destinations you want to compare (multiple depots)
-   - PLACES: towns/cities users may type as origin
+   DEPOTS + ORIGIN PLACES (EDIT THESE)
+   - DEPOTS: depots you want to compare (multiple)
+   - PLACES: origin towns/cities users might type
 ======================================================= */
 
-// ✅ Add / remove depots here (these are the ones it will choose the closest from)
+// ✅ Add/remove depots here. The bot will choose the closest depot.
 const DEPOTS = {
   "nuneaton": { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
-
-  // Example extra depots (uncomment + edit if you want):
+  // Add more depots if you want:
   // "coventry": { label: "Coventry Depot", lat: 52.4068, lon: -1.5197 },
   // "birmingham": { label: "Birmingham Depot", lat: 52.4895, lon: -1.8980 }
 };
 
-// ✅ Add more origin towns/cities here anytime
+// ✅ Add origin places here. (Keys must be in lowercase; multi-word is fine.)
 const PLACES = {
   "coventry": { lat: 52.4068, lon: -1.5197 },
   "birmingham": { lat: 52.4895, lon: -1.8980 },
   "leicester": { lat: 52.6369, lon: -1.1398 },
   "london": { lat: 51.5074, lon: -0.1278 },
   "wolverhampton": { lat: 52.5862, lon: -2.1286 }
-
-  // You can add multi-word keys too (normalize keeps spaces):
+  // Example multi-word:
   // "milton keynes": { lat: 52.0406, lon: -0.7594 }
 };
 
 function titleCase(s) {
   const t = (s || "").trim();
-  return t ? (t.charAt(0).toUpperCase() + t.slice(1)) : t;
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 
 function toRad(deg) {
@@ -209,8 +208,7 @@ function parseTravelMode(q) {
 }
 
 function estimateMinutes(miles, mode) {
-  // Rough averages (not route-based):
-  // car ~35 mph overall, train ~55 mph, bus ~20 mph, walk ~3 mph
+  // Rough averages (not route-based)
   const mphMap = { car: 35, train: 55, bus: 20, walk: 3 };
   const mph = mphMap[mode] || 35;
   return Math.round((miles / mph) * 60);
@@ -222,7 +220,6 @@ function modeLabel(mode) {
 }
 
 function findPlaceKey(qNorm) {
-  // Find any origin place mentioned in a query
   for (const key in PLACES) {
     if (!Object.prototype.hasOwnProperty.call(PLACES, key)) continue;
     if (qNorm.includes(key)) return key;
@@ -247,10 +244,20 @@ function findClosestDepot(originLatLon) {
 }
 
 /* =======================================================
-   QUIET SPELLING CORRECTION
+   QUIET SPELLING CORRECTION (WITH FIX)
+   ✅ Fix included: PROTECTED_TOKENS prevents Walking -> Parking
 ======================================================= */
 
 let VOCAB = new Set();
+
+// ✅ Tokens we NEVER want to spell-correct (chips/system words)
+const PROTECTED_TOKENS = new Set([
+  "walking", "walk",
+  "by", "car", "train", "bus",
+  "rail", "coach",
+  "depot", "depots",
+  "closest"
+]);
 
 function shouldSkipToken(tok) {
   if (!tok) return true;
@@ -289,10 +296,15 @@ function levenshtein(a, b, maxDist) {
 }
 
 function bestVocabMatch(token) {
+  // ✅ critical fix: do NOT correct travel-mode/chip words
+  if (PROTECTED_TOKENS.has(token)) return null;
+
   if (shouldSkipToken(token)) return null;
   if (VOCAB.has(token)) return null;
 
-  const maxDist = token.length <= 5 ? 1 : 2;
+  // Conservative correction
+  const maxDist = token.length <= 7 ? 1 : 2;
+
   let best = null;
   let bestDist = maxDist + 1;
 
@@ -312,7 +324,7 @@ function bestVocabMatch(token) {
 function buildVocabFromFAQs() {
   const vocab = new Set();
 
-  // From FAQ content
+  // FAQ fields
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -330,15 +342,20 @@ function buildVocabFromFAQs() {
     }
   }
 
-  // Also include depot + place tokens to help correct typos like “nuneaton”, “coventry”, etc.
-  Object.keys(DEPOTS).forEach((k) => {
-    normalize(k).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
-    normalize(DEPOTS[k].label).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
-  });
+  // Also include depot + place tokens so misspellings like “nuneaton” can be corrected
+  for (const dk in DEPOTS) {
+    if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
+    normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
+    normalize(DEPOTS[dk].label).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
+  }
 
-  Object.keys(PLACES).forEach((k) => {
-    normalize(k).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
-  });
+  for (const pk in PLACES) {
+    if (!Object.prototype.hasOwnProperty.call(PLACES, pk)) continue;
+    normalize(pk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
+  }
+
+  // ✅ add common system words too
+  ["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"].forEach((w) => vocab.add(w));
 
   VOCAB = vocab;
 }
@@ -363,7 +380,7 @@ function correctQueryTokens(rawText) {
 }
 
 /* =======================================================
-   UI HELPERS
+   UI / BUBBLES
 ======================================================= */
 
 function setUIEnabled(enabled) {
@@ -431,19 +448,19 @@ function addChips(questions, onClick) {
   const wrap = document.createElement("div");
   wrap.className = "chips";
 
-  qs.slice(0, SETTINGS.chipLimit).forEach(function (q) {
+  qs.slice(0, SETTINGS.chipLimit).forEach((q) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip-btn";
     b.textContent = q;
 
-    b.addEventListener("click", function () {
+    b.addEventListener("click", () => {
       const now = Date.now();
       if (isResponding) return;
       if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
       lastChipClickAt = now;
 
-      wrap.querySelectorAll(".chip-btn").forEach(function (btn) { btn.disabled = true; });
+      wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
       if (typeof onClick === "function") onClick(q);
       else handleUserMessage(q);
       input.focus();
@@ -452,13 +469,13 @@ function addChips(questions, onClick) {
     wrap.appendChild(b);
   });
 
-  if (isResponding) wrap.querySelectorAll(".chip-btn").forEach(function (btn) { btn.disabled = true; });
+  if (isResponding) wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
   chatWindow.appendChild(wrap);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
 /* =======================================================
-   FEEDBACK UI
+   FEEDBACK
 ======================================================= */
 
 function buildFeedbackUI(meta) {
@@ -491,8 +508,8 @@ function buildFeedbackUI(meta) {
     console.log("feedback", { value: value, at: new Date().toISOString(), meta: meta });
   }
 
-  up.addEventListener("click", function () { submit("up"); });
-  down.addEventListener("click", function () { submit("down"); });
+  up.addEventListener("click", () => submit("up"));
+  down.addEventListener("click", () => submit("down"));
 
   wrap.appendChild(label);
   wrap.appendChild(up);
@@ -508,7 +525,7 @@ function buildFeedbackUI(meta) {
 function buildCategoryIndex() {
   categoryIndex = new Map();
 
-  FAQS.forEach(function (item) {
+  FAQS.forEach((item) => {
     const key = (item.category || "general").toLowerCase();
     if (!categoryIndex.has(key)) categoryIndex.set(key, []);
     categoryIndex.get(key).push(item);
@@ -523,27 +540,25 @@ function buildCategoryIndex() {
 
   categories = Array.from(categoryIndex.keys())
     .sort()
-    .map(function (key) {
-      return {
-        key: key,
-        label: labelMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
-        count: categoryIndex.get(key).length
-      };
-    });
+    .map((key) => ({
+      key,
+      label: labelMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
+      count: categoryIndex.get(key).length
+    }));
 }
 
 function openDrawer() {
   overlay.hidden = false;
   drawer.hidden = false;
   drawer.setAttribute("aria-hidden", "false");
-  if (drawerCloseBtn) drawerCloseBtn.focus();
+  drawerCloseBtn?.focus();
 }
 
 function closeDrawer() {
   overlay.hidden = true;
   drawer.hidden = true;
   drawer.setAttribute("aria-hidden", "true");
-  if (topicsBtn) topicsBtn.focus();
+  topicsBtn?.focus();
 }
 
 function renderDrawer(selectedKey) {
@@ -551,25 +566,23 @@ function renderDrawer(selectedKey) {
   drawerCategoriesEl.innerHTML = "";
   drawerQuestionsEl.innerHTML = "";
 
-  categories.forEach(function (c) {
+  categories.forEach((c) => {
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className = "cat-pill";
-    pill.textContent = c.label + " (" + c.count + ")";
+    pill.textContent = `${c.label} (${c.count})`;
     pill.setAttribute("aria-selected", String(c.key === selected));
-
-    pill.addEventListener("click", function () { renderDrawer(c.key); });
+    pill.addEventListener("click", () => renderDrawer(c.key));
     drawerCategoriesEl.appendChild(pill);
   });
 
   const list = selected && categoryIndex.has(selected) ? categoryIndex.get(selected) : FAQS;
-
-  list.forEach(function (item) {
+  list.forEach((item) => {
     const q = document.createElement("button");
     q.type = "button";
     q.className = "drawer-q";
     q.textContent = item.question;
-    q.addEventListener("click", function () {
+    q.addEventListener("click", () => {
       closeDrawer();
       handleUserMessage(item.question);
     });
@@ -577,18 +590,17 @@ function renderDrawer(selectedKey) {
   });
 }
 
-// Mobile close fix: close on click + touchstart
 function bindClose(el) {
   if (!el) return;
 
-  el.addEventListener("click", function (e) {
+  el.addEventListener("click", (e) => {
     e.preventDefault();
     closeDrawer();
   });
 
   el.addEventListener(
     "touchstart",
-    function (e) {
+    (e) => {
       e.preventDefault();
       closeDrawer();
     },
@@ -596,27 +608,23 @@ function bindClose(el) {
   );
 }
 
-if (topicsBtn) {
-  topicsBtn.addEventListener("click", function () {
-    if (!faqsLoaded) return;
-    openDrawer();
-  });
-}
+topicsBtn?.addEventListener("click", () => {
+  if (!faqsLoaded) return;
+  openDrawer();
+});
 
-if (drawer) {
-  drawer.addEventListener("click", function (e) { e.stopPropagation(); });
-  drawer.addEventListener("touchstart", function (e) { e.stopPropagation(); }, { passive: true });
-}
+drawer?.addEventListener("click", (e) => e.stopPropagation());
+drawer?.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
 
 bindClose(drawerCloseBtn);
 bindClose(overlay);
 
-document.addEventListener("keydown", function (e) {
+document.addEventListener("keydown", (e) => {
   if (!drawer.hidden && e.key === "Escape") closeDrawer();
 });
 
 /* =======================================================
-   SUGGESTIONS (TYPEAHEAD)
+   TYPEAHEAD SUGGESTIONS
 ======================================================= */
 
 function escapeHTML(s) {
@@ -639,23 +647,23 @@ function showSuggestions(items) {
   }
 
   suggestionsEl.innerHTML = "";
-  items.forEach(function (it, idx) {
+  items.forEach((it, idx) => {
     const div = document.createElement("div");
     div.className = "suggestion-item";
     div.setAttribute("role", "option");
     div.setAttribute("aria-selected", "false");
     div.tabIndex = -1;
 
-    div.innerHTML = escapeHTML(it.question) + "<small>" + escapeHTML(it.categoryLabel) + "</small>";
+    div.innerHTML = `${escapeHTML(it.question)}<small>${escapeHTML(it.categoryLabel)}</small>`;
 
-    div.addEventListener("mousedown", function (ev) {
+    div.addEventListener("mousedown", (ev) => {
       ev.preventDefault();
       pickSuggestion(idx);
     });
 
     div.addEventListener(
       "touchstart",
-      function (ev) {
+      (ev) => {
         ev.preventDefault();
         pickSuggestion(idx);
       },
@@ -670,9 +678,7 @@ function showSuggestions(items) {
 
 function updateSuggestionSelection() {
   const nodes = suggestionsEl.querySelectorAll(".suggestion-item");
-  nodes.forEach(function (n, i) {
-    n.setAttribute("aria-selected", String(i === activeSuggestionIndex));
-  });
+  nodes.forEach((n, i) => n.setAttribute("aria-selected", String(i === activeSuggestionIndex)));
 }
 
 function pickSuggestion(index) {
@@ -691,52 +697,50 @@ function computeSuggestions(query) {
   let q = normalize(query);
   if (!q || q.length < 2) return [];
 
-  const correction = correctQueryTokens(query);
-  if (correction.changed && correction.corrected) q = correction.corrected;
+  const corr = correctQueryTokens(query);
+  if (corr.changed && corr.corrected) q = corr.corrected;
 
   const qTokens = tokenSet(q);
 
-  const scored = FAQS.map(function (item) {
+  const scored = FAQS.map((item) => {
     const question = item.question || "";
     const syns = item.synonyms || [];
     const keys = item.canonicalKeywords || [];
     const tags = item.tags || [];
 
     const scoreQ = jaccard(qTokens, tokenSet(question));
-    const scoreSyn = syns.length ? Math.max.apply(null, syns.map(function (s) { return jaccard(qTokens, tokenSet(s)); })) : 0;
-    const scoreKeys = keys.length ? Math.max.apply(null, keys.map(function (k) { return jaccard(qTokens, tokenSet(k)); })) : 0;
-    const scoreTags = tags.length ? Math.max.apply(null, tags.map(function (t) { return jaccard(qTokens, tokenSet(t)); })) : 0;
+    const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
+    const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
+    const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
 
-    const anyField = [question].concat(syns, keys, tags).map(normalize).join(" ");
+    const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
     const boost = anyField.includes(q) ? SETTINGS.boostSubstring : 0;
 
     const score = 0.60 * scoreQ + 0.22 * scoreSyn + 0.12 * scoreKeys + 0.06 * scoreTags + boost;
-    return { item: item, score: score };
+    return { item, score };
   })
-    .sort(function (a, b) { return b.score - a.score; })
+    .sort((a, b) => b.score - a.score)
     .slice(0, SETTINGS.suggestionLimit)
-    .filter(function (x) { return x.score > 0; });
+    .filter((x) => x.score > 0);
 
-  const labelMap = new Map(categories.map(function (c) { return [c.key, c.label]; }));
+  const labelMap = new Map(categories.map((c) => [c.key, c.label]));
 
-  return scored.map(function (s) {
-    return {
-      question: s.item.question,
-      categoryLabel: labelMap.get((s.item.category || "general").toLowerCase()) || "General"
-    };
-  });
+  return scored.map((s) => ({
+    question: s.item.question,
+    categoryLabel: labelMap.get((s.item.category || "general").toLowerCase()) || "General"
+  }));
 }
 
-input.addEventListener("input", function () {
+input.addEventListener("input", () => {
   if (!faqsLoaded) return;
   showSuggestions(computeSuggestions(input.value));
 });
 
-input.addEventListener("blur", function () {
-  setTimeout(function () { suggestionsEl.hidden = true; }, 120);
+input.addEventListener("blur", () => {
+  setTimeout(() => { suggestionsEl.hidden = true; }, 120);
 });
 
-input.addEventListener("keydown", function (e) {
+input.addEventListener("keydown", (e) => {
   if (suggestionsEl.hidden) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -763,75 +767,15 @@ input.addEventListener("keydown", function (e) {
 });
 
 /* =======================================================
-   UK OPENING-TIME HELPERS
-======================================================= */
-
-function getUKParts(date) {
-  const d = date || new Date();
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: UK_TZ,
-    weekday: "short",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).formatToParts(d);
-
-  const map = Object.fromEntries(parts.map(function (p) { return [p.type, p.value]; }));
-  return {
-    weekday: map.weekday,
-    year: Number(map.year),
-    month: Number(map.month),
-    day: Number(map.day),
-    hour: Number(map.hour),
-    minute: Number(map.minute)
-  };
-}
-
-function ukWeekdayNumber(weekdayShort) {
-  const lookup = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  return lookup[weekdayShort] ?? 0;
-}
-
-function minutesSinceMidnight(h, m) {
-  return h * 60 + m;
-}
-
-function isOpenNowUK() {
-  const uk = getUKParts(new Date());
-  const day = ukWeekdayNumber(uk.weekday);
-  const mins = minutesSinceMidnight(uk.hour, uk.minute);
-
-  const isWeekend = day === 0 || day === 6;
-  const openMins = minutesSinceMidnight(8, 30);
-  const closeMins = minutesSinceMidnight(17, 0);
-
-  return !isWeekend && mins >= openMins && mins < closeMins;
-}
-
-function willBeOpenTomorrowUK() {
-  const uk = getUKParts(new Date());
-  const safeUTC = new Date(Date.UTC(uk.year, uk.month - 1, uk.day, 12, 0, 0));
-  safeUTC.setUTCDate(safeUTC.getUTCDate() + 1);
-  const ukTomorrow = getUKParts(safeUTC);
-
-  const day = ukWeekdayNumber(ukTomorrow.weekday);
-  const isWeekend = day === 0 || day === 6;
-  return !isWeekend;
-}
-
-/* =======================================================
-   SPECIAL CASES (INCLUDING CLOSEST DEPOT)
+   SPECIAL CASES (INCLUDING CLOSEST DEPOT FLOW)
 ======================================================= */
 
 function specialCases(query) {
-  const qRaw = query || "";
-  const corr = correctQueryTokens(qRaw);
-  const q = corr.changed && corr.corrected ? corr.corrected : normalize(qRaw);
+  // Use normalized query; correction is safe because PROTECTED_TOKENS blocks chips like walking.
+  const corr = correctQueryTokens(query);
+  const q = corr.changed && corr.corrected ? corr.corrected : normalize(query);
 
-  // --- Closest depot flow: travel mode selection ---
+  // --- Closest depot: travel-mode chips ---
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
@@ -850,11 +794,10 @@ function specialCases(query) {
     }
   }
 
-  // --- Closest depot flow: main trigger ---
-  if (q.includes("how far") || q.includes("distance") || q.includes("closest depot")) {
+  // --- Closest depot: main trigger ---
+  if (q.includes("how far") || q.includes("distance") || q.includes("closest depot") || (q.includes("depot") && q.includes("closest"))) {
     const originKey = findPlaceKey(q);
 
-    // If origin missing, ask for it
     if (!originKey) {
       distanceCtx = { stage: "needOrigin" };
       return {
@@ -864,7 +807,6 @@ function specialCases(query) {
       };
     }
 
-    // Find closest depot
     const closest = findClosestDepot(PLACES[originKey]);
     if (!closest) {
       return {
@@ -876,7 +818,7 @@ function specialCases(query) {
     const depot = DEPOTS[closest.depotKey];
     distanceCtx = {
       stage: "haveClosest",
-      originKey: originKey,
+      originKey,
       depotKey: closest.depotKey,
       miles: closest.miles
     };
@@ -932,21 +874,9 @@ function specialCases(query) {
     }
   }
 
-  // --- Other special cases ---
-  if (q.includes("tomorrow")) {
-    return willBeOpenTomorrowUK()
-      ? { matched: true, answerHTML: "Yes — tomorrow is a weekday, so we’ll be open <b>8:30–17:00</b>." }
-      : { matched: true, answerHTML: "Tomorrow is a <b>weekend</b>, so we’re closed.<br>Hours: <b>Mon–Fri, 8:30–17:00</b>." };
-  }
-
-  if (q.includes("available") || q.includes("open now") || q.includes("right now") || q.includes("anyone there")) {
-    return isOpenNowUK()
-      ? { matched: true, answerHTML: "Yes — we’re currently <b>open</b> and staff should be available.<br>Hours: <b>Mon–Fri, 8:30–17:00</b>." }
-      : { matched: true, answerHTML: "Right now we appear to be <b>closed</b>.<br>Hours: <b>Mon–Fri, 8:30–17:00</b>." };
-  }
-
+  // --- Parking special case ---
   if (q.includes("parking") || q.includes("car park")) {
-    return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b> near our Nuneaton location. Spaces can be limited during busy times." };
+    return { matched: true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
 
   return null;
@@ -960,29 +890,31 @@ function matchFAQ(query) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
 
-  const scored = FAQS.map(function (item) {
-    const question = item.question || "";
-    const syns = item.synonyms || [];
-    const keys = item.canonicalKeywords || [];
-    const tags = item.tags || [];
+  const scored = FAQS
+    .map((item) => {
+      const question = item.question || "";
+      const syns = item.synonyms || [];
+      const keys = item.canonicalKeywords || [];
+      const tags = item.tags || [];
 
-    const scoreQ = jaccard(qTokens, tokenSet(question));
-    const scoreSyn = syns.length ? Math.max.apply(null, syns.map(function (s) { return jaccard(qTokens, tokenSet(s)); })) : 0;
-    const scoreKeys = keys.length ? Math.max.apply(null, keys.map(function (k) { return jaccard(qTokens, tokenSet(k)); })) : 0;
-    const scoreTags = tags.length ? Math.max.apply(null, tags.map(function (t) { return jaccard(qTokens, tokenSet(t)); })) : 0;
+      const scoreQ = jaccard(qTokens, tokenSet(question));
+      const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
+      const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
+      const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
 
-    const anyField = [question].concat(syns, keys, tags).map(normalize).join(" ");
-    const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
+      const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
+      const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
 
-    const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
-    return { item: item, score: score };
-  }).sort(function (a, b) { return b.score - a.score; });
+      const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
+      return { item, score };
+    })
+    .sort((a, b) => b.score - a.score);
 
   const top = scored[0];
   if (!top || top.score < SETTINGS.minConfidence) {
     return {
       matched: false,
-      suggestions: scored.slice(0, SETTINGS.topSuggestions).map(function (r) { return r.item.question; })
+      suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
     };
   }
 
@@ -992,56 +924,6 @@ function matchFAQ(query) {
     answerHTML: top.item.answer,
     followUps: top.item.followUps || []
   };
-}
-
-/* =======================================================
-   GUIDED FALLBACK
-======================================================= */
-
-function getTopCategoriesFor(query) {
-  const qTokens = tokenSet(query);
-
-  const scoredCats = categories
-    .map(function (c) {
-      const items = categoryIndex.get(c.key) || [];
-      const field = items
-        .map(function (it) {
-          return [it.question].concat(it.synonyms || [], it.canonicalKeywords || []).join(" ");
-        })
-        .join(" ");
-      const score = jaccard(qTokens, tokenSet(field));
-      return { key: c.key, label: c.label, count: c.count, score: score };
-    })
-    .sort(function (a, b) { return b.score - a.score; });
-
-  const top = scoredCats.filter(function (x) { return x.score > 0; }).slice(0, 3);
-  if (top.length) return top;
-  return categories.slice().sort(function (a, b) { return b.count - a.count; }).slice(0, 3);
-}
-
-function showCategoryClarifier(query) {
-  const topCats = getTopCategoriesFor(query);
-  addBubble("Which topic is this closest to?", "bot", { ts: new Date() });
-
-  const options = topCats.map(function (c) { return c.label; });
-  addChips(options, function (label) {
-    const picked = topCats.find(function (c) { return c.label === label; });
-    if (!picked) return;
-    showQuestionsForCategory(picked.key, true);
-  });
-}
-
-function showQuestionsForCategory(key, includeIntro) {
-  const items = categoryIndex.get(key) || [];
-  const labelObj = categories.find(function (c) { return c.key === key; });
-  const label = labelObj ? labelObj.label : "Topic";
-
-  if (includeIntro) {
-    addBubble("Here are common questions in <b>" + label + "</b>:", "bot", { html: true, ts: new Date() });
-  }
-
-  const qs = items.map(function (it) { return it.question; });
-  addChips(qs, function (q) { handleUserMessage(q); });
 }
 
 /* =======================================================
@@ -1064,7 +946,7 @@ function handleUserMessage(text) {
   setUIEnabled(false);
   addTyping();
 
-  setTimeout(function () {
+  setTimeout(() => {
     removeTyping();
 
     if (!faqsLoaded) {
@@ -1074,18 +956,11 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases (includes closest-depot flow)
+    // 1) Special cases (includes closest depot flow)
     const special = specialCases(text);
     if (special && special.matched) {
-      addBubble(special.answerHTML, "bot", {
-        html: true,
-        ts: new Date(),
-        feedback: true,
-        feedbackMeta: { type: "special", query: text }
-      });
-
+      addBubble(special.answerHTML, "bot", { html: true, ts: new Date(), feedback: true, feedbackMeta: { type: "special", query: text } });
       if (special.chips && special.chips.length) addChips(special.chips);
-
       missCount = 0;
       isResponding = false;
       setUIEnabled(true);
@@ -1095,9 +970,9 @@ function handleUserMessage(text) {
     // 2) FAQ match with quiet spelling correction
     let res = matchFAQ(text);
     if (!res.matched) {
-      const corr2 = correctQueryTokens(text);
-      if (corr2.changed && corr2.corrected) {
-        const res2 = matchFAQ(corr2.corrected);
+      const corr = correctQueryTokens(text);
+      if (corr.changed && corr.corrected) {
+        const res2 = matchFAQ(corr.corrected);
         if (res2.matched) res = res2;
         else if ((res2.suggestions || []).length > (res.suggestions || []).length) res = res2;
       }
@@ -1110,26 +985,24 @@ function handleUserMessage(text) {
         feedback: true,
         feedbackMeta: { type: "faq", question: res.item.question, category: res.item.category || "general" }
       });
-      missCount = 0;
 
       if (res.followUps && res.followUps.length) {
         addBubble("You can also ask:", "bot", { ts: new Date() });
         addChips(res.followUps);
       }
+
+      missCount = 0;
     } else {
       missCount++;
-      if (missCount === 1) {
-        showCategoryClarifier(text);
-      } else {
-        addBubble("I’m still not sure. Did you mean:", "bot", { ts: new Date() });
-        addChips(res.suggestions || []);
+      addBubble("I’m not sure. Did you mean:", "bot", { ts: new Date() });
+      addChips(res.suggestions || []);
 
+      if (missCount >= 2) {
         addBubble(
           "If you’d like, you can contact support at <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
           "bot",
           { html: true, ts: new Date(), feedback: true, feedbackMeta: { type: "escalation" } }
         );
-
         missCount = 0;
       }
     }
@@ -1148,8 +1021,7 @@ function sendChat() {
 
 sendBtn.addEventListener("click", sendChat);
 
-// Enter submits when suggestion list isn't open
-input.addEventListener("keydown", function (e) {
+input.addEventListener("keydown", (e) => {
   if (!suggestionsEl.hidden) return;
   if (e.key === "Enter") {
     e.preventDefault();
@@ -1157,7 +1029,7 @@ input.addEventListener("keydown", function (e) {
   }
 });
 
-clearBtn.addEventListener("click", function () {
+clearBtn.addEventListener("click", () => {
   chatWindow.innerHTML = "";
   missCount = 0;
   distanceCtx = null;
@@ -1169,15 +1041,15 @@ clearBtn.addEventListener("click", function () {
 ======================================================= */
 
 fetch("./public/config/faqs.json")
-  .then(function (res) { return res.json(); })
-  .then(function (data) {
+  .then((res) => res.json())
+  .then((data) => {
     FAQS = Array.isArray(data) ? data : [];
     faqsLoaded = true;
     buildCategoryIndex();
     buildVocabFromFAQs();
     renderDrawer();
   })
-  .catch(function () {
+  .catch(() => {
     FAQS = [];
     faqsLoaded = true;
     buildCategoryIndex();
@@ -1190,7 +1062,7 @@ fetch("./public/config/faqs.json")
 ======================================================= */
 
 function init() {
-  addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date() });
+  addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date(), feedback: false });
 }
 
 if (document.readyState === "loading") {
@@ -1198,3 +1070,4 @@ if (document.readyState === "loading") {
 } else {
   init();
 }
+
