@@ -1,11 +1,13 @@
 
 /* -------------------------------------------------------
- Welfare Support – Impressive Static Chatbot (FAQ + Topics + Suggestions)
+ Welfare Support – Static FAQ Chatbot (Polished + Human-like)
+ Features:
  - No saved memory (refresh resets)
  - Topics drawer (browse by category)
  - Search-as-you-type suggestions
  - Helpful feedback buttons (👍/👎)
  - Guided fallback (category clarification)
+ - Quiet spelling correction (auto-corrects typos without asking)
 ------------------------------------------------------- */
 
 const SETTINGS = {
@@ -21,8 +23,8 @@ const SETTINGS = {
 
 let FAQS = [];
 let faqsLoaded = false;
-let categories = [];
-let categoryIndex = new Map();
+let categories = [];              // [{key, label, count}]
+let categoryIndex = new Map();    // key -> [faqItems]
 
 // ---------- DOM ----------
 const chatWindow = document.getElementById("chatWindow");
@@ -42,27 +44,11 @@ const drawerQuestionsEl = document.getElementById("drawerQuestions");
 // ---------- UI State ----------
 let isResponding = false;
 let lastChipClickAt = 0;
-let missCount = 0;
+let missCount = 0; // in-session only; resets on refresh
 
 // suggestion keyboard state
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
-
-// ---------- Load FAQs ----------
-fetch("./public/config/faqs.json")
-  .then((res) => res.json())
-  .then((data) => {
-    FAQS = Array.isArray(data) ? data : [];
-    faqsLoaded = true;
-    buildCategoryIndex();
-    renderDrawer();
-  })
-  .catch(() => {
-    FAQS = [];
-    faqsLoaded = true;
-    buildCategoryIndex();
-    renderDrawer();
-  });
 
 // ---------- Helpers ----------
 const normalize = (s) =>
@@ -72,6 +58,7 @@ const normalize = (s) =>
     .replace(/[̀-ͯ]/g, "")
     .replace(/[“”‘’]/g, '"')
     .replace(/[–—]/g, "-")
+    // Broad compatibility: keep letters/numbers/spaces/hyphens (ASCII)
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -137,7 +124,7 @@ function sanitizeHTML(html) {
   return template.innerHTML;
 }
 
-// ---------- UK time (24-hour) ----------
+// ---------- UK time (24-hour) for timestamps ----------
 const UK_TZ = "Europe/London";
 
 function formatUKTime(date) {
@@ -147,6 +134,110 @@ function formatUKTime(date) {
     minute: "2-digit",
     hour12: false
   }).format(date);
+}
+
+// -----------------------------
+// Spelling correction (quiet mode)
+// -----------------------------
+let VOCAB = new Set();
+
+function shouldSkipToken(tok) {
+  if (!tok) return true;
+  if (tok.length <= 3) return true;
+  if (/\d/.test(tok)) return true;
+  if (tok.includes("@") || tok.includes(".")) return true;
+  if (!/^[a-z-]+$/.test(tok)) return true;
+  return false;
+}
+
+function levenshtein(a, b, maxDist) {
+  if (a === b) return 0;
+  const al = a.length, bl = b.length;
+  if (Math.abs(al - bl) > maxDist) return maxDist + 1;
+
+  const prev = new Array(bl + 1);
+  const curr = new Array(bl + 1);
+  for (let j = 0; j <= bl; j++) prev[j] = j;
+
+  for (let i = 1; i <= al; i++) {
+    curr[0] = i;
+    let minInRow = curr[0];
+    const ai = a.charCodeAt(i - 1);
+
+    for (let j = 1; j <= bl; j++) {
+      const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      if (curr[j] < minInRow) minInRow = curr[j];
+    }
+
+    if (minInRow > maxDist) return maxDist + 1;
+    for (let j = 0; j <= bl; j++) prev[j] = curr[j];
+  }
+
+  return prev[bl];
+}
+
+function bestVocabMatch(token) {
+  if (shouldSkipToken(token)) return null;
+  if (VOCAB.has(token)) return null;
+
+  const maxDist = token.length <= 5 ? 1 : 2;
+  let best = null;
+  let bestDist = maxDist + 1;
+
+  for (const w of VOCAB) {
+    if (Math.abs(w.length - token.length) > maxDist) continue;
+    const d = levenshtein(token, w, maxDist);
+    if (d < bestDist) {
+      bestDist = d;
+      best = w;
+      if (bestDist === 1) break;
+    }
+  }
+
+  return bestDist <= maxDist ? best : null;
+}
+
+function buildVocabFromFAQs() {
+  const vocab = new Set();
+
+  for (const item of FAQS) {
+    const fields = [
+      item.question,
+      ...(item.synonyms || []),
+      ...(item.canonicalKeywords || []),
+      ...(item.tags || []),
+      item.category
+    ];
+
+    for (const f of fields) {
+      const toks = normalize(f).split(" ").filter(Boolean);
+      for (const t of toks) {
+        if (!shouldSkipToken(t)) vocab.add(t);
+      }
+    }
+  }
+
+  VOCAB = vocab;
+}
+
+function correctQueryTokens(rawText) {
+  const norm = normalize(rawText);
+  if (!norm) return { corrected: norm, changed: false };
+
+  const tokens = norm.split(" ").filter(Boolean);
+  let changed = false;
+
+  const correctedTokens = tokens.map((t) => {
+    const fixed = bestVocabMatch(t);
+    if (fixed) {
+      changed = true;
+      return fixed;
+    }
+    return t;
+  });
+
+  return { corrected: correctedTokens.join(" "), changed: changed };
 }
 
 // ---------- UI ----------
@@ -160,22 +251,28 @@ function scrollToBottom() {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-function addBubble(text, type = "bot", opts = {}) {
-  const { html = false, ts = new Date(), feedback = false, feedbackMeta = null } = opts;
+function addBubble(text, type, opts) {
+  const options = opts || {};
+  const html = !!options.html;
+  const ts = options.ts || new Date();
+  const feedback = !!options.feedback;
+  const feedbackMeta = options.feedbackMeta || null;
 
   const row = document.createElement("div");
-  row.className = `msg ${type}`;
+  row.className = "msg " + type;
   row.dataset.ts = String(ts.getTime());
 
   const bubble = document.createElement("div");
-  bubble.className = `bubble ${type}`;
+  bubble.className = "bubble " + type;
   bubble.setAttribute("role", "article");
   bubble.setAttribute("aria-label", type === "bot" ? "Bot message" : "Your message");
 
   if (html) bubble.innerHTML = sanitizeHTML(text);
   else bubble.textContent = text;
 
-  if (feedback && type === "bot") bubble.appendChild(buildFeedbackUI(feedbackMeta));
+  if (feedback && type === "bot") {
+    bubble.appendChild(buildFeedbackUI(feedbackMeta));
+  }
 
   const time = document.createElement("div");
   time.className = "timestamp";
@@ -194,7 +291,7 @@ function addTyping() {
 
   const bubble = document.createElement("div");
   bubble.className = "bubble bot typing-bubble";
-  bubble.innerHTML = `Typing <span class="typing"><span></span><span></span><span></span></span>`;
+  bubble.innerHTML = 'Typing <span class="typing"><span></span><span></span><span></span></span>';
 
   row.appendChild(bubble);
   chatWindow.appendChild(row);
@@ -202,39 +299,39 @@ function addTyping() {
 }
 
 function removeTyping() {
-  chatWindow.querySelector('[data-typing="true"]')?.remove();
+  const t = chatWindow.querySelector('[data-typing="true"]');
+  if (t) t.remove();
 }
 
-function addChips(questions = [], onClick) {
-  if (!questions.length) return;
+function addChips(questions, onClick) {
+  const qs = questions || [];
+  if (!qs.length) return;
 
   const wrap = document.createElement("div");
   wrap.className = "chips";
 
-  questions.slice(0, SETTINGS.chipLimit).forEach((q) => {
+  qs.slice(0, SETTINGS.chipLimit).forEach(function (q) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip-btn";
     b.textContent = q;
 
-    b.addEventListener("click", () => {
+    b.addEventListener("click", function () {
       const now = Date.now();
       if (isResponding) return;
       if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
       lastChipClickAt = now;
 
-      wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
-
+      wrap.querySelectorAll(".chip-btn").forEach(function (btn) { btn.disabled = true; });
       if (typeof onClick === "function") onClick(q);
       else handleUserMessage(q);
-
       input.focus();
     });
 
     wrap.appendChild(b);
   });
 
-  if (isResponding) wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
+  if (isResponding) wrap.querySelectorAll(".chip-btn").forEach(function (btn) { btn.disabled = true; });
   chatWindow.appendChild(wrap);
   scrollToBottom();
 }
@@ -267,12 +364,11 @@ function buildFeedbackUI(meta) {
     down.disabled = true;
     thanks.hidden = false;
     thanks.textContent = "Thanks!";
-
-    console.log("feedback", { value, at: new Date().toISOString(), meta });
+    console.log("feedback", { value: value, at: new Date().toISOString(), meta: meta });
   }
 
-  up.addEventListener("click", () => submit("up"));
-  down.addEventListener("click", () => submit("down"));
+  up.addEventListener("click", function () { submit("up"); });
+  down.addEventListener("click", function () { submit("down"); });
 
   wrap.appendChild(label);
   wrap.appendChild(up);
@@ -285,11 +381,11 @@ function buildFeedbackUI(meta) {
 function buildCategoryIndex() {
   categoryIndex = new Map();
 
-  for (const item of FAQS) {
+  FAQS.forEach(function (item) {
     const key = (item.category || "general").toLowerCase();
     if (!categoryIndex.has(key)) categoryIndex.set(key, []);
     categoryIndex.get(key).push(item);
-  }
+  });
 
   const labelMap = {
     general: "General",
@@ -298,54 +394,55 @@ function buildCategoryIndex() {
     opening: "Opening times"
   };
 
-  categories = [...categoryIndex.keys()]
+  categories = Array.from(categoryIndex.keys())
     .sort()
-    .map((key) => ({
-      key,
-      label: labelMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
-      count: categoryIndex.get(key).length
-    }));
+    .map(function (key) {
+      return {
+        key: key,
+        label: labelMap[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
+        count: categoryIndex.get(key).length
+      };
+    });
 }
 
 function openDrawer() {
   overlay.hidden = false;
   drawer.hidden = false;
   drawer.setAttribute("aria-hidden", "false");
-  drawerCloseBtn?.focus();
+  if (drawerCloseBtn) drawerCloseBtn.focus();
 }
 
 function closeDrawer() {
   overlay.hidden = true;
   drawer.hidden = true;
   drawer.setAttribute("aria-hidden", "true");
-  topicsBtn?.focus();
+  if (topicsBtn) topicsBtn.focus();
 }
 
-function renderDrawer(selectedKey = null) {
+function renderDrawer(selectedKey) {
+  const selected = selectedKey || null;
   drawerCategoriesEl.innerHTML = "";
   drawerQuestionsEl.innerHTML = "";
 
-  categories.forEach((c) => {
+  categories.forEach(function (c) {
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className = "cat-pill";
-    pill.textContent = `${c.label} (${c.count})`;
-    pill.setAttribute("aria-selected", String(c.key === selectedKey));
+    pill.textContent = c.label + " (" + c.count + ")";
+    pill.setAttribute("aria-selected", String(c.key === selected));
 
-    pill.addEventListener("click", () => renderDrawer(c.key));
+    pill.addEventListener("click", function () { renderDrawer(c.key); });
     drawerCategoriesEl.appendChild(pill);
   });
 
-  const list = selectedKey && categoryIndex.has(selectedKey)
-    ? categoryIndex.get(selectedKey)
-    : FAQS;
+  const list = selected && categoryIndex.has(selected) ? categoryIndex.get(selected) : FAQS;
 
-  list.forEach((item) => {
+  list.forEach(function (item) {
     const q = document.createElement("button");
     q.type = "button";
     q.className = "drawer-q";
     q.textContent = item.question;
-    q.addEventListener("click", () => {
+    q.addEventListener("click", function () {
       closeDrawer();
       handleUserMessage(item.question);
     });
@@ -353,18 +450,17 @@ function renderDrawer(selectedKey = null) {
   });
 }
 
-/* ✅ MOBILE FIX: bind close on both click + touchstart */
 function bindClose(el) {
   if (!el) return;
 
-  el.addEventListener("click", (e) => {
+  el.addEventListener("click", function (e) {
     e.preventDefault();
     closeDrawer();
   });
 
   el.addEventListener(
     "touchstart",
-    (e) => {
+    function (e) {
       e.preventDefault();
       closeDrawer();
     },
@@ -372,19 +468,22 @@ function bindClose(el) {
   );
 }
 
-topicsBtn?.addEventListener("click", () => {
-  if (!faqsLoaded) return;
-  openDrawer();
-});
+if (topicsBtn) {
+  topicsBtn.addEventListener("click", function () {
+    if (!faqsLoaded) return;
+    openDrawer();
+  });
+}
 
-// stop taps inside drawer from acting like outside taps
-drawer?.addEventListener("click", (e) => e.stopPropagation());
-drawer?.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+if (drawer) {
+  drawer.addEventListener("click", function (e) { e.stopPropagation(); });
+  drawer.addEventListener("touchstart", function (e) { e.stopPropagation(); }, { passive: true });
+}
 
 bindClose(drawerCloseBtn);
 bindClose(overlay);
 
-document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", function (e) {
   if (!drawer.hidden && e.key === "Escape") closeDrawer();
 });
 
@@ -409,24 +508,28 @@ function showSuggestions(items) {
   }
 
   suggestionsEl.innerHTML = "";
-  items.forEach((it, idx) => {
+  items.forEach(function (it, idx) {
     const div = document.createElement("div");
     div.className = "suggestion-item";
     div.setAttribute("role", "option");
     div.setAttribute("aria-selected", "false");
     div.tabIndex = -1;
 
-    div.innerHTML = `${escapeHTML(it.question)}<small>${escapeHTML(it.categoryLabel)}</small>`;
+    div.innerHTML = escapeHTML(it.question) + "<small>" + escapeHTML(it.categoryLabel) + "</small>";
 
-    div.addEventListener("mousedown", (ev) => {
+    div.addEventListener("mousedown", function (ev) {
       ev.preventDefault();
       pickSuggestion(idx);
     });
 
-    div.addEventListener("touchstart", (ev) => {
-      ev.preventDefault();
-      pickSuggestion(idx);
-    }, { passive: false });
+    div.addEventListener(
+      "touchstart",
+      function (ev) {
+        ev.preventDefault();
+        pickSuggestion(idx);
+      },
+      { passive: false }
+    );
 
     suggestionsEl.appendChild(div);
   });
@@ -436,7 +539,9 @@ function showSuggestions(items) {
 
 function updateSuggestionSelection() {
   const nodes = suggestionsEl.querySelectorAll(".suggestion-item");
-  nodes.forEach((n, i) => n.setAttribute("aria-selected", String(i === activeSuggestionIndex)));
+  nodes.forEach(function (n, i) {
+    n.setAttribute("aria-selected", String(i === activeSuggestionIndex));
+  });
 }
 
 function pickSuggestion(index) {
@@ -452,50 +557,55 @@ function pickSuggestion(index) {
 }
 
 function computeSuggestions(query) {
-  const q = normalize(query);
+  let q = normalize(query);
   if (!q || q.length < 2) return [];
+
+  const correction = correctQueryTokens(query);
+  if (correction.changed && correction.corrected) q = correction.corrected;
 
   const qTokens = tokenSet(q);
 
-  const scored = FAQS.map((item) => {
+  const scored = FAQS.map(function (item) {
     const question = item.question || "";
     const syns = item.synonyms || [];
     const keys = item.canonicalKeywords || [];
     const tags = item.tags || [];
 
     const scoreQ = jaccard(qTokens, tokenSet(question));
-    const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
-    const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
-    const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
+    const scoreSyn = syns.length ? Math.max.apply(null, syns.map(function (s) { return jaccard(qTokens, tokenSet(s)); })) : 0;
+    const scoreKeys = keys.length ? Math.max.apply(null, keys.map(function (k) { return jaccard(qTokens, tokenSet(k)); })) : 0;
+    const scoreTags = tags.length ? Math.max.apply(null, tags.map(function (t) { return jaccard(qTokens, tokenSet(t)); })) : 0;
 
-    const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
+    const anyField = [question].concat(syns, keys, tags).map(normalize).join(" ");
     const boost = anyField.includes(q) ? SETTINGS.boostSubstring : 0;
 
     const score = 0.60 * scoreQ + 0.22 * scoreSyn + 0.12 * scoreKeys + 0.06 * scoreTags + boost;
-    return { item, score };
+    return { item: item, score: score };
   })
-    .sort((a, b) => b.score - a.score)
+    .sort(function (a, b) { return b.score - a.score; })
     .slice(0, SETTINGS.suggestionLimit)
-    .filter((x) => x.score > 0);
+    .filter(function (x) { return x.score > 0; });
 
-  const labelMap = new Map(categories.map((c) => [c.key, c.label]));
+  const labelMap = new Map(categories.map(function (c) { return [c.key, c.label]; }));
 
-  return scored.map((s) => ({
-    question: s.item.question,
-    categoryLabel: labelMap.get((s.item.category || "general").toLowerCase()) || "General"
-  }));
+  return scored.map(function (s) {
+    return {
+      question: s.item.question,
+      categoryLabel: labelMap.get((s.item.category || "general").toLowerCase()) || "General"
+    };
+  });
 }
 
-input.addEventListener("input", () => {
+input.addEventListener("input", function () {
   if (!faqsLoaded) return;
   showSuggestions(computeSuggestions(input.value));
 });
 
-input.addEventListener("blur", () => {
-  setTimeout(() => { suggestionsEl.hidden = true; }, 120);
+input.addEventListener("blur", function () {
+  setTimeout(function () { suggestionsEl.hidden = true; }, 120);
 });
 
-input.addEventListener("keydown", (e) => {
+input.addEventListener("keydown", function (e) {
   if (suggestionsEl.hidden) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -522,7 +632,8 @@ input.addEventListener("keydown", (e) => {
 });
 
 // ---------- Opening hours + special cases ----------
-function getUKParts(date = new Date()) {
+function getUKParts(date) {
+  const d = date || new Date();
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: UK_TZ,
     weekday: "short",
@@ -532,9 +643,9 @@ function getUKParts(date = new Date()) {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false
-  }).formatToParts(date);
+  }).formatToParts(d);
 
-  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  const map = Object.fromEntries(parts.map(function (p) { return [p.type, p.value]; }));
   return {
     weekday: map.weekday,
     year: Number(map.year),
@@ -555,7 +666,7 @@ function minutesSinceMidnight(h, m) {
 }
 
 function isOpenNowUK() {
-  const uk = getUKParts();
+  const uk = getUKParts(new Date());
   const day = ukWeekdayNumber(uk.weekday);
   const mins = minutesSinceMidnight(uk.hour, uk.minute);
 
@@ -608,71 +719,92 @@ function matchFAQ(query) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
 
-  const scored = FAQS.map((item) => {
+  const scored = FAQS.map(function (item) {
     const question = item.question || "";
     const syns = item.synonyms || [];
     const keys = item.canonicalKeywords || [];
     const tags = item.tags || [];
 
     const scoreQ = jaccard(qTokens, tokenSet(question));
-    const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
-    const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
-    const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
+    const scoreSyn = syns.length ? Math.max.apply(null, syns.map(function (s) { return jaccard(qTokens, tokenSet(s)); })) : 0;
+    const scoreKeys = keys.length ? Math.max.apply(null, keys.map(function (k) { return jaccard(qTokens, tokenSet(k)); })) : 0;
+    const scoreTags = tags.length ? Math.max.apply(null, tags.map(function (t) { return jaccard(qTokens, tokenSet(t)); })) : 0;
 
-    const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
+    const anyField = [question].concat(syns, keys, tags).map(normalize).join(" ");
     const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
 
     const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
-    return { item, score };
-  }).sort((a, b) => b.score - a.score);
+    return { item: item, score: score };
+  }).sort(function (a, b) { return b.score - a.score; });
 
   const top = scored[0];
   if (!top || top.score < SETTINGS.minConfidence) {
-    return { matched: false, suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question) };
+    return {
+      matched: false,
+      suggestions: scored.slice(0, SETTINGS.topSuggestions).map(function (r) { return r.item.question; })
+    };
   }
 
-  return { matched: true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps || [] };
+  return {
+    matched: true,
+    item: top.item,
+    answerHTML: top.item.answer,
+    followUps: top.item.followUps || []
+  };
 }
 
 // ---------- Guided fallback ----------
 function getTopCategoriesFor(query) {
   const qTokens = tokenSet(query);
 
-  const scoredCats = categories.map((c) => {
-    const items = categoryIndex.get(c.key) || [];
-    const field = items.map((it) => [it.question, ...(it.synonyms || []), ...(it.canonicalKeywords || [])].join(" ")).join(" ");
-    const score = jaccard(qTokens, tokenSet(field));
-    return { ...c, score };
-  }).sort((a, b) => b.score - a.score);
+  const scoredCats = categories
+    .map(function (c) {
+      const items = categoryIndex.get(c.key) || [];
+      const field = items
+        .map(function (it) {
+          return [it.question].concat(it.synonyms || [], it.canonicalKeywords || []).join(" ");
+        })
+        .join(" ");
+      const score = jaccard(qTokens, tokenSet(field));
+      return { key: c.key, label: c.label, count: c.count, score: score };
+    })
+    .sort(function (a, b) { return b.score - a.score; });
 
-  const top = scoredCats.filter((x) => x.score > 0).slice(0, 3);
+  const top = scoredCats.filter(function (x) { return x.score > 0; }).slice(0, 3);
   if (top.length) return top;
-  return [...categories].sort((a, b) => b.count - a.count).slice(0, 3);
+  return categories.slice().sort(function (a, b) { return b.count - a.count; }).slice(0, 3);
 }
 
 function showCategoryClarifier(query) {
   const topCats = getTopCategoriesFor(query);
   addBubble("Which topic is this closest to?", "bot", { ts: new Date() });
 
-  addChips(topCats.map((c) => c.label), (label) => {
-    const picked = topCats.find((c) => c.label === label);
-    if (picked) showQuestionsForCategory(picked.key, true);
+  const options = topCats.map(function (c) { return c.label; });
+  addChips(options, function (label) {
+    const picked = topCats.find(function (c) { return c.label === label; });
+    if (!picked) return;
+    showQuestionsForCategory(picked.key, true);
   });
 }
 
-function showQuestionsForCategory(key, includeIntro = false) {
+function showQuestionsForCategory(key, includeIntro) {
   const items = categoryIndex.get(key) || [];
-  const label = categories.find((c) => c.key === key)?.label || "Topic";
+  const labelObj = categories.find(function (c) { return c.key === key; });
+  const label = labelObj ? labelObj.label : "Topic";
 
-  if (includeIntro) addBubble(`Here are common questions in <b>${label}</b>:`, "bot", { html: true, ts: new Date() });
+  if (includeIntro) {
+    addBubble("Here are common questions in <b>" + label + "</b>:", "bot", { html: true, ts: new Date() });
+  }
 
-  addChips(items.map((it) => it.question), (q) => handleUserMessage(q));
+  const qs = items.map(function (it) { return it.question; });
+  addChips(qs, function (q) { handleUserMessage(q); });
 }
 
 // ---------- Main handler ----------
 function handleUserMessage(text) {
   if (!text) return;
 
+  // Hide suggestions once user sends
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
   currentSuggestions = [];
@@ -685,7 +817,7 @@ function handleUserMessage(text) {
   setUIEnabled(false);
   addTyping();
 
-  setTimeout(() => {
+  setTimeout(function () {
     removeTyping();
 
     if (!faqsLoaded) {
@@ -696,7 +828,7 @@ function handleUserMessage(text) {
     }
 
     const special = specialCases(text);
-    if (special?.matched) {
+    if (special && special.matched) {
       addBubble(special.answerHTML, "bot", {
         html: true,
         ts: new Date(),
@@ -709,7 +841,16 @@ function handleUserMessage(text) {
       return;
     }
 
-    const res = matchFAQ(text);
+    // FAQ match with quiet spelling correction
+    let res = matchFAQ(text);
+    if (!res.matched) {
+      const corr = correctQueryTokens(text);
+      if (corr.changed && corr.corrected) {
+        const res2 = matchFAQ(corr.corrected);
+        if (res2.matched) res = res2;
+        else if ((res2.suggestions || []).length > (res.suggestions || []).length) res = res2;
+      }
+    }
 
     if (res.matched) {
       addBubble(res.answerHTML, "bot", {
@@ -720,13 +861,12 @@ function handleUserMessage(text) {
       });
       missCount = 0;
 
-      if (res.followUps?.length) {
+      if (res.followUps && res.followUps.length) {
         addBubble("You can also ask:", "bot", { ts: new Date() });
         addChips(res.followUps);
       }
     } else {
       missCount++;
-
       if (missCount === 1) {
         showCategoryClarifier(text);
       } else {
@@ -734,7 +874,7 @@ function handleUserMessage(text) {
         addChips(res.suggestions || []);
 
         addBubble(
-          'If you’d like, you can contact support at <a href="mailto:support@Kelly.co.uk">support@Kelly.co.uk</a> or call <b>01234 567890</b>.',
+          "If you’d like, you can contact support at <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
           "bot",
           { html: true, ts: new Date(), feedback: true, feedbackMeta: { type: "escalation" } }
         );
@@ -757,16 +897,46 @@ function sendChat() {
 
 sendBtn.addEventListener("click", sendChat);
 
-clearBtn?.addEventListener("click", () => {
+// Enter submits when suggestion list isn't open
+input.addEventListener("keydown", function (e) {
+  if (!suggestionsEl.hidden) return;
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendChat();
+  }
+});
+
+clearBtn.addEventListener("click", function () {
   chatWindow.innerHTML = "";
   missCount = 0;
   init();
 });
+
+// ---------- Load FAQs (single fetch) ----------
+fetch("./public/config/faqs.json")
+  .then(function (res) { return res.json(); })
+  .then(function (data) {
+    FAQS = Array.isArray(data) ? data : [];
+    faqsLoaded = true;
+    buildCategoryIndex();
+    buildVocabFromFAQs();
+    renderDrawer();
+  })
+  .catch(function () {
+    FAQS = [];
+    faqsLoaded = true;
+    buildCategoryIndex();
+    buildVocabFromFAQs();
+    renderDrawer();
+  });
 
 // ---------- Init ----------
 function init() {
   addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date() });
 }
 
-if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", init);
-else init();
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
