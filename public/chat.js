@@ -35,7 +35,7 @@ const SETTINGS = {
   ticketTranscriptMaxLine: 140,  // max chars per transcript line
 
   // UK places dataset: 258 prominent UK cities (JSON) [1](https://www.worldcitiesdatabase.eu/United_Kingdom.php)[2](https://simplemaps.com/data/gb-cities.csv)
-  UK_PLACES_URL: "https://simplemaps.com/static/data/country-cities/gb/gb.json",
+  UK_PLACES_URL: "./public/config/uk-cities.json"
 
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
