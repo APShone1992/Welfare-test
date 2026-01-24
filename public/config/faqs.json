@@ -2,13 +2,17 @@
 [
   {
     "question": "What are your opening times?",
-    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b>. If you contact us outside these hours, we’ll reply on the next working day.",
+    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b> (UK time). If you contact us outside these hours, we’ll reply on the next working day.",
     "synonyms": [
       "opening times",
-      "when do you open",
-      "business hours",
+      "opening hours",
       "office hours",
-      "what time are you open"
+      "business hours",
+      "when do you open",
+      "what time do you open",
+      "what time are you open",
+      "what time do you close",
+      "what time do you shut"
     ],
     "canonicalKeywords": [
       "hours",
@@ -25,14 +29,16 @@
   },
   {
     "question": "How can I contact support?",
-    "answer": "Email us at <a href='mailto:support@Kelly.co.uk'>support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
+    "answer": "You can email <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
     "synonyms": [
       "support email",
       "customer service",
       "help contact",
       "contact details",
       "get in touch",
-      "phone number"
+      "phone number",
+      "how do i contact you",
+      "how can i speak to someone"
     ],
     "canonicalKeywords": [
       "email",
@@ -43,6 +49,7 @@
     "category": "support",
     "followUps": [
       "What is your response time?",
+      "Is anyone available now?",
       "Where are you located?"
     ]
   },
@@ -54,7 +61,8 @@
       "office location",
       "where is your office",
       "location",
-      "directions"
+      "directions",
+      "how do i get there"
     ],
     "canonicalKeywords": [
       "address",
