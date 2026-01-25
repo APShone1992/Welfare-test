@@ -1,22 +1,10 @@
 
-/* ---------------------------------------------------------------
- Welfare Support – Static FAQ Chatbot (Polished + Enhanced)
- Restores:
- - Original startup (greeting only) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
- - Depot flow: needOrigin accepts city chips again (Coventry etc) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-
- Includes enhancements:
- 3) Guided journeys (Access/Login, Pay/Payroll, Benefits)
- 4) Local learning from suggestion picks (no server)
- 5) Natural language hours (today/tomorrow/day-of-week/after/before)
- 6) Use my location (browser geolocation) for closest depot
- 7) Accessibility polish (focus, ARIA, reduced motion in CSS)
-
- Preferences kept:
- - No header status badge
- - No bank holiday year lookups/listing
- - Always: “No — we are not open on bank holidays.” [2](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
----------------------------------------------------------------- */
+/* Welfare Support Chatbot (Restored + Enhanced)
+- Startup greeting only (no starter chips) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+- Depot flow accepts city chips again when not using GPS [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+- Map preview FIXED: uses OpenStreetMap tile images instead of staticmap.openstreetmap.de
+- No bank holiday year listing; policy only; bank holidays affect availability (substitute-day principle) [2](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
+*/
 
 const SETTINGS = {
   minConfidence: 0.20,
@@ -25,18 +13,13 @@ const SETTINGS = {
   chipLimit: 6,
   chipClickCooldownMs: 900,
   suggestionLimit: 5,
-
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
-
   ticketTranscriptMessages: 12,
   ticketTranscriptMaxLine: 140,
-
   showUnderstoodLine: true,
   understoodLineThreshold: 0.18,
-
   voiceDefaultOn: false,
-
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
 };
@@ -46,9 +29,7 @@ let faqsLoaded = false;
 let categories = [];
 let categoryIndex = new Map();
 
-/* -----------------------------
-   DOM
------------------------------ */
+/* DOM */
 const chatWindow = document.getElementById("chatWindow");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
@@ -65,13 +46,10 @@ const drawerQuestionsEl = document.getElementById("drawerQuestions");
 const micBtn = document.getElementById("micBtn");
 const voiceBtn = document.getElementById("voiceBtn");
 
-/* -----------------------------
-   UI State
------------------------------ */
+/* UI State */
 let isResponding = false;
 let lastChipClickAt = 0;
 let missCount = 0;
-
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 
@@ -79,16 +57,12 @@ let distanceCtx = null;
 let clarifyCtx = null;
 let ticketCtx = null;
 let journeyCtx = null;
-
 let lastMissQueryNorm = null;
 let CHAT_LOG = [];
 
-/* ===============================================================
-   Memory
-================================================================ */
-const MEMORY_KEY = "ws_chat_memory_v4";
+/* Memory */
+const MEMORY_KEY = "ws_chat_memory_v5";
 const memory = { name: null, lastTopic: null, lastCity: null, preferredMode: null, voiceOn: null };
-
 function loadMemory() {
   try {
     const raw = localStorage.getItem(MEMORY_KEY);
@@ -102,12 +76,9 @@ function saveMemory() {
 }
 loadMemory();
 
-/* ===============================================================
-   Local Learning (suggestion choice memory)
-================================================================ */
+/* Local learning */
 const LEARN_KEY = "ws_choice_map_v1";
 let LEARN_MAP = {};
-
 function loadLearnMap() {
   try {
     const raw = localStorage.getItem(LEARN_KEY);
@@ -120,7 +91,6 @@ function saveLearnMap() {
   try { localStorage.setItem(LEARN_KEY, JSON.stringify(LEARN_MAP)); } catch (_) {}
 }
 loadLearnMap();
-
 function rememberChoice(queryNorm, chosenQuestion) {
   if (!queryNorm || !chosenQuestion) return;
   const entry = LEARN_MAP[queryNorm] || { chosen: chosenQuestion, count: 0 };
@@ -135,9 +105,7 @@ function learnedChoiceFor(queryNorm) {
   return e;
 }
 
-/* ===============================================================
-   Normalisation + Matching
-================================================================ */
+/* Normalisation */
 const normalize = (s) =>
   (s ?? "")
     .toLowerCase()
@@ -157,7 +125,6 @@ const STOP_WORDS = new Set([
 function stem(token) {
   return token.endsWith("s") && token.length > 3 ? token.slice(0, -1) : token;
 }
-
 const tokenSet = (s) =>
   new Set(
     normalize(s)
@@ -174,7 +141,7 @@ const jaccard = (a, b) => {
   return union ? inter / union : 0;
 };
 
-/* Better similarity: bigrams */
+/* bigram similarity */
 function bigrams(str) {
   const s = normalize(str).replace(/\s+/g, " ");
   const out = [];
@@ -195,9 +162,7 @@ function diceCoefficient(a, b) {
   return (2 * matches) / (A.length + B.length);
 }
 
-/* ===============================================================
-   Safe HTML
-================================================================ */
+/* Safe HTML */
 function escapeHTML(s) {
   const str = String(s ?? "");
   return str
@@ -211,15 +176,16 @@ function linkHTML(url, label) {
   return `<a href="${escapeAttrUrl(url)}">${escapeHTML(label)}</a>`;
 }
 function imgHTML(url, alt = "Map preview") {
-  return `<img class="map-preview" src="${escapeAttrUrl(url)}" alt="${escapeHTML(alt)}" loading="lazy">`;
+  return `<img class="map-preview" src="${escapeAttrUrl(url)}" alt="${escapeHTML(alt)}" loading="lazy" />`;
 }
-
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
+
   const allowedTags = new Set(["B","STRONG","I","EM","BR","A","SMALL","IMG"]);
   const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
   const toReplace = [];
+
   while (walker.nextNode()) {
     const el = walker.currentNode;
     if (!allowedTags.has(el.tagName)) { toReplace.push(el); continue; }
@@ -249,32 +215,25 @@ function sanitizeHTML(html) {
       }
     }
   }
+
   toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
   return template.innerHTML;
 }
-
 function htmlToPlainText(html) {
   const template = document.createElement("template");
   template.innerHTML = html ?? "";
   return (template.content.textContent ?? "").replace(/\s+\n/g, "\n").trim();
 }
 
-/* ===============================================================
-   UK time + hours + bank holidays (E&W) (no date listing)
-================================================================ */
+/* UK time */
 const UK_TZ = "Europe/London";
-
 function formatUKTime(date) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
 function formatUKDateLabel(dateObj) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, weekday: "long", day: "numeric", month: "short", year: "numeric" }).format(dateObj);
 }
-
 const UK_DAY_INDEX = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
-const DAY_NAME_TO_INDEX = { monday:1, tuesday:2, wednesday:3, thursday:4, friday:5, saturday:6, sunday:7 };
-const INDEX_TO_DAY_NAME = { 1:"Monday",2:"Tuesday",3:"Wednesday",4:"Thursday",5:"Friday",6:"Saturday",7:"Sunday" };
-
 function getUKParts(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: UK_TZ, weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
@@ -293,17 +252,15 @@ function getUKParts(date = new Date()) {
   return { weekdayShort, dayIndex, year, month, day, hour, minute, minutesNow };
 }
 
+/* Business hours + bank holidays E&W */
 const BUSINESS_HOURS = {
   openDays: new Set([1,2,3,4,5]),
   startMinutes: 8 * 60 + 30,
   endMinutes: 17 * 60
 };
-
 function toISODate(y, m, d) {
   return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 }
-
-// Easter Sunday (computus)
 function easterSunday(year) {
   const a = year % 19, b = Math.floor(year / 100), c = year % 100;
   const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
@@ -316,8 +273,7 @@ function easterSunday(year) {
   const day = ((h + l - 7 * m + 114) % 31) + 1;
   return { year, month, day };
 }
-function dayOfWeekUTC(y, m, d) { return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); } // 0 Sun..6 Sat
-
+function dayOfWeekUTC(y, m, d) { return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
 function firstMondayOfMay(year) { for (let d=1; d<=7; d++) if (dayOfWeekUTC(year,5,d)===1) return d; return 1; }
 function lastMondayOfMonth(year, month) {
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -337,7 +293,6 @@ function christmasAndBoxingObserved(year) {
   if (boxingDow===6 || boxingDow===0) return { xmas:{m:12,d:25}, boxing:{m:12,d:28} };
   return { xmas:{m:12,d:25}, boxing:{m:12,d:26} };
 }
-
 function bankHolidaysEWSet(year) {
   const set = new Set();
   const ny = newYearObserved(year);
@@ -359,13 +314,11 @@ function bankHolidaysEWSet(year) {
   set.add(toISODate(year, xb.boxing.m, xb.boxing.d));
   return set;
 }
-
 function isBankHolidayEW(dateObj = new Date()) {
   const uk = getUKParts(dateObj);
   const iso = toISODate(uk.year, uk.month, uk.day);
   return bankHolidaysEWSet(uk.year).has(iso);
 }
-
 function isOpenNowEW(dateObj = new Date()) {
   const uk = getUKParts(dateObj);
   const isWeekday = BUSINESS_HOURS.openDays.has(uk.dayIndex);
@@ -374,7 +327,6 @@ function isOpenNowEW(dateObj = new Date()) {
   if (isBankHolidayEW(dateObj)) return false;
   return true;
 }
-
 function nextOpenDateTimeEW(from = new Date()) {
   const start = new Date(from.getTime());
   for (let dayOffset = 0; dayOffset <= 14; dayOffset++) {
@@ -392,14 +344,12 @@ function nextOpenDateTimeEW(from = new Date()) {
   }
   return new Date(from.getTime() + 86400000);
 }
-
 function minsToHrsMins(mins) {
-  const h = Math.floor(mins/60), m = mins % 60;
+  const h = Math.floor(mins/60), m = mins%60;
   if (h<=0) return `${m} min`;
   if (m===0) return `${h} hr`;
   return `${h} hr ${m} min`;
 }
-
 function buildAvailabilityAnswerHTML() {
   const now = new Date();
   const uk = getUKParts(now);
@@ -418,105 +368,7 @@ function buildAvailabilityAnswerHTML() {
   return `❌ <b>No — we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b><br>Next opening time: <b>${escapeHTML(formatUKDateLabel(nextOpen))}</b> at <b>${escapeHTML(formatUKTime(nextOpen))}</b>.<br><small>Hours: Monday–Friday, 08:30–17:00 (UK time). Closed weekends & bank holidays.</small>${holidayNote}`;
 }
 
-/* ===============================================================
-   Natural language hours (open today/tomorrow/day/time)
-================================================================ */
-function addDays(dateObj, days) { return new Date(dateObj.getTime() + days * 86400000); }
-
-function parseTimeToMinutes(textNorm) {
-  const hm = textNorm.match(/\b(\d{1,2})\s*:\s*(\d{2})\b/);
-  if (hm) return Math.min(23, parseInt(hm[1],10))*60 + Math.min(59, parseInt(hm[2],10));
-
-  const ampm = textNorm.match(/\b(\d{1,2})\s*(am|pm)\b/);
-  if (ampm) {
-    let h = parseInt(ampm[1],10); const ap = ampm[2];
-    if (h === 12) h = (ap==="am") ? 0 : 12;
-    else if (ap==="pm") h += 12;
-    return Math.min(23,h)*60;
-  }
-
-  const atH = textNorm.match(/\b(at|after|before)\s+(\d{1,2})\b/);
-  if (atH) return Math.min(23, parseInt(atH[2],10))*60;
-
-  return null;
-}
-
-function resolveDayReference(qNorm) {
-  if (qNorm.includes("today")) return { dayOffset:0, label:"today" };
-  if (qNorm.includes("tomorrow")) return { dayOffset:1, label:"tomorrow" };
-
-  const dayMatch = qNorm.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/);
-  if (dayMatch) {
-    const wantIdx = DAY_NAME_TO_INDEX[dayMatch[1]];
-    const nowUK = getUKParts(new Date());
-    let delta = (wantIdx - nowUK.dayIndex + 7) % 7;
-
-    if (qNorm.includes("next ") && delta === 0) delta = 7;
-    if (qNorm.includes("next ") && delta > 0) delta += 7;
-    if (!qNorm.includes("next ") && delta === 0) delta = 7;
-
-    return { dayOffset: delta, label: `on ${INDEX_TO_DAY_NAME[wantIdx]}` };
-  }
-  return null;
-}
-
-function buildOpenAtTimeAnswer(targetDate, minutes) {
-  const uk = getUKParts(targetDate);
-  const timeLabel = `${String(Math.floor(minutes/60)).padStart(2,"0")}:${String(minutes%60).padStart(2,"0")}`;
-
-  if (isBankHolidayEW(targetDate)) {
-    return `❌ <b>No — we are not open on bank holidays.</b><br><small>Hours: Monday–Friday, 08:30–17:00 (UK time).</small>`;
-  }
-  if (!BUSINESS_HOURS.openDays.has(uk.dayIndex)) {
-    return `❌ <b>No — we’re closed ${escapeHTML(formatUKDateLabel(targetDate))}.</b><br><small>We’re open Monday–Friday, 08:30–17:00.</small>`;
-  }
-
-  const open = minutes >= BUSINESS_HOURS.startMinutes && minutes < BUSINESS_HOURS.endMinutes;
-  return open
-    ? `✅ <b>Yes — we’re open at ${escapeHTML(timeLabel)} (UK time) ${escapeHTML(formatUKDateLabel(targetDate))}.</b>`
-    : `❌ <b>No — we’re closed at ${escapeHTML(timeLabel)} (UK time) ${escapeHTML(formatUKDateLabel(targetDate))}.</b>`;
-}
-
-function naturalLanguageHoursAnswer(qNorm) {
-  const asksOpen =
-    qNorm.includes("are you open") || qNorm.includes("open ") || qNorm.includes("opening") || qNorm.includes("available");
-  const asksCloseTime =
-    qNorm.includes("close at") || qNorm.includes("closing time") || qNorm.includes("what time do you close") || qNorm.includes("what time do you shut");
-
-  if (qNorm.includes("bank holiday") || qNorm.includes("bank holidays")) {
-    return `❌ <b>No — we are not open on bank holidays.</b><br><small>We’re open Monday–Friday, 08:30–17:00 (UK time).</small>`;
-  }
-
-  const dayRef = resolveDayReference(qNorm);
-  const timeMin = parseTimeToMinutes(qNorm);
-
-  if (asksCloseTime && !dayRef && timeMin == null) {
-    return `We close at <b>17:00</b> (UK time), Monday–Friday.<br><small>Closed weekends & bank holidays.</small>`;
-  }
-
-  if (asksOpen && dayRef && timeMin == null) {
-    const target = addDays(new Date(), dayRef.dayOffset);
-    const uk = getUKParts(target);
-    if (isBankHolidayEW(target)) return `❌ <b>No — we are not open on bank holidays.</b><br><small>${escapeHTML(formatUKDateLabel(target))} is a bank holiday.</small>`;
-    if (!BUSINESS_HOURS.openDays.has(uk.dayIndex)) return `❌ <b>No — we’re closed ${escapeHTML(dayRef.label)}.</b><br><small>We’re open Monday–Friday, 08:30–17:00.</small>`;
-    return `✅ <b>Yes — we’re open ${escapeHTML(dayRef.label)}.</b><br><small>Hours: 08:30–17:00. Closed bank holidays.</small>`;
-  }
-
-  if (asksOpen && dayRef && timeMin != null) {
-    const target = addDays(new Date(), dayRef.dayOffset);
-    return buildOpenAtTimeAnswer(target, timeMin);
-  }
-
-  if (asksOpen && !dayRef && timeMin != null) {
-    return buildOpenAtTimeAnswer(new Date(), timeMin);
-  }
-
-  return null;
-}
-
-/* ===============================================================
-   Depots + places
-================================================================ */
+/* Depots & places */
 const DEPOTS = {
   nuneaton: { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
@@ -527,7 +379,6 @@ const PLACES = {
   london: { lat: 51.5074, lon: -0.1278 },
   wolverhampton: { lat: 52.5862, lon: -2.1286 }
 };
-
 function titleCase(s) { const t=(s??"").trim(); return t ? t.charAt(0).toUpperCase()+t.slice(1) : t; }
 function toRad(deg){ return (deg*Math.PI)/180; }
 function distanceMiles(a,b){
@@ -574,18 +425,24 @@ function googleDirectionsURL(originText, depot, mode){
   if (mode==="train" || mode==="bus") travelmode="transit";
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${travelmode}`;
 }
-function osmStaticMapURL(lat, lon, zoom=13, w=400, h=220){
-  const center=`${lat},${lon}`;
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${encodeURIComponent(center)}&zoom=${zoom}&size=${w}x${h}&markers=${encodeURIComponent(center)},red-pushpin`;
-}
 function googleMapsPlaceURL(lat, lon){ return `https://www.google.com/maps?q=${encodeURIComponent(lat+","+lon)}`; }
 
-/* ===============================================================
-   Spelling correction (quiet)
-================================================================ */
+/* ✅ MAP PREVIEW FIX: use standard OSM tile */
+function lonLatToTileXY(lon, lat, z) {
+  const latRad = lat * Math.PI / 180;
+  const n = Math.pow(2, z);
+  const x = Math.floor((lon + 180) / 360 * n);
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  return { x, y };
+}
+function osmTileURL(lat, lon, zoom = 13) {
+  const t = lonLatToTileXY(lon, lat, zoom);
+  return `https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`;
+}
+
+/* Spelling correction (quiet) */
 let VOCAB = new Set();
 const PROTECTED_TOKENS = new Set(["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest","payroll"]);
-
 function shouldSkipToken(tok){
   if (!tok) return true;
   if (tok.length<=3) return true;
@@ -662,9 +519,7 @@ function rephraseQuery(text){
 }
 function meaningChangeScore(a,b){ return 1 - diceCoefficient(a,b); }
 
-/* ===============================================================
-   Transcript + bubbles
-================================================================ */
+/* UI helpers */
 function setUIEnabled(enabled){
   input.disabled=!enabled;
   sendBtn.disabled=!enabled;
@@ -693,6 +548,7 @@ function buildTranscript(limit=12){
   }).join("\n");
 }
 
+/* Voice output */
 let voiceOn = (typeof memory.voiceOn === "boolean") ? memory.voiceOn : SETTINGS.voiceDefaultOn;
 memory.voiceOn = voiceOn;
 saveMemory();
@@ -721,6 +577,7 @@ voiceBtn.addEventListener("click", ()=>{
 });
 updateVoiceBtnUI();
 
+/* Voice input */
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
 let micListening = false;
@@ -761,7 +618,6 @@ function initSpeechRecognition(){
   return rec;
 }
 recognizer = initSpeechRecognition();
-
 micBtn.addEventListener("click", ()=>{
   if (!recognizer){
     addBubble("Voice input isn’t supported in this browser. Try Chrome or Edge, or just type your question.", "bot", { speak:false });
@@ -771,6 +627,7 @@ micBtn.addEventListener("click", ()=>{
   else { try{ recognizer.start(); } catch(_){} }
 });
 
+/* Bubbles */
 function addBubble(text, type, opts){
   const options=opts ?? {};
   const html=!!options.html;
@@ -801,7 +658,6 @@ function addBubble(text, type, opts){
 
   if (type==="bot" && speak) speakIfEnabled(html ? htmlToPlainText(text) : text);
 }
-
 function addTyping(){
   const row=document.createElement("div");
   row.className="msg bot";
@@ -818,6 +674,7 @@ function removeTyping(){
   if (t) t.remove();
 }
 
+/* Chips */
 function addChips(questions, onClick){
   const qs=questions ?? [];
   if (!qs.length) return;
@@ -845,9 +702,7 @@ function addChips(questions, onClick){
   chatWindow.scrollTop=chatWindow.scrollHeight;
 }
 
-/* ===============================================================
-   Drawer
-================================================================ */
+/* Drawer */
 function buildCategoryIndex(){
   categoryIndex=new Map();
   FAQS.forEach((item)=>{
@@ -900,9 +755,7 @@ bindClose(drawerCloseBtn);
 bindClose(overlay);
 document.addEventListener("keydown",(e)=>{ if (!drawer.hidden && e.key==="Escape") closeDrawer(); });
 
-/* ===============================================================
-   Typeahead Suggestions
-================================================================ */
+/* Suggestions */
 function showSuggestions(items){
   currentSuggestions=items;
   activeSuggestionIndex=-1;
@@ -959,7 +812,6 @@ function computeSuggestions(query){
       keys.length ? Math.max(...keys.map((k)=>jaccard(qTokens, tokenSet(k)))) : 0,
       tags.length ? Math.max(...tags.map((t)=>jaccard(qTokens, tokenSet(t)))) : 0
     );
-
     const scoreB=Math.max(
       diceCoefficient(q, question),
       syns.length ? Math.max(...syns.map((s)=>diceCoefficient(q, s))) : 0
@@ -1007,9 +859,7 @@ input.addEventListener("keydown",(e)=>{
   }
 });
 
-/* ===============================================================
-   Tone
-================================================================ */
+/* Tone */
 function analyzeTone(userText){
   const q=normalize(userText);
   return {
@@ -1027,9 +877,7 @@ function tonePrefix(t){
   return "";
 }
 
-/* ===============================================================
-   FAQ matching
-================================================================ */
+/* FAQ match */
 function matchFAQ(query){
   const qNorm=normalize(query);
   const qTokens=tokenSet(qNorm);
@@ -1065,44 +913,7 @@ function matchFAQ(query){
   return { matched:true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps ?? [] };
 }
 
-function categoryKeyFromLabelOrKey(textNorm){
-  for (const c of categories){
-    const keyNorm=normalize(c.key), labelNorm=normalize(c.label);
-    if (textNorm===keyNorm || textNorm===labelNorm || textNorm.includes(keyNorm) || textNorm.includes(labelNorm)) return c.key;
-  }
-  return null;
-}
-function matchFAQFromList(query, list){
-  const qNorm=normalize(query);
-  const qTokens=tokenSet(qNorm);
-
-  const scored=(list ?? []).map((item)=>{
-    const question=item.question ?? "";
-    const syns=item.synonyms ?? [];
-    const scoreJ=Math.max(
-      jaccard(qTokens, tokenSet(question)),
-      syns.length ? Math.max(...syns.map((s)=>jaccard(qTokens, tokenSet(s)))) : 0
-    );
-    const scoreB=Math.max(
-      diceCoefficient(qNorm, question),
-      syns.length ? Math.max(...syns.map((s)=>diceCoefficient(qNorm, s))) : 0
-    );
-    const anyField=[question, ...syns].map(normalize).join(" ");
-    const boost=anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
-    const score = 0.62*scoreJ + 0.30*scoreB + boost;
-    return { item, score };
-  }).sort((a,b)=>b.score-a.score);
-
-  const top=scored[0];
-  if (!top || top.score<SETTINGS.minConfidence){
-    return { matched:false, suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r)=>r.item.question) };
-  }
-  return { matched:true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps ?? [] };
-}
-
-/* ===============================================================
-   Geolocation helper
-================================================================ */
+/* Geolocation */
 function requestBrowserLocation(){
   return new Promise((resolve, reject)=>{
     if (!navigator.geolocation){ reject(new Error("Geolocation not supported")); return; }
@@ -1114,83 +925,20 @@ function requestBrowserLocation(){
   });
 }
 
-/* ===============================================================
-   Guided journeys (3)
-================================================================ */
-function startJourney(typeLabel){ journeyCtx={ type:typeLabel, stage:"start", answers:{} }; }
-
-function journeyNextPrompt(ctx){
-  const t=ctx.type;
-  if (ctx.stage==="start"){ ctx.stage="needName"; return { html:"Sure — I’ll guide you through a few quick questions. What’s your <b>name</b>?" }; }
-  if (ctx.stage==="needName"){ ctx.stage="needEmail"; return { html:"Thanks. What <b>email</b> should we reply to?" }; }
-  if (ctx.stage==="needEmail"){ ctx.stage="needPhone"; return { html:"Great — what’s the best <b>contact number</b> for you?" }; }
-
-  if (t==="Access / Login"){
-    if (ctx.stage==="needPhone"){ ctx.stage="system"; return { html:"Which system is this for? (portal, payroll app, email, etc.)" }; }
-    if (ctx.stage==="system"){ ctx.stage="issueType"; return { html:"What’s happening? (password reset, locked out, error message, etc.)" }; }
-    if (ctx.stage==="issueType"){ ctx.stage="errorText"; return { html:"If there’s an error message, paste it (or type <b>none</b>)." }; }
-    if (ctx.stage==="errorText"){ ctx.stage="urgency"; return { html:"How urgent is this?", chips:["Low","Normal","High","Critical"] }; }
-  }
-  if (t==="Pay / Payroll"){
-    if (ctx.stage==="needPhone"){ ctx.stage="payPeriod"; return { html:"Which pay period/week is affected?" }; }
-    if (ctx.stage==="payPeriod"){ ctx.stage="problem"; return { html:"What’s the issue? (missing pay, wrong hours, tax code, etc.)" }; }
-    if (ctx.stage==="problem"){ ctx.stage="amount"; return { html:"If you know it, what amount is missing/incorrect? (or type <b>unknown</b>)" }; }
-    if (ctx.stage==="amount"){ ctx.stage="urgency"; return { html:"How urgent is this?", chips:["Low","Normal","High","Critical"] }; }
-  }
-  if (t==="Benefits"){
-    if (ctx.stage==="needPhone"){ ctx.stage="benefitType"; return { html:"Which benefit is this about? (holiday, sick pay, pension, other)" }; }
-    if (ctx.stage==="benefitType"){ ctx.stage="change"; return { html:"What changed or what do you need help with?" }; }
-    if (ctx.stage==="change"){ ctx.stage="urgency"; return { html:"How urgent is this?", chips:["Low","Normal","High","Critical"] }; }
-  }
-
-  if (ctx.stage==="urgency"){ ctx.stage="done"; return { html:"Thanks — I’ve got everything I need." }; }
-  return null;
-}
-
-function buildJourneyMailto(ctx){
-  const subject=encodeURIComponent(`[Welfare Support] ${ctx.type} (${ctx.answers.urgency || "Normal"})`);
-  const transcript=buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
-
-  const lines=[
-    `Type: ${ctx.type}`,
-    `Urgency: ${ctx.answers.urgency || ""}`,
-    `Name: ${ctx.answers.name || ""}`,
-    `Email: ${ctx.answers.email || ""}`,
-    `Contact number: ${ctx.answers.phone || ""}`,
-    "",
-    "Details:",
-    ...(ctx.type==="Access / Login" ? [`System: ${ctx.answers.system || ""}`, `Issue: ${ctx.answers.issueType || ""}`, `Error: ${ctx.answers.errorText || ""}`] : []),
-    ...(ctx.type==="Pay / Payroll" ? [`Pay period: ${ctx.answers.payPeriod || ""}`, `Problem: ${ctx.answers.problem || ""}`, `Amount: ${ctx.answers.amount || ""}`] : []),
-    ...(ctx.type==="Benefits" ? [`Benefit type: ${ctx.answers.benefitType || ""}`, `Query: ${ctx.answers.change || ""}`] : []),
-    "",
-    "Chat transcript (latest messages):",
-    transcript,
-    "",
-    "— Sent from Welfare Support chatbot"
-  ].join("\n");
-
-  const body=encodeURIComponent(lines);
-  return `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
-}
-
-/* ===============================================================
-   Ticket phone validation
-================================================================ */
+/* Validation */
 function isValidPhone(raw){
   const digits=String(raw ?? "").replace(/[^\d]/g,"");
   return digits.length>=8 && digits.length<=16;
 }
 
-/* ===============================================================
-   SPECIAL CASES
-================================================================ */
+/* Special cases */
 function specialCases(query, tone){
   const corr=correctQueryTokens(query);
-  const q0 = corr.changed && corr.corrected ? corr.corrected : normalize(query);
-  const q = rephraseQuery(q0);
+  const canon=rephraseQuery(corr.changed && corr.corrected ? corr.corrected : query);
+  const q = normalize(canon);
 
-  /* Bank holiday policy (no lists) */
-  if (q.includes("bank holiday") || q.includes("bank holidays")){
+  // bank holiday policy (no lists)
+  if (q.includes("bank holiday") || q.includes("bank holidays")) {
     return {
       matched:true,
       answerHTML: `${tonePrefix(tone)}❌ <b>No — we are not open on bank holidays.</b><br><small>We’re open Monday–Friday, 08:30–17:00 (UK time), and closed on weekends & bank holidays.</small>`,
@@ -1198,104 +946,43 @@ function specialCases(query, tone){
     };
   }
 
-  /* Guided journeys start (chips or text) */
-  if (!journeyCtx){
-    if (q === "access / login" || q.includes("login") || q.includes("locked out") || q.includes("password")){
-      startJourney("Access / Login");
-      const p = journeyNextPrompt(journeyCtx);
-      return { matched:true, answerHTML: tonePrefix(tone)+p.html };
-    }
-    if (q === "pay / payroll" || q.includes("payroll") || q.includes("missing pay") || q.includes("wrong pay")){
-      startJourney("Pay / Payroll");
-      const p = journeyNextPrompt(journeyCtx);
-      return { matched:true, answerHTML: tonePrefix(tone)+p.html };
-    }
-    if (q === "benefits" || q.includes("benefit") || q.includes("holiday pay") || q.includes("sick pay") || q.includes("pension")){
-      startJourney("Benefits");
-      const p = journeyNextPrompt(journeyCtx);
-      return { matched:true, answerHTML: tonePrefix(tone)+p.html };
-    }
-  }
-
-  /* Guided journey in progress */
-  if (journeyCtx && journeyCtx.stage !== "done"){
-    if (q === "cancel" || q === "stop"){
-      journeyCtx=null;
-      return { matched:true, answerHTML: tonePrefix(tone)+"No problem — I’ve cancelled the guided help.", chips:["Access / Login","Pay / Payroll","Benefits"] };
-    }
-
-    const stage=journeyCtx.stage;
-    const raw=String(query ?? "").trim();
-
-    if (stage==="needName") journeyCtx.answers.name=raw;
-    if (stage==="needEmail"){
-      const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw);
-      if (!ok) return { matched:true, answerHTML: tonePrefix(tone)+"That doesn’t look like an email — can you retype it?" };
-      journeyCtx.answers.email=raw;
-    }
-    if (stage==="needPhone"){
-      if (!isValidPhone(raw)) return { matched:true, answerHTML: tonePrefix(tone)+"That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
-      journeyCtx.answers.phone=raw;
-    }
-    if (stage==="system") journeyCtx.answers.system=raw;
-    if (stage==="issueType") journeyCtx.answers.issueType=raw;
-    if (stage==="errorText") journeyCtx.answers.errorText = (normalize(raw)==="none") ? "None" : raw;
-    if (stage==="payPeriod") journeyCtx.answers.payPeriod=raw;
-    if (stage==="problem") journeyCtx.answers.problem=raw;
-    if (stage==="amount") journeyCtx.answers.amount = (normalize(raw)==="unknown") ? "Unknown" : raw;
-    if (stage==="benefitType") journeyCtx.answers.benefitType=raw;
-    if (stage==="change") journeyCtx.answers.change=raw;
-    if (stage==="urgency") journeyCtx.answers.urgency=raw;
-
-    const next=journeyNextPrompt(journeyCtx);
-    if (next){
-      return { matched:true, answerHTML: tonePrefix(tone)+next.html, chips: next.chips ?? null };
-    }
-
-    if (journeyCtx.stage==="done"){
-      const mailto=buildJourneyMailto(journeyCtx);
-      const summary =
-        `<b>Guided request summary</b><br>` +
-        `Type: <b>${escapeHTML(journeyCtx.type)}</b><br>` +
-        `Urgency: <b>${escapeHTML(journeyCtx.answers.urgency || "Normal")}</b><br>` +
-        `Name: <b>${escapeHTML(journeyCtx.answers.name || "")}</b><br>` +
-        `Email: <b>${escapeHTML(journeyCtx.answers.email || "")}</b><br>` +
-        `Contact number: <b>${escapeHTML(journeyCtx.answers.phone || "")}</b><br><br>` +
-        `${linkHTML(mailto, "Email support with this request (includes transcript)")}<br>` +
-        `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
-        `Want to do another guided request?`;
-      journeyCtx=null;
-      return { matched:true, answerHTML: summary, chips:["Access / Login","Pay / Payroll","Benefits"] };
-    }
-  }
-
-  /* Natural language opening hours */
-  const nl = naturalLanguageHoursAnswer(q);
-  if (nl){
-    return { matched:true, answerHTML: tonePrefix(tone)+nl, chips:["What are your opening times?","Is anyone available now?","How can I contact support?"] };
-  }
-
-  /* Availability now */
+  // availability now
   const availabilityTriggers = ["is anyone available","anyone available","available now","are you available","open now","are you open now","can i speak to someone","speak to someone now"];
-  if (availabilityTriggers.some((t)=>q.includes(t))){
-    return { matched:true, answerHTML: tonePrefix(tone)+buildAvailabilityAnswerHTML(), chips:["What are your opening times?","How can I contact support?"] };
+  if (availabilityTriggers.some((t)=>q.includes(t))) {
+    return { matched:true, answerHTML: tonePrefix(tone) + buildAvailabilityAnswerHTML(), chips:["What are your opening times?","How can I contact support?"] };
   }
 
-  /* Depot: If bot asked for origin, accept GPS OR city reply (RESTORED) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/) */
-  if (distanceCtx && distanceCtx.stage === "needOrigin"){
-    if (q === "use my location" || q === "my location"){
-      return { matched:true, answerHTML: tonePrefix(tone)+"Okay — please allow location access in your browser. One moment…", doGeo:true };
+  // location map
+  if (q.includes("where are you") || q.includes("location") || q.includes("address")) {
+    const depot = DEPOTS.nuneaton;
+    const gmaps = googleMapsPlaceURL(depot.lat, depot.lon);
+    const tile = osmTileURL(depot.lat, depot.lon, 13);
+    return {
+      matched:true,
+      answerHTML:
+        `We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.<br>` +
+        `${linkHTML(gmaps, "Open in Google Maps")}<br>` +
+        `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
+      chips:["Is there parking?","How can I contact support?"]
+    };
+  }
+
+  // parking
+  if (q.includes("parking") || q.includes("car park")) {
+    return { matched:true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
+  }
+
+  // depot: if waiting for origin, accept GPS or city (RESTORED)
+  if (distanceCtx && distanceCtx.stage === "needOrigin") {
+    if (q === "use my location" || q === "my location") {
+      return { matched:true, answerHTML: "Okay — please allow location access in your browser. One moment…", doGeo:true };
     }
-
-    // ✅ city reply (Coventry etc)
     const cityKey = findPlaceKey(q) || (PLACES[q] ? q : null);
-    if (cityKey && PLACES[cityKey]){
+    if (cityKey && PLACES[cityKey]) {
       const closest = findClosestDepot(PLACES[cityKey]);
-      if (!closest) return { matched:true, answerHTML: tonePrefix(tone)+"I couldn’t find a depot for that location yet. Try another town/city." };
-
+      if (!closest) return { matched:true, answerHTML: "I couldn’t find a depot for that location yet. Try another town/city." };
       const depot = DEPOTS[closest.depotKey];
       distanceCtx = { stage:"haveClosest", originKey: cityKey, depotKey: closest.depotKey, miles: closest.miles };
-
       return {
         matched:true,
         answerHTML:
@@ -1307,28 +994,27 @@ function specialCases(query, tone){
     }
   }
 
-  /* Depot trigger (ask for origin, show chips incl city + GPS) */
-  if (q.includes("how far") || q.includes("distance") || q.includes("closest depot") || (q.includes("depot") && q.includes("closest"))){
+  // depot trigger
+  if (q.includes("how far") || q.includes("distance") || q.includes("closest depot") || (q.includes("depot") && q.includes("closest"))) {
     const originKey = findPlaceKey(q);
-    if (!originKey){
+    if (!originKey) {
       distanceCtx = { stage:"needOrigin" };
       return {
         matched:true,
-        answerHTML: tonePrefix(tone) + "Certainly — what town/city are you travelling from? (Or choose <b>Use my location</b>.)",
+        answerHTML: "Certainly — what town/city are you travelling from? (Or choose <b>Use my location</b>.)",
         chips:["Use my location","Coventry","Birmingham","Leicester","London"]
       };
     }
     const closest = findClosestDepot(PLACES[originKey]);
-    if (!closest) return { matched:true, answerHTML: tonePrefix(tone) + "I can do that once I know your starting town/city. Where are you travelling from?" };
-
+    if (!closest) return { matched:true, answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?" };
     const depot = DEPOTS[closest.depotKey];
     distanceCtx = { stage:"haveClosest", originKey, depotKey: closest.depotKey, miles: closest.miles };
 
     const mode = parseTravelMode(q) || memory.preferredMode;
-    if (mode){
+    if (mode) {
       const minutes = estimateMinutes(closest.miles, mode);
       const url = googleDirectionsURL(titleCase(originKey), depot, mode);
-      const mapImg = osmStaticMapURL(depot.lat, depot.lon);
+      const tile = osmTileURL(depot.lat, depot.lon, 13);
       return {
         matched:true,
         answerHTML:
@@ -1336,7 +1022,7 @@ function specialCases(query, tone){
           `From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
           `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
           `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-          `${imgHTML(mapImg)}`,
+          `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
         chips:["By car","By train","By bus","Walking"]
       };
     }
@@ -1351,9 +1037,9 @@ function specialCases(query, tone){
     };
   }
 
-  /* Depot: choose travel mode after closest found */
-  if (distanceCtx && distanceCtx.stage==="haveClosest"){
-    if (q==="by car" || q==="by train" || q==="by bus" || q==="walking"){
+  // depot: mode selection after closest
+  if (distanceCtx && distanceCtx.stage === "haveClosest") {
+    if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q==="walking") ? "walk" : q.replace("by ","");
       memory.preferredMode = mode;
       saveMemory();
@@ -1362,7 +1048,7 @@ function specialCases(query, tone){
       const minutes = estimateMinutes(distanceCtx.miles, mode);
       const originLabel = distanceCtx.originKey ? titleCase(distanceCtx.originKey) : "your location";
       const url = googleDirectionsURL(originLabel, depot, mode);
-      const mapImg = osmStaticMapURL(depot.lat, depot.lon);
+      const tile = osmTileURL(depot.lat, depot.lon, 13);
 
       return {
         matched:true,
@@ -1371,38 +1057,16 @@ function specialCases(query, tone){
           `From <b>${escapeHTML(originLabel)}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.<br>` +
           `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
           `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-          `${imgHTML(mapImg)}`,
+          `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
         chips:["By car","By train","By bus","Walking"]
       };
     }
   }
 
-  /* Location question (map preview) */
-  if (q.includes("where are you") || q.includes("location") || q.includes("address")){
-    const depot = DEPOTS.nuneaton;
-    const mapImg = osmStaticMapURL(depot.lat, depot.lon);
-    const gmaps = googleMapsPlaceURL(depot.lat, depot.lon);
-    return {
-      matched:true,
-      answerHTML:
-        `We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.<br>` +
-        `${linkHTML(gmaps, "Open in Google Maps")}<br>` +
-        `${imgHTML(mapImg)}`,
-      chips:["Is there parking?","How can I contact support?"]
-    };
-  }
-
-  /* Parking */
-  if (q.includes("parking") || q.includes("car park")){
-    return { matched:true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
-  }
-
   return null;
 }
 
-/* ===============================================================
-   MAIN handler
-================================================================ */
+/* Main handler */
 function handleUserMessage(text){
   if (!text) return;
 
@@ -1432,13 +1096,10 @@ function handleUserMessage(text){
     }
 
     const corr=correctQueryTokens(text);
-    const norm0 = corr.changed && corr.corrected ? corr.corrected : text;
-    const canon = rephraseQuery(norm0);
-
+    const canon=rephraseQuery(corr.changed && corr.corrected ? corr.corrected : text);
     const change = meaningChangeScore(normalize(text), normalize(canon));
     const showUnderstood = SETTINGS.showUnderstoodLine && canon && change >= SETTINGS.understoodLineThreshold;
 
-    // Special cases
     const special = specialCases(text, tone);
     if (special && special.matched){
       if (showUnderstood) addBubble(`<small>I understood: <b>${escapeHTML(canon)}</b></small>`, "bot", { html:true, speak:false });
@@ -1460,14 +1121,14 @@ function handleUserMessage(text){
             const mode = memory.preferredMode || "car";
             const minutes = estimateMinutes(closest.miles, mode);
             const url = googleDirectionsURL("your location", depot, mode);
-            const mapImg = osmStaticMapURL(depot.lat, depot.lon);
+            const tile = osmTileURL(depot.lat, depot.lon, 13);
 
             addBubble(
               `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
               `Distance is approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
               `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
               `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-              `${imgHTML(mapImg)}`,
+              `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
               "bot",
               { html:true }
             );
@@ -1487,7 +1148,7 @@ function handleUserMessage(text){
       return;
     }
 
-    // FAQ match
+    // normal FAQ match
     let res = matchFAQ(canon);
     if (!res.matched && canon !== text){
       const res2 = matchFAQ(text);
@@ -1511,19 +1172,12 @@ function handleUserMessage(text){
       missCount++;
       lastMissQueryNorm = normalize(canon || text);
 
-      if (missCount === 1 && categories.length){
-        clarifyCtx = { stage:"needCategory", originalQuery: canon || text };
-        addBubble(tonePrefix(tone) + "Quick check — what is this about?", "bot", { speak:false });
-        addChips(categories.map((c)=>c.label));
-      } else {
-        addBubble(tonePrefix(tone) + "I’m not sure. Did you mean:", "bot", { speak:false });
+      addBubble(tonePrefix(tone) + "I’m not sure. Did you mean:", "bot", { speak:false });
 
-        // Learning: remember what they clicked after a miss
-        addChips(res.suggestions ?? [], (pickedQuestion)=>{
-          if (lastMissQueryNorm) rememberChoice(lastMissQueryNorm, pickedQuestion);
-          handleUserMessage(pickedQuestion);
-        });
-      }
+      addChips(res.suggestions ?? [], (pickedQuestion)=>{
+        if (lastMissQueryNorm) rememberChoice(lastMissQueryNorm, pickedQuestion);
+        handleUserMessage(pickedQuestion);
+      });
 
       if (missCount >= 2){
         const mail = `mailto:${SETTINGS.supportEmail}`;
@@ -1534,7 +1188,6 @@ function handleUserMessage(text){
           { html:true, speak:false }
         );
         missCount=0;
-        clarifyCtx=null;
         lastMissQueryNorm=null;
       }
     }
@@ -1551,7 +1204,6 @@ function sendChat(){
   if (!text) return;
   handleUserMessage(text);
 }
-
 sendBtn.addEventListener("click", sendChat);
 
 clearBtn.addEventListener("click", ()=>{
@@ -1567,9 +1219,7 @@ clearBtn.addEventListener("click", ()=>{
   input.focus();
 });
 
-/* ===============================================================
-   LOAD FAQS
-================================================================ */
+/* Load FAQs */
 fetch("./public/config/faqs.json")
   .then((res)=>res.json())
   .then((data)=>{
@@ -1587,9 +1237,7 @@ fetch("./public/config/faqs.json")
     renderDrawer();
   });
 
-/* ===============================================================
-   INIT (RESTORED: greeting only) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-================================================================ */
+/* INIT (greeting only) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/) */
 function init(){
   addBubble(SETTINGS.greeting, "bot", { html:true, speak:false, ts:new Date() });
 }
