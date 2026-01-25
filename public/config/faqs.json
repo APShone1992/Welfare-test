@@ -6,21 +6,21 @@
     "synonyms": ["create a ticket", "open a ticket", "log a ticket", "submit a request", "raise a request", "support ticket", "ticket"],
     "canonicalKeywords": ["ticket", "request", "support", "help"],
     "category": "actions",
-    "followUps": ["How can I contact support?", "What is your response time?"]
+    "followUps": ["How can I contact support?", "What are your opening times?"]
   },
   {
     "question": "Get directions to my closest depot",
-    "answer": "Ask <b>closest depot</b> or <b>how far is my closest depot</b>. I’ll ask your town/city (or use GPS) and then give directions.",
-    "synonyms": ["directions to depot", "get directions", "maps link", "route to depot", "navigate to depot", "closest depot directions", "closest depot", "how far depot"],
-    "canonicalKeywords": ["directions", "maps", "route", "navigate", "closest depot", "distance"],
+    "answer": "Ask <b>closest depot</b>. I’ll ask your town/city (or use GPS) and then give directions.",
+    "synonyms": ["closest depot", "how far depot", "distance to depot", "depot directions"],
+    "canonicalKeywords": ["depot", "closest", "distance", "directions"],
     "category": "actions",
-    "followUps": ["Where are you located?", "How can I contact support?"]
+    "followUps": ["Where are you located?", "Is there parking?"]
   },
   {
     "question": "What are your opening times?",
     "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b> (UK time). We’re <b>closed on weekends and bank holidays</b>.",
-    "synonyms": ["opening times", "opening hours", "office hours", "business hours", "when do you open", "what time do you open", "what time do you close"],
-    "canonicalKeywords": ["hours", "schedule", "availability"],
+    "synonyms": ["opening times", "opening hours", "office hours", "business hours"],
+    "canonicalKeywords": ["hours", "availability"],
     "category": "opening",
     "followUps": ["Is anyone available now?", "Are you open on bank holidays?"]
   },
@@ -34,34 +34,26 @@
   },
   {
     "question": "Is anyone available now?",
-    "answer": "Ask <b>is anyone available</b> to check if we’re open right now (UK time, weekends, and bank holidays).",
-    "synonyms": ["is anyone available", "anyone available", "available now", "open now", "are you open now"],
-    "canonicalKeywords": ["available", "open", "closing time", "opening time"],
+    "answer": "Ask <b>is anyone available</b> to check if we’re open right now.",
+    "synonyms": ["is anyone available", "anyone available", "available now", "open now"],
+    "canonicalKeywords": ["available", "open"],
     "category": "opening",
     "followUps": ["What are your opening times?", "How can I contact support?"]
   },
   {
     "question": "How can I contact support?",
     "answer": "You can email <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
-    "synonyms": ["support email", "customer service", "help contact", "contact details", "phone number", "how can i speak to someone"],
+    "synonyms": ["support email", "customer service", "help contact", "contact details", "phone number"],
     "canonicalKeywords": ["email", "phone", "contact"],
     "category": "support",
-    "followUps": ["Raise a request (create a ticket)", "Is anyone available now?"]
+    "followUps": ["Raise a request (create a ticket)"]
   },
   {
     "question": "Where are you located?",
     "answer": "We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.",
-    "synonyms": ["address", "office location", "where is your office", "location", "directions", "where is your depot"],
-    "canonicalKeywords": ["address", "map", "office", "directions", "depot", "parking"],
+    "synonyms": ["address", "office location", "where is your office", "location"],
+    "canonicalKeywords": ["address", "map", "office"],
     "category": "general",
-    "followUps": ["Is there parking?", "Get directions to my closest depot"]
-  },
-  {
-    "question": "Is there parking?",
-    "answer": "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times.",
-    "synonyms": ["parking", "car park", "visitor parking"],
-    "canonicalKeywords": ["parking"],
-    "category": "general",
-    "followUps": ["Where are you located?", "Get directions to my closest depot"]
+    "followUps": ["Get directions to my closest depot", "Is there parking?"]
   }
 ]
