@@ -1,12 +1,12 @@
 
 /* ---------------------------------------------------------------
- Welfare Support – Static FAQ Chatbot (Upgraded)
+ Welfare Support – Static FAQ Chatbot (Upgraded + Polished)
  Adds:
  1) Human tone adaptation
  2) Context memory (session + localStorage)
- 4) Bank holiday engine for any year (no APIs) + substitute days
- 8) Embedded static map preview (OpenStreetMap static map)
- 10) Auto-fix typos + rephrase "I understood"
+ 4) Bank holiday engine (England & Wales) for availability checks ONLY (no year listing)
+ 8) Embedded static map preview (OpenStreetMap static map) + Google Maps link
+ 10) Quiet typo correction + optional “I understood…” line
  11) Improved matching (token + bigram similarity)
  12) Voice input (SpeechRecognition) + voice output (SpeechSynthesis)
 ---------------------------------------------------------------- */
@@ -22,13 +22,12 @@ const SETTINGS = {
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
 
-  // mailto transcript limits
   ticketTranscriptMessages: 12,
   ticketTranscriptMaxLine: 140,
 
-  // UX
-  showUnderstoodLine: true,     // show “I understood: …” when we corrected/rephrased
-  understoodLineThreshold: 0.18, // only show if meaning changed enough
+  showUnderstoodLine: true,
+  understoodLineThreshold: 0.18,
+
   voiceDefaultOn: false,
 
   greeting:
@@ -58,7 +57,6 @@ const drawerQuestionsEl = document.getElementById("drawerQuestions");
 
 const micBtn = document.getElementById("micBtn");
 const voiceBtn = document.getElementById("voiceBtn");
-const statusBadge = document.getElementById("statusBadge");
 
 /* -----------------------------
    UI State
@@ -79,13 +77,13 @@ let CHAT_LOG = []; // { role: "User"|"Bot", text, ts }
 /* ===============================================================
    2) Context memory (persisted)
 ================================================================ */
-const MEMORY_KEY = "ws_chat_memory_v1";
+const MEMORY_KEY = "ws_chat_memory_v2";
 const memory = {
   name: null,
   lastTopic: null,
   lastCity: null,
   preferredMode: null,
-  voiceOn: null // boolean
+  voiceOn: null
 };
 
 function loadMemory() {
@@ -93,18 +91,14 @@ function loadMemory() {
     const raw = localStorage.getItem(MEMORY_KEY);
     if (!raw) return;
     const obj = JSON.parse(raw);
-    if (obj && typeof obj === "object") {
-      Object.assign(memory, obj);
-    }
+    if (obj && typeof obj === "object") Object.assign(memory, obj);
   } catch (_) {}
 }
-
 function saveMemory() {
   try {
     localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
   } catch (_) {}
 }
-
 loadMemory();
 
 /* ===============================================================
@@ -155,7 +149,6 @@ function bigrams(str) {
   for (let i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
   return out;
 }
-
 function diceCoefficient(a, b) {
   const A = bigrams(a);
   const B = bigrams(b);
@@ -176,7 +169,7 @@ function diceCoefficient(a, b) {
 }
 
 /* ===============================================================
-   HTML escaping + sanitization (safe)
+   HTML escaping + sanitization
 ================================================================ */
 function escapeHTML(s) {
   const str = String(s ?? "");
@@ -189,7 +182,6 @@ function escapeHTML(s) {
 }
 
 function escapeAttrUrl(url) {
-  // only used for attributes we control
   return String(url ?? "")
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;");
@@ -199,7 +191,7 @@ function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
 
-  // ✅ allow IMG for map previews (restricted)
+  // allow IMG for map previews (restricted)
   const allowedTags = new Set(["B","STRONG","I","EM","BR","A","SMALL","IMG"]);
 
   const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
@@ -213,12 +205,10 @@ function sanitizeHTML(html) {
       continue;
     }
 
-    // remove unsafe attributes
     [...el.attributes].forEach((attr) => {
       const name = attr.name.toLowerCase();
 
       if (el.tagName === "A" && (name === "href" || name === "target" || name === "rel")) return;
-
       if (el.tagName === "IMG" && (name === "src" || name === "alt" || name === "class" || name === "loading")) return;
 
       el.removeAttribute(attr.name);
@@ -234,10 +224,8 @@ function sanitizeHTML(html) {
 
     if (el.tagName === "IMG") {
       const src = el.getAttribute("src") ?? "";
-      // allow only https images (prevents script/data injection)
       const safeImg = /^https:\/\//i.test(src);
       if (!safeImg) {
-        // replace unsafe image with its alt text
         toReplace.push(el);
       } else {
         if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");
@@ -246,7 +234,10 @@ function sanitizeHTML(html) {
     }
   }
 
-  toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
+  toReplace.forEach((node) =>
+    node.replaceWith(document.createTextNode(node.textContent ?? ""))
+  );
+
   return template.innerHTML;
 }
 
@@ -311,23 +302,15 @@ function getUKParts(date = new Date()) {
 }
 
 /* ===============================================================
-   4) Bank holiday engine (England & Wales, no APIs)
-   Standard bank holidays + substitute days per GOV.UK guidance. [2](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
-   Also supports one-off overrides if ever needed.
+   4) Bank holiday engine (England & Wales) — for OPEN/CLOSED only
+   Uses substitute-day logic as per GOV.UK guidance. [1](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
+   NOTE: We DO NOT show lists or year lookups in the chat.
 ================================================================ */
 const BUSINESS_HOURS = {
-  openDays: new Set([1,2,3,4,5]),     // Mon-Fri
-  startMinutes: 8 * 60 + 30,         // 08:30
-  endMinutes: 17 * 60                // 17:00
+  openDays: new Set([1,2,3,4,5]),
+  startMinutes: 8 * 60 + 30,
+  endMinutes: 17 * 60
 };
-
-// optional overrides (rare one-offs) - format: "YYYY-MM-DD"
-const BANK_HOLIDAY_OVERRIDES_ADD = new Set([
-  // Example: "2023-05-08" (Coronation holiday) if you ever need it
-]);
-const BANK_HOLIDAY_OVERRIDES_REMOVE = new Set([
-  // Example: remove if not observed
-]);
 
 function toISODate(y, m, d) {
   const mm = String(m).padStart(2, "0");
@@ -335,7 +318,7 @@ function toISODate(y, m, d) {
   return `${y}-${mm}-${dd}`;
 }
 
-// Gregorian computus (Anonymous algorithm) - Easter Sunday
+// Easter Sunday (Gregorian computus)
 function easterSunday(year) {
   const a = year % 19;
   const b = Math.floor(year / 100);
@@ -349,96 +332,72 @@ function easterSunday(year) {
   const k = c % 4;
   const l = (32 + 2 * e + 2 * i - h - k) % 7;
   const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31); // 3=Mar, 4=Apr
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
   const day = ((h + l - 7 * m + 114) % 31) + 1;
   return { year, month, day };
 }
 
 function dayOfWeek(y, m, d) {
-  // Zeller-like; return 0=Sunday..6=Saturday for Gregorian calendar
-  const date = new Date(Date.UTC(y, m - 1, d));
-  return date.getUTCDay();
+  // 0=Sun..6=Sat (UTC safe)
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 }
 
 function firstMondayOfMay(year) {
-  // May = 5
   for (let d = 1; d <= 7; d++) {
-    if (dayOfWeek(year, 5, d) === 1) return d; // Monday
+    if (dayOfWeek(year, 5, d) === 1) return d;
   }
   return 1;
 }
 
 function lastMondayOfMonth(year, month) {
-  // find last day of month
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate(); // month is 1-based
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
   for (let d = lastDay; d >= lastDay - 6; d--) {
-    if (dayOfWeek(year, month, d) === 1) return d; // Monday
+    if (dayOfWeek(year, month, d) === 1) return d;
   }
   return lastDay;
 }
 
-function christmasSubstituteDays(year) {
-  // Returns { christmasObserved: {m,d}, boxingObserved: {m,d} } for E&W
-  // If Christmas/Boxing fall on weekend, substitute days apply. [2](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
-  const xmasDow = dayOfWeek(year, 12, 25); // 0 Sun .. 6 Sat
-  const boxingDow = dayOfWeek(year, 12, 26);
-
-  let christmasObserved = { m: 12, d: 25 };
-  let boxingObserved = { m: 12, d: 26 };
-
-  // If 25th is Saturday -> observed Monday 27th; Boxing observed Tuesday 28th
-  if (xmasDow === 6) {
-    christmasObserved = { m: 12, d: 27 };
-    boxingObserved = { m: 12, d: 28 };
-    return { christmasObserved, boxingObserved };
-  }
-
-  // If 25th is Sunday -> observed Tuesday 27th? Actually Monday 26th becomes Christmas substitute, Tuesday 27th becomes Boxing substitute.
-  if (xmasDow === 0) {
-    christmasObserved = { m: 12, d: 27 };
-    boxingObserved = { m: 12, d: 28 };
-    return { christmasObserved, boxingObserved };
-  }
-
-  // If Boxing Day is Sunday -> observed Tuesday 28th (because Monday 27th may be Christmas substitute if 25th was Sat)
-  if (boxingDow === 0) {
-    boxingObserved = { m: 12, d: 28 };
-  }
-
-  // If Boxing Day is Saturday -> observed Monday 28th? Actually if 26th is Sat, observed Monday 28th (since 27th Sunday).
-  if (boxingDow === 6) {
-    boxingObserved = { m: 12, d: 28 };
-  }
-
-  return { christmasObserved, boxingObserved };
-}
-
 function newYearObserved(year) {
-  // If Jan 1 is Saturday -> observed Monday Jan 3
-  // If Jan 1 is Sunday -> observed Monday Jan 2
   const dow = dayOfWeek(year, 1, 1);
-  if (dow === 6) return { m: 1, d: 3 };
-  if (dow === 0) return { m: 1, d: 2 };
+  if (dow === 6) return { m: 1, d: 3 }; // Sat -> Mon 3
+  if (dow === 0) return { m: 1, d: 2 }; // Sun -> Mon 2
   return { m: 1, d: 1 };
 }
 
-function bankHolidaysEnglandWales(year) {
+function christmasAndBoxingObserved(year) {
+  // Substitute days per GOV.UK principle: if weekend, substitute weekday applies. [1](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
+  const xmasDow = dayOfWeek(year, 12, 25);
+  const boxingDow = dayOfWeek(year, 12, 26);
+
+  // If Christmas Day is Sat/Sun, observed on Mon/Tue and Boxing on next weekday
+  if (xmasDow === 6 || xmasDow === 0) {
+    return { xmas: { m: 12, d: 27 }, boxing: { m: 12, d: 28 } };
+  }
+
+  // If Boxing Day is Sat or Sun, observed on next Monday (28th)
+  if (boxingDow === 6 || boxingDow === 0) {
+    return { xmas: { m: 12, d: 25 }, boxing: { m: 12, d: 28 } };
+  }
+
+  return { xmas: { m: 12, d: 25 }, boxing: { m: 12, d: 26 } };
+}
+
+function bankHolidaysEWSet(year) {
   const set = new Set();
 
   // New Year
   const ny = newYearObserved(year);
   set.add(toISODate(year, ny.m, ny.d));
 
-  // Easter-related
+  // Easter
   const es = easterSunday(year);
-  // Good Friday = Easter Sunday - 2 days, Easter Monday = +1 day
-  const easterDate = new Date(Date.UTC(year, es.month - 1, es.day));
-  const goodFriday = new Date(easterDate.getTime() - 2 * 86400000);
-  const easterMonday = new Date(easterDate.getTime() + 1 * 86400000);
+  const easter = new Date(Date.UTC(year, es.month - 1, es.day));
+  const goodFriday = new Date(easter.getTime() - 2 * 86400000);
+  const easterMonday = new Date(easter.getTime() + 1 * 86400000);
   set.add(toISODate(goodFriday.getUTCFullYear(), goodFriday.getUTCMonth() + 1, goodFriday.getUTCDate()));
   set.add(toISODate(easterMonday.getUTCFullYear(), easterMonday.getUTCMonth() + 1, easterMonday.getUTCDate()));
 
-  // Early May (first Monday of May)
+  // Early May (first Monday)
   set.add(toISODate(year, 5, firstMondayOfMay(year)));
 
   // Spring (last Monday of May)
@@ -447,18 +406,10 @@ function bankHolidaysEnglandWales(year) {
   // Summer (last Monday of August)
   set.add(toISODate(year, 8, lastMondayOfMonth(year, 8)));
 
-  // Christmas + Boxing substitutes
-  const x = christmasSubstituteDays(year);
-  set.add(toISODate(year, x.christmasObserved.m, x.christmasObserved.d));
-  set.add(toISODate(year, x.boxingObserved.m, x.boxingObserved.d));
-
-  // apply overrides
-  BANK_HOLIDAY_OVERRIDES_ADD.forEach((d) => {
-    if (d.startsWith(String(year) + "-")) set.add(d);
-  });
-  BANK_HOLIDAY_OVERRIDES_REMOVE.forEach((d) => {
-    if (d.startsWith(String(year) + "-")) set.delete(d);
-  });
+  // Christmas + Boxing
+  const xb = christmasAndBoxingObserved(year);
+  set.add(toISODate(year, xb.xmas.m, xb.xmas.d));
+  set.add(toISODate(year, xb.boxing.m, xb.boxing.d));
 
   return set;
 }
@@ -466,47 +417,37 @@ function bankHolidaysEnglandWales(year) {
 function isBankHolidayEW(dateObj = new Date()) {
   const uk = getUKParts(dateObj);
   const iso = toISODate(uk.year, uk.month, uk.day);
-  const set = bankHolidaysEnglandWales(uk.year);
-  return set.has(iso);
+  return bankHolidaysEWSet(uk.year).has(iso);
 }
 
 function isOpenNowEW(dateObj = new Date()) {
   const uk = getUKParts(dateObj);
   const isWeekday = BUSINESS_HOURS.openDays.has(uk.dayIndex);
-  const withinHours = uk.minutesNow >= BUSINESS_HOURS.startMinutes && uk.minutesNow < BUSINESS_HOURS.endMinutes;
-  if (!isWeekday || !withinHours) return false;
+  const within = uk.minutesNow >= BUSINESS_HOURS.startMinutes && uk.minutesNow < BUSINESS_HOURS.endMinutes;
+  if (!isWeekday || !within) return false;
   if (isBankHolidayEW(dateObj)) return false;
   return true;
 }
 
 function nextOpenDateTimeEW(from = new Date()) {
-  // Find next opening time (08:30 UK) skipping weekends & bank holidays
+  // next opening time (08:30 UK) skipping weekends & bank holidays
   const start = new Date(from.getTime());
+
   for (let dayOffset = 0; dayOffset <= 14; dayOffset++) {
     const probe = new Date(start.getTime() + dayOffset * 86400000);
-
-    // Search for 08:30 UK on that date
     const base = new Date(probe.getTime());
     base.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < 24 * 60; i++) {
       const cand = new Date(base.getTime() + i * 60000);
       const uk = getUKParts(cand);
-
-      // match 08:30 on that date
       if (uk.minutesNow !== BUSINESS_HOURS.startMinutes) continue;
-
-      // must be weekday, must not be bank holiday
       if (!BUSINESS_HOURS.openDays.has(uk.dayIndex)) continue;
       if (isBankHolidayEW(cand)) continue;
-
-      // if dayOffset==0, must be in the future (or now before opening)
       if (cand.getTime() <= from.getTime()) continue;
-
       return cand;
     }
   }
-  // fallback: tomorrow
   return new Date(from.getTime() + 86400000);
 }
 
@@ -532,11 +473,13 @@ function buildAvailabilityAnswerHTML() {
     );
   }
 
-  const holidayNote = isBankHolidayEW(now)
-    ? "<br><small>Today is a <b>bank holiday</b> (England & Wales), so we’re closed.</small>"
+  const isBH = isBankHolidayEW(now);
+  const holidayNote = isBH
+    ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>"
     : "";
 
   const nextOpen = nextOpenDateTimeEW(now);
+
   return (
     `❌ <b>No — we’re closed right now.</b><br>` +
     `Current UK time: <b>${escapeHTML(nowUK)}</b><br>` +
@@ -547,14 +490,12 @@ function buildAvailabilityAnswerHTML() {
 }
 
 /* ===============================================================
-   8) Map preview (OSM static map) + Google Maps link
+   8) Map preview + Google Maps link
 ================================================================ */
-function osmStaticMapURL(lat, lon, zoom = 14, w = 400, h = 220) {
+function osmStaticMapURL(lat, lon, zoom = 13, w = 400, h = 220) {
   const center = `${lat},${lon}`;
-  // Public OSM static map service, no key required
   return `https://staticmap.openstreetmap.de/staticmap.php?center=${encodeURIComponent(center)}&zoom=${zoom}&size=${w}x${h}&markers=${encodeURIComponent(center)},red-pushpin`;
 }
-
 function googleMapsPlaceURL(lat, lon) {
   return `https://www.google.com/maps?q=${encodeURIComponent(lat + "," + lon)}`;
 }
@@ -707,7 +648,6 @@ function bestVocabMatch(token) {
 
 function buildVocabFromFAQs() {
   const vocab = new Set();
-
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -722,7 +662,6 @@ function buildVocabFromFAQs() {
     }
   }
 
-  // also add locations/depot words
   for (const dk in DEPOTS) {
     if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
@@ -745,38 +684,33 @@ function correctQueryTokens(rawText) {
   let changed = false;
   const correctedTokens = tokens.map((t) => {
     const fixed = bestVocabMatch(t);
-    if (fixed) {
-      changed = true;
-      return fixed;
-    }
+    if (fixed) { changed = true; return fixed; }
     return t;
   });
+
   return { corrected: correctedTokens.join(" "), changed };
 }
 
-function rephraseQuery(normText) {
-  // lightweight rephrase to a canonical form for better matching & clarity
-  let q = normalize(normText);
+function rephraseQuery(text) {
+  let q = normalize(text);
 
-  // common sms/typo patterns
+  // common shorthand
   q = q.replace(/\bwhn\b/g, "when")
        .replace(/\bur\b/g, "your")
        .replace(/\bu\b/g, "you")
        .replace(/\br\b/g, "are");
 
-  // normalize “open/available”
+  // normalize availability phrasing
   q = q.replace(/\bis any( )?one available\b/g, "is anyone available now")
-       .replace(/\bopen right now\b/g, "open now")
-       .replace(/\bopening hour\b/g, "opening hours");
+       .replace(/\bopen right now\b/g, "open now");
 
-  // normalize depot distance phrasing
+  // normalize depot phrasing
   if (q.includes("how far") && q.includes("depot")) q = "how far is my closest depot";
 
   return q.trim();
 }
 
 function meaningChangeScore(a, b) {
-  // 0..1 based on dice similarity (lower => bigger change)
   return 1 - diceCoefficient(a, b);
 }
 
@@ -787,7 +721,6 @@ function setUIEnabled(enabled) {
   input.disabled = !enabled;
   sendBtn.disabled = !enabled;
   micBtn.disabled = !enabled;
-  // allow voice toggle always
   chatWindow.querySelectorAll(".chip-btn").forEach((b) => (b.disabled = !enabled));
 }
 
@@ -819,10 +752,111 @@ function buildTranscript(limit = 12) {
   }).join("\n");
 }
 
+/* ===============================================================
+   12) Voice output
+================================================================ */
+let voiceOn = (typeof memory.voiceOn === "boolean") ? memory.voiceOn : SETTINGS.voiceDefaultOn;
+memory.voiceOn = voiceOn;
+saveMemory();
+
+function updateVoiceBtnUI() {
+  if (!voiceBtn) return;
+  voiceBtn.classList.toggle("on", !!voiceOn);
+  voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
+  voiceBtn.title = voiceOn ? "Voice output on" : "Voice output off";
+}
+
+function speakIfEnabled(text) {
+  if (!voiceOn) return;
+  if (!("speechSynthesis" in window)) return;
+
+  try {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(String(text ?? ""));
+    utter.rate = 1.0;
+    utter.pitch = 1.0;
+    utter.lang = "en-GB";
+    window.speechSynthesis.speak(utter);
+  } catch (_) {}
+}
+
+voiceBtn?.addEventListener("click", () => {
+  voiceOn = !voiceOn;
+  memory.voiceOn = voiceOn;
+  saveMemory();
+  updateVoiceBtnUI();
+  addBubble(voiceOn ? "Voice output is now <b>on</b>." : "Voice output is now <b>off</b>.", "bot", { html: true, ts: new Date() });
+});
+
+updateVoiceBtnUI();
+
+/* ===============================================================
+   12) Voice input
+================================================================ */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let micListening = false;
+
+function initSpeechRecognition() {
+  if (!SpeechRecognition) return null;
+
+  const rec = new SpeechRecognition();
+  rec.lang = "en-GB";
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+
+  rec.onstart = () => {
+    micListening = true;
+    micBtn?.classList.add("on");
+    micBtn.textContent = "🎙️";
+  };
+
+  rec.onend = () => {
+    micListening = false;
+    micBtn?.classList.remove("on");
+    micBtn.textContent = "🎤";
+  };
+
+  rec.onerror = () => {
+    micListening = false;
+    micBtn?.classList.remove("on");
+    micBtn.textContent = "🎤";
+    addBubble("Voice input isn’t available right now — you can still type your question.", "bot", { ts: new Date() });
+  };
+
+  rec.onresult = (event) => {
+    const text = event.results?.[0]?.[0]?.transcript ?? "";
+    if (text.trim()) {
+      input.value = text.trim();
+      sendChat();
+    }
+  };
+
+  return rec;
+}
+
+recognizer = initSpeechRecognition();
+
+micBtn?.addEventListener("click", () => {
+  if (!recognizer) {
+    addBubble("Voice input isn’t supported in this browser. Try Chrome or Edge, or just type your question.", "bot", { ts: new Date() });
+    return;
+  }
+  if (micListening) {
+    try { recognizer.stop(); } catch (_) {}
+  } else {
+    try { recognizer.start(); } catch (_) {}
+  }
+});
+
+/* ===============================================================
+   Bubble rendering (speaks bot messages unless suppressed)
+================================================================ */
 function addBubble(text, type, opts) {
   const options = opts ?? {};
   const html = !!options.html;
   const ts = options.ts ?? new Date();
+  const speak = options.speak !== false;
 
   const row = document.createElement("div");
   row.className = "msg " + type;
@@ -847,24 +881,22 @@ function addBubble(text, type, opts) {
 
   pushToTranscript(type, html ? sanitizeHTML(text) : text, { ts, html });
 
-  // 12) Voice output (if enabled and bot message)
-  if (type === "bot") speakIfEnabled(html ? htmlToPlainText(text) : text);
+  if (type === "bot" && speak) {
+    speakIfEnabled(html ? htmlToPlainText(text) : text);
+  }
 }
 
 function addTyping() {
   const row = document.createElement("div");
   row.className = "msg bot";
   row.dataset.typing = "true";
-
   const bubble = document.createElement("div");
   bubble.className = "bubble bot typing-bubble";
   bubble.innerHTML = 'Typing <span class="typing"><span></span><span></span><span></span></span>';
-
   row.appendChild(bubble);
   chatWindow.appendChild(row);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
-
 function removeTyping() {
   const t = chatWindow.querySelector('[data-typing="true"]');
   if (t) t.remove();
@@ -882,19 +914,17 @@ function addChips(questions, onClick) {
     b.type = "button";
     b.className = "chip-btn";
     b.textContent = q;
-
     b.addEventListener("click", () => {
       const now = Date.now();
       if (isResponding) return;
       if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
-
       lastChipClickAt = now;
+
       wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
       if (typeof onClick === "function") onClick(q);
       else handleUserMessage(q);
       input.focus();
     });
-
     wrap.appendChild(b);
   });
 
@@ -904,7 +934,7 @@ function addChips(questions, onClick) {
 }
 
 /* ===============================================================
-   Topics Drawer
+   Topics drawer
 ================================================================ */
 function buildCategoryIndex() {
   categoryIndex = new Map();
@@ -976,14 +1006,8 @@ function renderDrawer(selectedKey) {
 
 function bindClose(el) {
   if (!el) return;
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    closeDrawer();
-  });
-  el.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    closeDrawer();
-  }, { passive: false });
+  el.addEventListener("click", (e) => { e.preventDefault(); closeDrawer(); });
+  el.addEventListener("touchstart", (e) => { e.preventDefault(); closeDrawer(); }, { passive: false });
 }
 
 topicsBtn?.addEventListener("click", () => { if (faqsLoaded) openDrawer(); });
@@ -996,7 +1020,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* ===============================================================
-   Typeahead Suggestions
+   Typeahead suggestions
 ================================================================ */
 function showSuggestions(items) {
   currentSuggestions = items;
@@ -1051,7 +1075,6 @@ function computeSuggestions(query) {
   if (corr.changed && corr.corrected) q = corr.corrected;
 
   const qTokens = tokenSet(q);
-
   const labelMap = new Map(categories.map((c) => [c.key, c.label]));
 
   const scored = FAQS.map((item) => {
@@ -1137,6 +1160,7 @@ function tonePrefix(tone) {
   if (tone.frustrated) return "I’m sorry about that — ";
   if (tone.urgent) return "Got it — ";
   if (tone.greeting) return "Hello! ";
+  if (tone.thanks) return "You’re welcome — ";
   return "";
 }
 
@@ -1164,13 +1188,15 @@ function matchFAQ(query) {
     const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
     const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
 
-    const score = (0.52 * scoreQ + 0.22 * scoreSyn + 0.10 * scoreKeys + 0.06 * scoreTags) + (0.10 * bigramQ + 0.08 * bigramSyn) + boost;
+    const score =
+      (0.52 * scoreQ + 0.22 * scoreSyn + 0.10 * scoreKeys + 0.06 * scoreTags) +
+      (0.10 * bigramQ + 0.08 * bigramSyn) +
+      boost;
 
     return { item, score };
   }).sort((a, b) => b.score - a.score);
 
   const top = scored[0];
-
   if (!top || top.score < SETTINGS.minConfidence) {
     return {
       matched: false,
@@ -1182,8 +1208,7 @@ function matchFAQ(query) {
     matched: true,
     item: top.item,
     answerHTML: top.item.answer,
-    followUps: top.item.followUps ?? [],
-    score: top.score
+    followUps: top.item.followUps ?? []
   };
 }
 
@@ -1205,20 +1230,21 @@ function matchFAQFromList(query, list) {
   const scored = (list ?? []).map((item) => {
     const question = item.question ?? "";
     const syns = item.synonyms ?? [];
-    const keys = item.canonicalKeywords ?? [];
-    const tags = item.tags ?? [];
 
-    const scoreQ = jaccard(qTokens, tokenSet(question));
-    const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
+    const scoreJ = Math.max(
+      jaccard(qTokens, tokenSet(question)),
+      syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0
+    );
 
-    const bigramQ = diceCoefficient(qNorm, question);
-    const bigramSyn = syns.length ? Math.max(...syns.map((s) => diceCoefficient(qNorm, s))) : 0;
+    const scoreB = Math.max(
+      diceCoefficient(qNorm, question),
+      syns.length ? Math.max(...syns.map((s) => diceCoefficient(qNorm, s))) : 0
+    );
 
-    const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
+    const anyField = [question, ...syns].map(normalize).join(" ");
     const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
 
-    const score = 0.62 * Math.max(scoreQ, scoreSyn) + 0.30 * Math.max(bigramQ, bigramSyn) + boost;
-
+    const score = 0.62 * scoreJ + 0.30 * scoreB + boost;
     return { item, score };
   }).sort((a, b) => b.score - a.score);
 
@@ -1229,159 +1255,45 @@ function matchFAQFromList(query, list) {
       suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
     };
   }
+
   return {
     matched: true,
     item: top.item,
     answerHTML: top.item.answer,
-    followUps: top.item.followUps ?? [],
-    score: top.score
+    followUps: top.item.followUps ?? []
   };
 }
 
 /* ===============================================================
    Ticket validation
 ================================================================ */
-function normalizePhoneForValidation(raw) {
-  const s = String(raw ?? "").trim();
-  const digits = s.replace(/[^\d]/g, "");
-  return { original: s, digits };
-}
 function isValidPhone(raw) {
-  const { digits } = normalizePhoneForValidation(raw);
+  const digits = String(raw ?? "").replace(/[^\d]/g, "");
   return digits.length >= 8 && digits.length <= 16;
 }
 
 /* ===============================================================
-   12) Voice input + output
-================================================================ */
-let voiceOn = (typeof memory.voiceOn === "boolean") ? memory.voiceOn : SETTINGS.voiceDefaultOn;
-memory.voiceOn = voiceOn;
-saveMemory();
-
-function updateVoiceBtnUI() {
-  if (!voiceBtn) return;
-  voiceBtn.classList.toggle("on", !!voiceOn);
-  voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
-  voiceBtn.title = voiceOn ? "Voice output on" : "Voice output off";
-}
-
-function speakIfEnabled(text) {
-  if (!voiceOn) return;
-  if (!("speechSynthesis" in window)) return;
-
-  try {
-    // cancel any ongoing speech so it doesn't overlap
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(String(text ?? ""));
-    utter.rate = 1.0;
-    utter.pitch = 1.0;
-    utter.lang = "en-GB";
-    window.speechSynthesis.speak(utter);
-  } catch (_) {}
-}
-
-voiceBtn?.addEventListener("click", () => {
-  voiceOn = !voiceOn;
-  memory.voiceOn = voiceOn;
-  saveMemory();
-  updateVoiceBtnUI();
-  addBubble(voiceOn ? "Voice output is now <b>on</b>." : "Voice output is now <b>off</b>.", "bot", { html: true, ts: new Date() });
-});
-
-updateVoiceBtnUI();
-
-// Voice recognition (Chrome/Edge typically)
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognizer = null;
-let micListening = false;
-
-function initSpeechRecognition() {
-  if (!SpeechRecognition) return null;
-
-  const rec = new SpeechRecognition();
-  rec.lang = "en-GB";
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
-
-  rec.onstart = () => {
-    micListening = true;
-    micBtn?.classList.add("on");
-    micBtn.textContent = "🎙️";
-  };
-
-  rec.onend = () => {
-    micListening = false;
-    micBtn?.classList.remove("on");
-    micBtn.textContent = "🎤";
-  };
-
-  rec.onerror = () => {
-    micListening = false;
-    micBtn?.classList.remove("on");
-    micBtn.textContent = "🎤";
-    addBubble("Voice input isn’t available right now — you can still type your question.", "bot", { ts: new Date() });
-  };
-
-  rec.onresult = (event) => {
-    const text = event.results?.[0]?.[0]?.transcript ?? "";
-    if (text.trim()) {
-      input.value = text.trim();
-      sendChat();
-    }
-  };
-
-  return rec;
-}
-
-recognizer = initSpeechRecognition();
-
-micBtn?.addEventListener("click", () => {
-  if (!recognizer) {
-    addBubble("Voice input isn’t supported in this browser. Try Chrome or Edge, or just type your question.", "bot", { ts: new Date() });
-    return;
-  }
-  if (micListening) {
-    try { recognizer.stop(); } catch (_) {}
-  } else {
-    try { recognizer.start(); } catch (_) {}
-  }
-});
-
-/* ===============================================================
-   Status badge (open/closed/bank holiday)
-================================================================ */
-function updateStatusBadge() {
-  if (!statusBadge) return;
-  const now = new Date();
-  const open = isOpenNowEW(now);
-  const holiday = isBankHolidayEW(now);
-  const ukTime = formatUKTime(now);
-
-  statusBadge.classList.remove("open","closed","holiday");
-
-  if (open) {
-    statusBadge.classList.add("open");
-    statusBadge.textContent = `🟢 Open now (${ukTime})`;
-  } else if (holiday) {
-    statusBadge.classList.add("holiday");
-    statusBadge.textContent = `🟡 Bank holiday — closed`;
-  } else {
-    statusBadge.classList.add("closed");
-    statusBadge.textContent = `🔴 Closed (${ukTime})`;
-  }
-}
-updateStatusBadge();
-setInterval(updateStatusBadge, 60 * 1000);
-
-/* ===============================================================
-   Special cases (availability + flows + map previews)
+   SPECIAL CASES (bank holidays policy, availability, ticket, depot, location)
 ================================================================ */
 function specialCases(query, tone) {
   const corr = correctQueryTokens(query);
   const q0 = corr.changed && corr.corrected ? corr.corrected : normalize(query);
   const q = rephraseQuery(q0);
 
-  // availability triggers
+  // ✅ Bank holiday question: always policy response (NO listing / NO year support)
+  if (q.includes("bank holiday") || q.includes("bank holidays")) {
+    memory.lastTopic = "opening";
+    saveMemory();
+    return {
+      matched: true,
+      answerHTML:
+        `${tonePrefix(tone)}❌ <b>No — we are not open on bank holidays.</b><br>` +
+        `<small>We’re open Monday–Friday, 08:30–17:00 (UK time), and closed on weekends & bank holidays.</small>`,
+      chips: ["What are your opening times?", "Is anyone available now?", "How can I contact support?"]
+    };
+  }
+
+  // Availability / open-now logic
   const availabilityTriggers = [
     "is anyone available",
     "anyone available",
@@ -1400,30 +1312,7 @@ function specialCases(query, tone) {
     return {
       matched: true,
       answerHTML: tonePrefix(tone) + buildAvailabilityAnswerHTML(),
-      chips: ["What are your opening times?", "How can I contact support?"],
-      usedQuery: q
-    };
-  }
-
-  // If user asks "bank holidays" or "holiday" explicitly, show this year's list
-  if (q.includes("bank holiday") || q.includes("bank holidays")) {
-    const now = new Date();
-    const uk = getUKParts(now);
-    const list = Array.from(bankHolidaysEnglandWales(uk.year))
-      .sort()
-      .map((d) => d)
-      .slice(0, 12);
-
-    memory.lastTopic = "opening";
-    saveMemory();
-    return {
-      matched: true,
-      answerHTML:
-        `${tonePrefix(tone)}Here are the <b>England & Wales bank holidays</b> for <b>${uk.year}</b>:<br>` +
-        list.map((d) => `• ${escapeHTML(d)}`).join("<br>") +
-        `<br><small>If you need a different year, ask: “bank holidays ${uk.year + 1}”.</small>`,
-      chips: [`Bank holidays ${uk.year + 1}`, "What are your opening times?"],
-      usedQuery: q
+      chips: ["What are your opening times?", "How can I contact support?"]
     };
   }
 
@@ -1440,15 +1329,13 @@ function specialCases(query, tone) {
         return {
           matched: true,
           answerHTML: tonePrefix(tone) + res.answerHTML,
-          chips: (res.followUps && res.followUps.length) ? res.followUps : null,
-          usedQuery: q
+          chips: (res.followUps && res.followUps.length) ? res.followUps : null
         };
       }
       return {
         matched: true,
         answerHTML: tonePrefix(tone) + `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`,
-        chips: res.suggestions ?? [],
-        usedQuery: q
+        chips: res.suggestions ?? []
       };
     }
   }
@@ -1469,8 +1356,7 @@ function specialCases(query, tone) {
     return {
       matched: true,
       answerHTML: tonePrefix(tone) + "Sure — what do you need help with?",
-      chips: ["Access / Login", "Pay / Payroll", "Benefits", "General query", "Something else"],
-      usedQuery: q
+      chips: ["Access / Login", "Pay / Payroll", "Benefits", "General query", "Something else"]
     };
   }
 
@@ -1479,44 +1365,43 @@ function specialCases(query, tone) {
       ticketCtx = null;
       return {
         matched: true,
-        answerHTML: tonePrefix(tone) + "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>.",
-        usedQuery: q
+        answerHTML: tonePrefix(tone) + "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>."
       };
     }
 
     if (ticketCtx.stage === "needType") {
       ticketCtx.type = query.trim();
       ticketCtx.stage = "needName";
-      return { matched: true, answerHTML: tonePrefix(tone) + "Thanks — what’s your name?", usedQuery: q };
+      return { matched: true, answerHTML: tonePrefix(tone) + "Thanks — what’s your name?" };
     }
     if (ticketCtx.stage === "needName") {
       ticketCtx.name = query.trim();
       memory.name = ticketCtx.name;
       saveMemory();
       ticketCtx.stage = "needEmail";
-      return { matched: true, answerHTML: tonePrefix(tone) + "And what email should we reply to?", usedQuery: q };
+      return { matched: true, answerHTML: tonePrefix(tone) + "And what email should we reply to?" };
     }
     if (ticketCtx.stage === "needEmail") {
       const email = query.trim();
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if (!ok) return { matched: true, answerHTML: tonePrefix(tone) + "That doesn’t look like an email — can you retype it?", usedQuery: q };
+      if (!ok) return { matched: true, answerHTML: tonePrefix(tone) + "That doesn’t look like an email — can you retype it?" };
       ticketCtx.email = email;
       ticketCtx.stage = "needPhone";
-      return { matched: true, answerHTML: tonePrefix(tone) + "Thanks — what’s the best contact number for you?", usedQuery: q };
+      return { matched: true, answerHTML: tonePrefix(tone) + "Thanks — what’s the best contact number for you?" };
     }
     if (ticketCtx.stage === "needPhone") {
       const phone = query.trim();
       if (!isValidPhone(phone)) {
-        return { matched: true, answerHTML: tonePrefix(tone) + "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +).", usedQuery: q };
+        return { matched: true, answerHTML: tonePrefix(tone) + "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
       }
       ticketCtx.phone = phone;
       ticketCtx.stage = "needDescription";
-      return { matched: true, answerHTML: tonePrefix(tone) + "Briefly describe the issue (1–3 sentences is perfect).", usedQuery: q };
+      return { matched: true, answerHTML: tonePrefix(tone) + "Briefly describe the issue (1–3 sentences is perfect)." };
     }
     if (ticketCtx.stage === "needDescription") {
       ticketCtx.description = query.trim();
       ticketCtx.stage = "needUrgency";
-      return { matched: true, answerHTML: tonePrefix(tone) + "How urgent is this?", chips: ["Low", "Normal", "High", "Critical"], usedQuery: q };
+      return { matched: true, answerHTML: tonePrefix(tone) + "How urgent is this?", chips: ["Low", "Normal", "High", "Critical"] };
     }
     if (ticketCtx.stage === "needUrgency") {
       ticketCtx.urgency = query.trim();
@@ -1548,11 +1433,11 @@ function specialCases(query, tone) {
         `Want to start another?`;
 
       ticketCtx = null;
-      return { matched: true, answerHTML: summary, chips: ["Raise a request (create a ticket)"], usedQuery: q };
+      return { matched: true, answerHTML: summary, chips: ["Raise a request (create a ticket)"] };
     }
   }
 
-  // Depot / distance flow
+  // Depot flow (mode selection)
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q === "walking") ? "walk" : q.replace("by ", "");
@@ -1561,36 +1446,37 @@ function specialCases(query, tone) {
 
       const depot = DEPOTS[distanceCtx.depotKey];
       const minutes = estimateMinutes(distanceCtx.miles, mode);
-
       const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
       const mapImg = osmStaticMapURL(depot.lat, depot.lon, 13, 400, 220);
 
-      const html =
-        `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-        `From <b>${escapeHTML(titleCase(distanceCtx.originKey))}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.<br>` +
-        `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b> (traffic and services can vary).<br>` +
-        `<a href="${escapeAttrUrl(url)}">Get directions in Google Maps</a>` +
-        `<br><img class="map-preview" src="${escapeAttrUrl(mapImg)}" alt="Map preview of depot location">`;
-
-      return { matched: true, answerHTML: html, chips: ["By car", "By train", "By bus", "Walking"], usedQuery: q };
+      return {
+        matched: true,
+        answerHTML:
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
+          `From <b>${escapeHTML(titleCase(distanceCtx.originKey))}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.<br>` +
+          `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b> (traffic and services can vary).<br>` +
+          `<a href="${escapeAttrUrl(url)}">Get directions in Google Maps</a>` +
+          `<img class="map-preview" src="${escapeAttrUrl(mapImg)}" alt="Map preview">`,
+        chips: ["By car", "By train", "By bus", "Walking"]
+      };
     }
   }
 
+  // Depot flow trigger
   if (q.includes("how far") || q.includes("distance") || q.includes("closest depot") || (q.includes("depot") && q.includes("closest"))) {
     const originKey = findPlaceKey(q);
     if (!originKey) {
       distanceCtx = { stage: "needOrigin" };
-      return { matched: true, answerHTML: tonePrefix(tone) + "Certainly — what town or city are you travelling from?", chips: ["Coventry", "Birmingham", "Leicester", "London"], usedQuery: q };
+      return { matched: true, answerHTML: tonePrefix(tone) + "Certainly — what town or city are you travelling from?", chips: ["Coventry", "Birmingham", "Leicester", "London"] };
     }
 
     memory.lastCity = originKey;
     saveMemory();
 
     const closest = findClosestDepot(PLACES[originKey]);
-    if (!closest) return { matched: true, answerHTML: tonePrefix(tone) + "I can do that once I know your starting town/city. Where are you travelling from?", usedQuery: q };
+    if (!closest) return { matched: true, answerHTML: tonePrefix(tone) + "I can do that once I know your starting town/city. Where are you travelling from?" };
 
     const depot = DEPOTS[closest.depotKey];
-
     distanceCtx = { stage: "haveClosest", originKey, depotKey: closest.depotKey, miles: closest.miles };
 
     const modeInText = parseTravelMode(q) || memory.preferredMode;
@@ -1600,14 +1486,16 @@ function specialCases(query, tone) {
       const url = googleDirectionsURL(titleCase(originKey), depot, modeInText);
       const mapImg = osmStaticMapURL(depot.lat, depot.lon, 13, 400, 220);
 
-      const html =
-        `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-        `From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
-        `Estimated time ${escapeHTML(modeLabel(modeInText))} is around <b>${minutes} minutes</b> (traffic and services can vary).<br>` +
-        `<a href="${escapeAttrUrl(url)}">Get directions in Google Maps</a>` +
-        `<br><img class="map-preview" src="${escapeAttrUrl(mapImg)}" alt="Map preview of depot location">`;
-
-      return { matched: true, answerHTML: html, chips: ["By car", "By train", "By bus", "Walking"], usedQuery: q };
+      return {
+        matched: true,
+        answerHTML:
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
+          `From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
+          `Estimated time ${escapeHTML(modeLabel(modeInText))} is around <b>${minutes} minutes</b> (traffic and services can vary).<br>` +
+          `<a href="${escapeAttrUrl(url)}">Get directions in Google Maps</a>` +
+          `<img class="map-preview" src="${escapeAttrUrl(mapImg)}" alt="Map preview">`,
+        chips: ["By car", "By train", "By bus", "Walking"]
+      };
     }
 
     return {
@@ -1616,59 +1504,28 @@ function specialCases(query, tone) {
         `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
         `From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
         `How are you travelling?`,
-      chips: ["By car", "By train", "By bus", "Walking"],
-      usedQuery: q
+      chips: ["By car", "By train", "By bus", "Walking"]
     };
   }
 
-  if (distanceCtx && distanceCtx.stage === "needOrigin") {
-    const originKey2 = findPlaceKey(q) || (PLACES[q] ? q : null);
-    if (originKey2) {
-      memory.lastCity = originKey2;
-      saveMemory();
-
-      const closest2 = findClosestDepot(PLACES[originKey2]);
-      const depot2 = DEPOTS[closest2.depotKey];
-
-      distanceCtx = { stage: "haveClosest", originKey: originKey2, depotKey: closest2.depotKey, miles: closest2.miles };
-
-      return {
-        matched: true,
-        answerHTML:
-          `Thanks — your closest depot is <b>${escapeHTML(depot2.label)}</b>.<br>` +
-          `From <b>${escapeHTML(titleCase(originKey2))}</b> it’s approximately <b>${Math.round(closest2.miles)} miles</b>.<br>` +
-          `How are you travelling?`,
-        chips: ["By car", "By train", "By bus", "Walking"],
-        usedQuery: q
-      };
-    }
-  }
-
-  // Parking special case
-  if (q.includes("parking") || q.includes("car park")) {
-    memory.lastTopic = "location";
-    saveMemory();
-    return { matched: true, answerHTML: tonePrefix(tone) + "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times.", usedQuery: q };
-  }
-
-  // If user asks "where located" and you want map preview even if FAQ answers are plain:
+  // Location question: include map preview
   if (q.includes("where are you") || q.includes("location") || q.includes("address")) {
     const depot = DEPOTS.nuneaton;
     const mapImg = osmStaticMapURL(depot.lat, depot.lon, 13, 400, 220);
     const gmaps = googleMapsPlaceURL(depot.lat, depot.lon);
-
-    memory.lastTopic = "location";
-    saveMemory();
-
     return {
       matched: true,
       answerHTML:
         `${tonePrefix(tone)}We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.<br>` +
-        `<a href="${escapeAttrUrl(gmaps)}">Open in Google Maps</a><br>` +
-        `<img class="map-preview" src="${escapeAttrUrl(mapImg)}" alt="Map preview of Nuneaton Depot">`,
-      chips: ["How can I contact support?", "Is there parking?"],
-      usedQuery: q
+        `<a href="${escapeAttrUrl(gmaps)}">Open in Google Maps</a>` +
+        `<img class="map-preview" src="${escapeAttrUrl(mapImg)}" alt="Map preview">`,
+      chips: ["Is there parking?", "How can I contact support?"]
     };
+  }
+
+  // Parking special case
+  if (q.includes("parking") || q.includes("car park")) {
+    return { matched: true, answerHTML: tonePrefix(tone) + "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
 
   return null;
@@ -1704,18 +1561,17 @@ function handleUserMessage(text) {
       return;
     }
 
-    // apply correction + rephrase for matching
     const corr = correctQueryTokens(text);
     const norm0 = corr.changed && corr.corrected ? corr.corrected : text;
     const canon = rephraseQuery(norm0);
 
-    // show “I understood…” only if meaningful change
     const change = meaningChangeScore(normalize(text), normalize(canon));
     if (SETTINGS.showUnderstoodLine && canon && change >= SETTINGS.understoodLineThreshold) {
-      addBubble(`<small>I understood: <b>${escapeHTML(canon)}</b></small>`, "bot", { html: true, ts: new Date() });
+      // do not speak the “understood” line
+      addBubble(`<small>I understood: <b>${escapeHTML(canon)}</b></small>`, "bot", { html: true, ts: new Date(), speak: false });
     }
 
-    // 1) Special cases first
+    // 1) Special cases
     const special = specialCases(text, tone);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", { html: true, ts: new Date() });
@@ -1726,17 +1582,14 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 2) FAQ match (use canonical for best result)
+    // 2) FAQ match (canonical first)
     let res = matchFAQ(canon);
-
     if (!res.matched && canon !== text) {
-      // try original too
       const res2 = matchFAQ(text);
       if (res2.matched || (res2.suggestions?.length ?? 0) > (res.suggestions?.length ?? 0)) res = res2;
     }
 
     if (res.matched) {
-      // update memory for topic
       memory.lastTopic = (res.item?.category ?? memory.lastTopic);
       saveMemory();
 
@@ -1752,7 +1605,6 @@ function handleUserMessage(text) {
     } else {
       missCount++;
 
-      // first miss -> ask category
       if (missCount === 1 && categories.length) {
         clarifyCtx = { stage: "needCategory", originalQuery: canon || text };
         addBubble(tonePrefix(tone) + "Quick check — what is this about?", "bot", { ts: new Date() });
@@ -1762,7 +1614,6 @@ function handleUserMessage(text) {
         addChips(res.suggestions ?? []);
       }
 
-      // escalate after repeated misses
       if (missCount >= 2) {
         const mail = `mailto:${SETTINGS.supportEmail}`;
         addBubble(
@@ -1800,7 +1651,7 @@ clearBtn.addEventListener("click", () => {
 });
 
 /* ===============================================================
-   Load FAQs
+   LOAD FAQS
 ================================================================ */
 fetch("./public/config/faqs.json")
   .then((res) => res.json())
@@ -1820,18 +1671,19 @@ fetch("./public/config/faqs.json")
   });
 
 /* ===============================================================
-   Init
+   INIT
 ================================================================ */
 function init() {
   addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date() });
 
-  // add a helpful chip row on first load using memory
-  const chips = [];
-  chips.push("What are your opening times?");
-  chips.push("Is anyone available now?");
-  chips.push("How can I contact support?");
-  chips.push("Get directions to my closest depot");
-  addChips(chips);
+  // helpful starter chips (no bank holiday year options)
+  addChips([
+    "What are your opening times?",
+    "Is anyone available now?",
+    "Are you open on bank holidays?",
+    "How can I contact support?",
+    "Get directions to my closest depot"
+  ]);
 }
 
 if (document.readyState === "loading") {
