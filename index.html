@@ -3,25 +3,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Welfare Support Chat</title>
+  <title>Welfare Support Chat (Enhanced)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="./public/chat.css" />
   <script defer src="./public/chat.js"></script>
+  <script defer src="./public/uploads-addon.js"></script>
 </head>
-
 <body>
+  <!-- load the same UI -->
   <div class="chat-container">
     <header class="chat-header">
       <img src="./public/assets/bot-icon.svg" class="bot-avatar" alt="Welfare Support bot" />
       <h1>Welfare Support</h1>
 
       <div class="header-actions">
-        <button id="topicsBtn" class="header-btn" type="button" aria-haspopup="dialog" aria-controls="topicsDrawer">
-          Topics
-        </button>
-        <button id="clearBtn" class="clear-btn" type="button" aria-label="Clear chat">
-          Clear
-        </button>
+        <button id="topicsBtn" class="header-btn" type="button" aria-haspopup="dialog" aria-controls="topicsDrawer">Topics</button>
+        <button id="clearBtn" class="clear-btn" type="button" aria-label="Clear chat">Clear</button>
       </div>
     </header>
 
@@ -40,14 +37,12 @@
     </div>
   </div>
 
-  <!-- Topics Drawer -->
   <div id="drawerOverlay" class="drawer-overlay" hidden></div>
   <aside id="topicsDrawer" class="drawer" role="dialog" aria-modal="true" aria-label="Topics" hidden>
     <div class="drawer-header">
       <h2>Topics</h2>
       <button id="drawerCloseBtn" class="drawer-close" type="button" aria-label="Close topics">✕</button>
     </div>
-
     <div class="drawer-body">
       <p class="drawer-hint">Browse common topics or pick a question:</p>
       <div id="drawerCategories" class="drawer-categories"></div>
