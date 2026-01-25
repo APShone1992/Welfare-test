@@ -3,57 +3,128 @@
   {
     "question": "Raise a request (create a ticket)",
     "answer": "To raise a request, click this topic or type <b>raise a request</b>. I’ll ask a few quick questions and then create an email you can send to support (with your chat transcript included).",
-    "synonyms": ["create a ticket", "open a ticket", "log a ticket", "submit a request", "raise a request", "support ticket", "ticket"],
-    "canonicalKeywords": ["ticket", "request", "support", "help"],
+    "synonyms": [
+      "create a ticket",
+      "open a ticket",
+      "log a ticket",
+      "submit a request",
+      "raise a request",
+      "support ticket"
+    ],
+    "canonicalKeywords": [
+      "ticket",
+      "request",
+      "support",
+      "help"
+    ],
     "category": "actions",
-    "followUps": ["How can I contact support?", "What are your opening times?"]
+    "followUps": [
+      "How can I contact support?",
+      "What is your response time?"
+    ]
   },
   {
     "question": "Get directions to my closest depot",
-    "answer": "Ask <b>closest depot</b>. I’ll ask your town/city (or use GPS) and then give directions.",
-    "synonyms": ["closest depot", "how far depot", "distance to depot", "depot directions"],
-    "canonicalKeywords": ["depot", "closest", "distance", "directions"],
+    "answer": "Click this topic or ask <b>closest depot</b>. I’ll ask your starting town/city and travel mode, then provide distance, time estimate, and a Google Maps directions link.",
+    "synonyms": [
+      "directions to depot",
+      "get directions",
+      "maps link",
+      "route to depot",
+      "navigate to depot",
+      "closest depot directions"
+    ],
+    "canonicalKeywords": [
+      "directions",
+      "maps",
+      "route",
+      "navigate",
+      "closest depot"
+    ],
     "category": "actions",
-    "followUps": ["Where are you located?", "Is there parking?"]
+    "followUps": [
+      "How far am I from my closest depot?",
+      "Where are you located?"
+    ]
   },
   {
     "question": "What are your opening times?",
-    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b> (UK time). We’re <b>closed on weekends and bank holidays</b>.",
-    "synonyms": ["opening times", "opening hours", "office hours", "business hours"],
-    "canonicalKeywords": ["hours", "availability"],
-    "category": "opening",
-    "followUps": ["Is anyone available now?", "Are you open on bank holidays?"]
-  },
-  {
-    "question": "Are you open on bank holidays?",
-    "answer": "❌ <b>No — we are not open on bank holidays.</b>",
-    "synonyms": ["bank holiday", "bank holidays", "open on bank holidays", "closed on bank holidays"],
-    "canonicalKeywords": ["bank holiday", "open", "closed"],
-    "category": "opening",
-    "followUps": ["What are your opening times?", "Is anyone available now?"]
-  },
-  {
-    "question": "Is anyone available now?",
-    "answer": "Ask <b>is anyone available</b> to check if we’re open right now.",
-    "synonyms": ["is anyone available", "anyone available", "available now", "open now"],
-    "canonicalKeywords": ["available", "open"],
-    "category": "opening",
-    "followUps": ["What are your opening times?", "How can I contact support?"]
+    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b> (UK time). If you contact us outside these hours, we’ll reply on the next working day.",
+    "synonyms": [
+      "opening times",
+      "opening hours",
+      "office hours",
+      "business hours",
+      "when do you open",
+      "what time do you open",
+      "what time are you open",
+      "what time do you close",
+      "what time do you shut"
+    ],
+    "canonicalKeywords": [
+      "hours",
+      "schedule",
+      "timetable",
+      "availability"
+    ],
+    "category": "general",
+    "followUps": [
+      "Are you open tomorrow?",
+      "Is anyone available now?",
+      "Are you open on weekends or bank holidays?"
+    ]
   },
   {
     "question": "How can I contact support?",
-    "answer": "You can email <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
-    "synonyms": ["support email", "customer service", "help contact", "contact details", "phone number"],
-    "canonicalKeywords": ["email", "phone", "contact"],
+    "answer": "You can email <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>. We aim to reply within 1 working day.",
+    "synonyms": [
+      "support email",
+      "customer service",
+      "help contact",
+      "contact details",
+      "get in touch",
+      "phone number",
+      "how do i contact you",
+      "how can i speak to someone"
+    ],
+    "canonicalKeywords": [
+      "email",
+      "phone",
+      "contact",
+      "support request"
+    ],
     "category": "support",
-    "followUps": ["Raise a request (create a ticket)"]
+    "followUps": [
+      "What is your response time?",
+      "Is anyone available now?",
+      "Where are you located?"
+    ]
   },
   {
     "question": "Where are you located?",
     "answer": "We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.",
-    "synonyms": ["address", "office location", "where is your office", "location"],
-    "canonicalKeywords": ["address", "map", "office"],
+    "synonyms": [
+      "address",
+      "office location",
+      "where is your office",
+      "location",
+      "directions",
+      "how do i get there",
+      "depot address",
+      "where is your depot"
+    ],
+    "canonicalKeywords": [
+      "address",
+      "map",
+      "office",
+      "directions",
+      "parking",
+      "depot"
+    ],
     "category": "general",
-    "followUps": ["Get directions to my closest depot", "Is there parking?"]
+    "followUps": [
+      "How far am I from my closest depot?",
+      "Is there parking?"
+    ]
   }
 ]
