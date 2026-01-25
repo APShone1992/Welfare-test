@@ -3,13 +3,13 @@
 // - Embeds the chat page in an iframe
 // - Auto-detects base URL from this script src
 // - Adds ESC close + click-outside close
-
 (function () {
-  const currentScript = document.currentScript || (function () {
-    const scripts = document.getElementsByTagName("script");
-    return scripts[scripts.length - 1];
-  })();
-
+  const currentScript =
+    document.currentScript ||
+    (function () {
+      const scripts = document.getElementsByTagName("script");
+      return scripts[scripts.length - 1];
+    })();
   if (!currentScript || !currentScript.src) return;
 
   const scriptURL = new URL(currentScript.src, window.location.href);
@@ -41,7 +41,6 @@
     btn.style.transform = "scale(1.06)";
     btn.style.boxShadow = "0 14px 35px rgba(0,0,0,0.26)";
   });
-
   btn.addEventListener("mouseleave", function () {
     btn.style.transform = "scale(1)";
     btn.style.boxShadow = "0 10px 25px rgba(0,0,0,0.22)";
@@ -69,19 +68,27 @@
     "overflow: hidden"
   ].join("; ");
 
-  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-same-origin");
+  // ✅ FIX: allow mailto links to open from inside the iframe
+  // allow-popups + allow-top-navigation-by-user-activation enables mailto: to open user mail client.
+  frame.setAttribute(
+    "sandbox",
+    "allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+  );
+
   document.body.appendChild(frame);
 
   function openFrame() {
     frame.style.display = "block";
-    requestAnimationFrame(function () { frame.style.opacity = "1"; });
+    requestAnimationFrame(function () {
+      frame.style.opacity = "1";
+    });
   }
-
   function closeFrame() {
     frame.style.opacity = "0";
-    setTimeout(function () { frame.style.display = "none"; }, 180);
+    setTimeout(function () {
+      frame.style.display = "none";
+    }, 180);
   }
-
   function isOpen() {
     return frame.style.display === "block";
   }
