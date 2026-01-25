@@ -1,5 +1,5 @@
 
-// Welfare Support – Floating Widget
+// Welfare Support – Floating Widget (permissions fixed)
 (function () {
   const currentScript =
     document.currentScript ||
@@ -54,13 +54,14 @@
     "overflow: hidden"
   ].join("; ");
 
-  // Allow mailto + popups + user navigation
+  // ✅ sandbox: allow scripts/forms + allow navigation for mailto
   frame.setAttribute(
     "sandbox",
     "allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
   );
-  // ✅ Allow geolocation inside iframe
-  frame.setAttribute("allow", "geolocation");
+
+  // ✅ permissions policy: allow mic + gps inside iframe
+  frame.setAttribute("allow", "geolocation; microphone");
 
   document.body.appendChild(frame);
 
