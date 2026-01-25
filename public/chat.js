@@ -1,10 +1,11 @@
 
-/* Welfare Support Chat – stable integrated build (FIXED)
-   Fixes:
-   - FAQ answers now work (drawer click + typed questions + synonyms)
-   - Encoded HTML (&lt;b&gt;, &lt;a&gt;) now decodes into real tags + clickable links
-   - Escaping fixed (no double-encoding that breaks mailto URLs)
-   - Suggestions dropdown now functions (you already had the UI)
+/* Welfare Support Chat – stable integrated build (NO ATTACHMENTS)
+   Includes:
+   - FAQ answering from faqs.json (topics + typed questions)
+   - Entity decoding so <b>, <a> render even if faqs.json uses &lt;...&gt;
+   - Ticket flow (mailto + transcript)
+   - Depot flow (GPS, cities, directions)
+   - Mic + voice output
 */
 
 const SETTINGS = {
@@ -78,7 +79,7 @@ function escapeAttrUrl(s) {
     .replace(/>/g, "&gt;");
 }
 
-// decode HTML entities (supports legacy faqs.json containing &lt;b&gt; etc.)
+// decode entities so legacy &lt;b&gt; works too
 function decodeHTMLEntities(str) {
   const t = document.createElement("textarea");
   t.innerHTML = str ?? "";
@@ -91,7 +92,6 @@ function htmlToPlainText(html) {
   return (t.content.textContent ?? "").trim();
 }
 
-// allow safe tags including IMG for map preview
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -172,7 +172,6 @@ const BANK_HOLIDAYS_EW = new Set([
 function isBankHolidayToday() {
   return BANK_HOLIDAYS_EW.has(getUKDateISO(new Date()));
 }
-
 function isOpenNow() {
   const day = getUKDayIndex(new Date());
   const mins = getUKMinutesNow(new Date());
@@ -182,7 +181,7 @@ function isOpenNow() {
   return true;
 }
 
-// Map helpers (OSM tile)
+// Map helpers
 function lonLatToTileXY(lon, lat, z) {
   const latRad = lat * Math.PI / 180;
   const n = Math.pow(2, z);
@@ -255,7 +254,7 @@ function buildTranscript(limit = 12) {
   return slice.map((m) => `[${formatUKTime(new Date(m.ts))}] ${m.role}: ${m.text}`).join("\n");
 }
 
-// speech (speaker) — armed after user interaction
+// speaker
 const VOICE_KEY = "ws_voice_v1";
 const voiceState = { on:false, armed:false };
 try { Object.assign(voiceState, JSON.parse(localStorage.getItem(VOICE_KEY) || "{}")); } catch {}
@@ -288,7 +287,7 @@ voiceBtn.addEventListener("click", ()=>{
   addBubble(voiceState.on ? "Voice output is now <b>on</b>." : "Voice output is now <b>off</b>.", "bot", { html:true, speak:false });
 });
 
-// mic (SpeechRecognition)
+// mic
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
 let micListening = false;
@@ -399,7 +398,6 @@ function addChips(labels, onClick) {
 
       wrap.querySelectorAll(".chip-btn").forEach((btn)=>btn.disabled=true);
 
-      // GPS must be called directly on click
       if (label === "Use my location" && distanceCtx?.stage === "needOrigin") {
         await handleUseMyLocation();
         return;
@@ -440,7 +438,7 @@ async function handleUseMyLocation(){
   }
 }
 
-// ---------- FAQ matching (THIS is what was missing)
+// ---------- FAQ matching
 function scoreMatch(qNorm, candNorm) {
   if (!qNorm || !candNorm) return 0;
   if (qNorm === candNorm) return 1;
@@ -468,7 +466,6 @@ function matchFAQ(text) {
       if (bestLocal >= 0.98) break;
     }
 
-    // optional keyword boost
     const kws = (item.canonicalKeywords || []).map(k => normalize(k)).filter(Boolean);
     if (kws.some(k => q.includes(k))) bestLocal = Math.min(1, bestLocal + 0.06);
 
@@ -478,16 +475,14 @@ function matchFAQ(text) {
   return best && best.score >= SETTINGS.minConfidence ? best.item : null;
 }
 
-// ---------- special logic (unchanged from you)
+// ---------- special cases
 function specialCases(text){
   const q = normalize(text);
 
-  // bank holiday policy
   if (q.includes("bank holiday") || q.includes("bank holidays")){
     return { html:"❌ <b>No — we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
   }
 
-  // availability now
   if (q.includes("is anyone available") || q.includes("available now") || q.includes("open now")){
     const open = isOpenNow();
     const nowUK = formatUKTime(new Date());
@@ -498,7 +493,6 @@ function specialCases(text){
     return { html:`❌ <b>No — we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
   }
 
-  // ticket trigger
   const wantsTicket =
     q.includes("raise a request") || q.includes("create a ticket") || q.includes("open a ticket") ||
     q.includes("log a ticket") || q.includes("submit a request") || q === "ticket";
@@ -542,21 +536,19 @@ function specialCases(text){
         `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
         `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
-        `${linkTag(mailtoHref, "Email support with this request (includes transcript)")}<br>` +
-        `<small>(This opens your email app with the message prefilled — you then press Send.)</small>`;
+        `${linkTag(mailtoHref, "Email support with this request (includes transcript)")}` +
+        `<br><small>(This opens your email app with the message prefilled — you then press Send.)</small>`;
 
       ticketCtx=null;
       return { html, chips:["Raise a request (create a ticket)"] };
     }
   }
 
-  // depot trigger
   if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")){
     distanceCtx = { stage:"needOrigin" };
     return { html:"What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
   }
 
-  // city response for depot
   if (distanceCtx?.stage==="needOrigin"){
     const cityKey = Object.keys(PLACES).find(k=>q===k || q.includes(k));
     if (cityKey){
@@ -567,7 +559,6 @@ function specialCases(text){
     }
   }
 
-  // mode selection
   if (distanceCtx?.stage==="haveClosest"){
     if (q==="by car" || q==="by train" || q==="by bus" || q==="walking"){
       const mode = q==="walking" ? "walk" : q.replace("by ","");
@@ -584,7 +575,6 @@ function specialCases(text){
     }
   }
 
-  // location map
   if (q.includes("where are you") || q.includes("location") || q.includes("address")){
     const d = DEPOTS.nuneaton;
     const tile = osmTileURL(d.lat, d.lon, 13);
@@ -595,14 +585,14 @@ function specialCases(text){
   return null;
 }
 
-// ---------- main message handling (FIXED: now returns FAQ answers)
+// ---------- main message handling
 function handleUserMessage(text){
   if (!text) return;
 
   addBubble(text, "user", { speak:false });
-  input.value = "";
+  input.value="";
 
-  isResponding = true;
+  isResponding=true;
 
   const s = specialCases(text);
   if (s){
@@ -612,7 +602,6 @@ function handleUserMessage(text){
     return;
   }
 
-  // ✅ THIS was missing: match FAQ and output answer
   const faq = matchFAQ(text);
   if (faq){
     addBubble(faq.answer, "bot", { html:true });
@@ -688,7 +677,6 @@ function renderDrawer(selectedKey){
     b.textContent=item.question;
     b.addEventListener("click", ()=>{
       closeDrawer();
-      // this now works because handleUserMessage will match FAQ and return answer
       handleUserMessage(item.question);
     });
     drawerQuestionsEl.appendChild(b);
@@ -713,7 +701,6 @@ fetch("./public/config/faqs.json")
     faqsLoaded=true;
     buildCategoryIndex();
     renderDrawer(null);
-    addBubble("I couldn’t load Topics (faqs.json). Check the file path on GitHub Pages.", "bot");
   });
 
 // ---------- init greeting
@@ -726,4 +713,3 @@ if (document.readyState === "loading"){
 } else {
   init();
 }
-``
