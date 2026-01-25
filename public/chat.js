@@ -1,7 +1,10 @@
 
-/* Welfare Support Chatbot (Ticket Flow Fixed + Link Fix + Map Fix)
-- Ticket/request flow restored and clickable mailto links fixed. [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-- Widget mailto support is handled in widget.js sandbox (separate file). [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+/* Welfare Support Chatbot (Ticket + GPS + Depot restored)
+- Ticket/request flow works (mailto + transcript) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+- GPS flow restored (Use my location) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+- City chips work again in needOrigin stage [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+- Uses OSM tiles for map preview (reliable)
+- No bank holiday year listing; policy only [2](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
 */
 
 const SETTINGS = {
@@ -11,18 +14,11 @@ const SETTINGS = {
   chipLimit: 6,
   chipClickCooldownMs: 900,
   suggestionLimit: 5,
-
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
-
   ticketTranscriptMessages: 12,
   ticketTranscriptMaxLine: 140,
-
-  showUnderstoodLine: true,
-  understoodLineThreshold: 0.18,
-
   voiceDefaultOn: false,
-
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
 };
@@ -49,21 +45,21 @@ const drawerQuestionsEl = document.getElementById("drawerQuestions");
 const micBtn = document.getElementById("micBtn");
 const voiceBtn = document.getElementById("voiceBtn");
 
-/* UI State */
+/* State */
 let isResponding = false;
 let lastChipClickAt = 0;
 let missCount = 0;
+
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 
 let distanceCtx = null;
-let clarifyCtx = null;
 let ticketCtx = null;
-let lastMissQueryNorm = null;
+
 let CHAT_LOG = [];
 
 /* Memory */
-const MEMORY_KEY = "ws_chat_memory_v7";
+const MEMORY_KEY = "ws_chat_memory_v8";
 const memory = { voiceOn: null, preferredMode: null, name: null };
 function loadMemory() {
   try {
@@ -78,36 +74,7 @@ function saveMemory() {
 }
 loadMemory();
 
-/* Local learning */
-const LEARN_KEY = "ws_choice_map_v1";
-let LEARN_MAP = {};
-function loadLearnMap() {
-  try {
-    const raw = localStorage.getItem(LEARN_KEY);
-    if (!raw) return;
-    const obj = JSON.parse(raw);
-    if (obj && typeof obj === "object") LEARN_MAP = obj;
-  } catch (_) {}
-}
-function saveLearnMap() {
-  try { localStorage.setItem(LEARN_KEY, JSON.stringify(LEARN_MAP)); } catch (_) {}
-}
-loadLearnMap();
-function rememberChoice(queryNorm, chosenQuestion) {
-  if (!queryNorm || !chosenQuestion) return;
-  const entry = LEARN_MAP[queryNorm] || { chosen: chosenQuestion, count: 0 };
-  entry.chosen = chosenQuestion;
-  entry.count = (entry.count || 0) + 1;
-  LEARN_MAP[queryNorm] = entry;
-  saveLearnMap();
-}
-function learnedChoiceFor(queryNorm) {
-  const e = LEARN_MAP[queryNorm];
-  if (!e || !e.chosen) return null;
-  return e;
-}
-
-/* Normalisation */
+/* Normalise */
 const normalize = (s) =>
   (s ?? "")
     .toLowerCase()
@@ -119,51 +86,6 @@ const normalize = (s) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const STOP_WORDS = new Set([
-  "what","are","your","do","you","we","is","the","a","an","to","of","and",
-  "in","on","for","with","please","can","i","me","my"
-]);
-
-function stem(token) {
-  return token.endsWith("s") && token.length > 3 ? token.slice(0, -1) : token;
-}
-const tokenSet = (s) =>
-  new Set(
-    normalize(s)
-      .split(" ")
-      .map(stem)
-      .filter((t) => t && !STOP_WORDS.has(t))
-  );
-
-const jaccard = (a, b) => {
-  if (!a.size || !b.size) return 0;
-  let inter = 0;
-  for (const x of a) if (b.has(x)) inter++;
-  const union = new Set([...a, ...b]).size;
-  return union ? inter / union : 0;
-};
-
-/* Bigram similarity */
-function bigrams(str) {
-  const s = normalize(str).replace(/\s+/g, " ");
-  const out = [];
-  for (let i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
-  return out;
-}
-function diceCoefficient(a, b) {
-  const A = bigrams(a);
-  const B = bigrams(b);
-  if (!A.length || !B.length) return 0;
-  const map = new Map();
-  for (const x of A) map.set(x, (map.get(x) || 0) + 1);
-  let matches = 0;
-  for (const y of B) {
-    const c = map.get(y) || 0;
-    if (c > 0) { matches++; map.set(y, c - 1); }
-  }
-  return (2 * matches) / (A.length + B.length);
-}
-
 /* Safe HTML */
 function escapeHTML(s) {
   const str = String(s ?? "");
@@ -174,19 +96,12 @@ function escapeHTML(s) {
 function escapeAttrUrl(url) {
   return String(url ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
-
-/* ✅ FIX: real anchor + real image */
-function linkHTML(url, label) {
-  const href = escapeAttrUrl(url);
-  const text = escapeHTML(label);
-  return `<a href="${href}">${text}</a>`;
+function aHTML(href, label) {
+  return `<a href="${escapeAttrUrl(href)}">${escapeHTML(label)}</a>`;
 }
-function imgHTML(url, alt = "Map preview") {
-  const src = escapeAttrUrl(url);
-  const a = escapeHTML(alt);
-  return `<img class="map-preview" src="${src}" alt="${a}" loading="lazy">`;
+function imgTagHTML(src, alt = "Map preview") {
+  return `<img class="map-preview" src="${escapeAttrUrl(src)}" alt="${escapeHTML(alt)}" loading="lazy">`;
 }
-
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -216,23 +131,18 @@ function sanitizeHTML(html) {
 
     if (el.tagName === "IMG") {
       const src = el.getAttribute("src") ?? "";
-      const safeImg = /^https:\/\//i.test(src);
-      if (!safeImg) toReplace.push(el);
-      else {
-        if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");
-        el.setAttribute("loading", "lazy");
-      }
+      if (!/^https:\/\//i.test(src)) toReplace.push(el);
+      else el.setAttribute("loading", "lazy");
     }
   }
 
   toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
   return template.innerHTML;
 }
-
 function htmlToPlainText(html) {
-  const template = document.createElement("template");
-  template.innerHTML = html ?? "";
-  return (template.content.textContent ?? "").replace(/\s+\n/g, "\n").trim();
+  const t = document.createElement("template");
+  t.innerHTML = html ?? "";
+  return (t.content.textContent ?? "").trim();
 }
 
 /* UK time */
@@ -240,92 +150,129 @@ const UK_TZ = "Europe/London";
 function formatUKTime(date) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
-function getUKParts(date = new Date()) {
-  const fmt = new Intl.DateTimeFormat("en-GB", {
-    timeZone: UK_TZ, weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hour12: false
+
+/* Ticket transcript */
+function pushToTranscript(type, text, opts) {
+  const options = opts ?? {};
+  const ts = (options.ts ?? new Date()).getTime();
+  const plain = options.html ? htmlToPlainText(text) : String(text ?? "").trim();
+  if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts });
+  if (CHAT_LOG.length > 80) CHAT_LOG = CHAT_LOG.slice(-80);
+}
+function buildTranscript(limit = 12) {
+  const take = Math.max(1, limit);
+  const slice = CHAT_LOG.slice(-take);
+  return slice.map((m) => {
+    const time = formatUKTime(new Date(m.ts));
+    return `[${time}] ${m.role}: ${m.text}`;
+  }).join("\n");
+}
+
+/* UI */
+function setUIEnabled(enabled) {
+  input.disabled = !enabled;
+  sendBtn.disabled = !enabled;
+  micBtn.disabled = !enabled;
+  chatWindow.querySelectorAll(".chip-btn").forEach((b) => (b.disabled = !enabled));
+}
+function addBubble(text, type, opts) {
+  const options = opts ?? {};
+  const html = !!options.html;
+  const ts = options.ts ?? new Date();
+
+  const row = document.createElement("div");
+  row.className = "msg " + type;
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble " + type;
+  bubble.setAttribute("role", "article");
+
+  if (html) bubble.innerHTML = sanitizeHTML(text);
+  else bubble.textContent = text;
+
+  const time = document.createElement("div");
+  time.className = "timestamp";
+  time.textContent = formatUKTime(ts);
+
+  row.appendChild(bubble);
+  row.appendChild(time);
+  chatWindow.appendChild(row);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  pushToTranscript(type, html ? sanitizeHTML(text) : text, { ts, html });
+}
+function addTyping() {
+  const row = document.createElement("div");
+  row.className = "msg bot";
+  row.dataset.typing = "true";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble bot typing-bubble";
+  bubble.innerHTML = 'Typing <span class="typing"><span></span><span></span><span></span></span>';
+  row.appendChild(bubble);
+  chatWindow.appendChild(row);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+function removeTyping() {
+  const t = chatWindow.querySelector('[data-typing="true"]');
+  if (t) t.remove();
+}
+function addChips(questions, onClick) {
+  const qs = questions ?? [];
+  if (!qs.length) return;
+  const wrap = document.createElement("div");
+  wrap.className = "chips";
+  qs.slice(0, SETTINGS.chipLimit).forEach((q) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip-btn";
+    b.textContent = q;
+    b.addEventListener("click", () => {
+      const now = Date.now();
+      if (isResponding) return;
+      if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
+      lastChipClickAt = now;
+      wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
+      if (typeof onClick === "function") onClick(q);
+      else handleUserMessage(q);
+      input.focus();
+    });
+    wrap.appendChild(b);
   });
-  const parts = fmt.formatToParts(date);
-  const get = (type) => parts.find((p) => p.type === type)?.value;
-  const weekdayShort = get("weekday");
-  const UK_DAY_INDEX = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
-  const dayIndex = UK_DAY_INDEX[weekdayShort] ?? 0;
-  const hour = parseInt(get("hour") ?? "0", 10);
-  const minute = parseInt(get("minute") ?? "0", 10);
-  const minutesNow = hour * 60 + minute;
-  const year = parseInt(get("year") ?? "0", 10);
-  const month = parseInt(get("month") ?? "1", 10);
-  const day = parseInt(get("day") ?? "1", 10);
-  return { dayIndex, minutesNow, year, month, day };
+  chatWindow.appendChild(wrap);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-/* Bank holidays E&W (for open/closed only) */
-const BUSINESS_HOURS = { openDays: new Set([1,2,3,4,5]), startMinutes: 8*60+30, endMinutes: 17*60 };
-function toISODate(y,m,d){ return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
-function easterSunday(year){
-  const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),
-        g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,
-        m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
-  return { month, day };
+/* Depots/places */
+const DEPOTS = { nuneaton: { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 } };
+const PLACES = {
+  coventry: { lat: 52.4068, lon: -1.5197 },
+  birmingham: { lat: 52.4895, lon: -1.8980 },
+  leicester: { lat: 52.6369, lon: -1.1398 },
+  london: { lat: 51.5074, lon: -0.1278 }
+};
+function titleCase(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+function toRad(deg){ return (deg*Math.PI)/180; }
+function distanceMiles(a,b){
+  const R=3958.8;
+  const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
+  const lat1=toRad(a.lat), lat2=toRad(b.lat);
+  const h=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return R*(2*Math.asin(Math.sqrt(h)));
 }
-function dayOfWeekUTC(y,m,d){ return new Date(Date.UTC(y,m-1,d)).getUTCDay(); }
-function firstMondayOfMay(y){ for(let d=1; d<=7; d++) if(dayOfWeekUTC(y,5,d)===1) return d; return 1; }
-function lastMondayOfMonth(y,month){
-  const last=new Date(Date.UTC(y,month,0)).getUTCDate();
-  for(let d=last; d>=last-6; d--) if(dayOfWeekUTC(y,month,d)===1) return d;
-  return last;
-}
-function newYearObserved(y){
-  const dow=dayOfWeekUTC(y,1,1);
-  if(dow===6) return {m:1,d:3};
-  if(dow===0) return {m:1,d:2};
-  return {m:1,d:1};
-}
-function christmasAndBoxingObserved(y){
-  const x=dayOfWeekUTC(y,12,25), b=dayOfWeekUTC(y,12,26);
-  if(x===6 || x===0) return {x:{m:12,d:27}, b:{m:12,d:28}};
-  if(b===6 || b===0) return {x:{m:12,d:25}, b:{m:12,d:28}};
-  return {x:{m:12,d:25}, b:{m:12,d:26}};
-}
-function bankHolidaysEWSet(y){
-  const set=new Set();
-  const ny=newYearObserved(y); set.add(toISODate(y,ny.m,ny.d));
-  const es=easterSunday(y);
-  const easter=new Date(Date.UTC(y,es.month-1,es.day));
-  const goodFriday=new Date(easter.getTime()-2*86400000);
-  const easterMonday=new Date(easter.getTime()+86400000);
-  set.add(toISODate(goodFriday.getUTCFullYear(), goodFriday.getUTCMonth()+1, goodFriday.getUTCDate()));
-  set.add(toISODate(easterMonday.getUTCFullYear(), easterMonday.getUTCMonth()+1, easterMonday.getUTCDate()));
-  set.add(toISODate(y,5,firstMondayOfMay(y)));
-  set.add(toISODate(y,5,lastMondayOfMonth(y,5)));
-  set.add(toISODate(y,8,lastMondayOfMonth(y,8)));
-  const xb=christmasAndBoxingObserved(y);
-  set.add(toISODate(y,xb.x.m,xb.x.d));
-  set.add(toISODate(y,xb.b.m,xb.b.d));
-  return set;
-}
-function isBankHolidayEW(dateObj=new Date()){
-  const uk=getUKParts(dateObj);
-  return bankHolidaysEWSet(uk.year).has(toISODate(uk.year, uk.month, uk.day));
-}
-function isOpenNowEW(dateObj=new Date()){
-  const uk=getUKParts(dateObj);
-  if(!BUSINESS_HOURS.openDays.has(uk.dayIndex)) return false;
-  if(uk.minutesNow < BUSINESS_HOURS.startMinutes || uk.minutesNow >= BUSINESS_HOURS.endMinutes) return false;
-  if(isBankHolidayEW(dateObj)) return false;
-  return true;
-}
-function buildAvailabilityAnswerHTML(){
-  const now=new Date();
-  const nowUK=formatUKTime(now);
-  if(isOpenNowEW(now)){
-    return `✅ <b>Yes — we’re open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`;
+function findClosestDepot(origin){
+  let bestKey=null, best=Infinity;
+  for (const k in DEPOTS){
+    const miles=distanceMiles(origin, DEPOTS[k]);
+    if (miles<best){ best=miles; bestKey=k; }
   }
-  const holidayNote = isBankHolidayEW(now) ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : "";
-  return `❌ <b>No — we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${holidayNote}<br><small>Hours: Monday–Friday, 08:30–17:00 (UK time).</small>`;
+  return bestKey ? { depotKey: bestKey, miles: best } : null;
 }
-
-/* Map preview: OSM tile */
+function googleDirectionsURL(originText, depot, mode){
+  const origin=encodeURIComponent(originText);
+  const dest=encodeURIComponent(`${depot.lat},${depot.lon}`);
+  const travelmode = mode === "walk" ? "walking" : (mode === "train" || mode === "bus") ? "transit" : "driving";
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${travelmode}`;
+}
 function lonLatToTileXY(lon, lat, z) {
   const latRad = lat * Math.PI / 180;
   const n = Math.pow(2, z);
@@ -338,368 +285,29 @@ function osmTileURL(lat, lon, zoom = 13) {
   return `https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`;
 }
 
+/* GPS helper ✅ */
+function requestBrowserLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (err) => reject(err),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 }
+    );
+  });
+}
+
 /* Ticket validation */
-function isValidPhone(raw){
-  const digits = String(raw ?? "").replace(/[^\d]/g,"");
+function isValidPhone(raw) {
+  const digits = String(raw ?? "").replace(/[^\d]/g, "");
   return digits.length >= 8 && digits.length <= 16;
 }
 
-/* Transcript helpers */
-function pushToTranscript(type, text, opts){
-  const options=opts ?? {};
-  const tsDate=options.ts ?? new Date();
-  const ts=tsDate.getTime();
-  const plain = options.html ? htmlToPlainText(text) : String(text ?? "").trim();
-  const role = type==="bot" ? "Bot" : "User";
-  if (plain) CHAT_LOG.push({ role, text: plain, ts });
-  const keep = Math.max(SETTINGS.ticketTranscriptMessages ?? 12, 12) * 4;
-  if (CHAT_LOG.length>keep) CHAT_LOG=CHAT_LOG.slice(-keep);
-}
-function buildTranscript(limit=12){
-  const take=Math.max(1,limit);
-  const slice=CHAT_LOG.slice(-take);
-  const MAX_LINE=Math.max(40, SETTINGS.ticketTranscriptMaxLine ?? 140);
-  return slice.map((m)=>{
-    const time=formatUKTime(new Date(m.ts));
-    const msg=(m.text ?? "").replace(/\s+/g," ").trim();
-    const clipped = msg.length>MAX_LINE ? msg.slice(0,MAX_LINE-1)+"…" : msg;
-    return `[${time}] ${m.role}: ${clipped}`;
-  }).join("\n");
-}
-
-/* UI enable/disable */
-function setUIEnabled(enabled){
-  input.disabled=!enabled;
-  sendBtn.disabled=!enabled;
-  micBtn.disabled=!enabled;
-  chatWindow.querySelectorAll(".chip-btn").forEach((b)=>b.disabled=!enabled);
-}
-
-/* Voice output */
-let voiceOn = (typeof memory.voiceOn === "boolean") ? memory.voiceOn : SETTINGS.voiceDefaultOn;
-memory.voiceOn = voiceOn;
-saveMemory();
-
-function updateVoiceBtnUI(){
-  voiceBtn.classList.toggle("on", !!voiceOn);
-  voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
-  voiceBtn.setAttribute("aria-pressed", voiceOn ? "true" : "false");
-}
-function speakIfEnabled(text){
-  if (!voiceOn) return;
-  if (!("speechSynthesis" in window)) return;
-  try{
-    window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(String(text ?? ""));
-    u.lang="en-GB";
-    window.speechSynthesis.speak(u);
-  } catch(_){}
-}
-voiceBtn.addEventListener("click", ()=>{
-  voiceOn=!voiceOn;
-  memory.voiceOn=voiceOn;
-  saveMemory();
-  updateVoiceBtnUI();
-  addBubble(voiceOn ? "Voice output is now <b>on</b>." : "Voice output is now <b>off</b>.", "bot", { html:true, speak:false });
-});
-updateVoiceBtnUI();
-
-/* Voice input */
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognizer = null;
-let micListening = false;
-
-function initSpeechRecognition(){
-  if (!SpeechRecognition) return null;
-  const rec=new SpeechRecognition();
-  rec.lang="en-GB";
-  rec.interimResults=false;
-  rec.maxAlternatives=1;
-
-  rec.onstart=()=>{
-    micListening=true;
-    micBtn.classList.add("on");
-    micBtn.textContent="🎙️";
-    micBtn.setAttribute("aria-pressed","true");
-  };
-  rec.onend=()=>{
-    micListening=false;
-    micBtn.classList.remove("on");
-    micBtn.textContent="🎤";
-    micBtn.setAttribute("aria-pressed","false");
-  };
-  rec.onerror=()=>{
-    micListening=false;
-    micBtn.classList.remove("on");
-    micBtn.textContent="🎤";
-    micBtn.setAttribute("aria-pressed","false");
-    addBubble("Voice input isn’t available right now — you can still type your question.", "bot", { speak:false });
-  };
-  rec.onresult=(event)=>{
-    const text=event.results?.[0]?.[0]?.transcript ?? "";
-    if (text.trim()){
-      input.value=text.trim();
-      sendChat();
-    }
-  };
-  return rec;
-}
-recognizer = initSpeechRecognition();
-
-micBtn.addEventListener("click", ()=>{
-  if (!recognizer){
-    addBubble("Voice input isn’t supported in this browser. Try Chrome or Edge, or just type your question.", "bot", { speak:false });
-    return;
-  }
-  if (micListening) { try{ recognizer.stop(); } catch(_){} }
-  else { try{ recognizer.start(); } catch(_){} }
-});
-
-/* Bubbles */
-function addBubble(text, type, opts){
-  const options=opts ?? {};
-  const html=!!options.html;
-  const speak = options.speak !== false;
-  const ts=options.ts ?? new Date();
-
-  const row=document.createElement("div");
-  row.className="msg " + type;
-
-  const bubble=document.createElement("div");
-  bubble.className="bubble " + type;
-  bubble.setAttribute("role","article");
-  bubble.setAttribute("aria-label", type==="bot" ? "Bot message" : "Your message");
-
-  if (html) bubble.innerHTML = sanitizeHTML(text);
-  else bubble.textContent = text;
-
-  const time=document.createElement("div");
-  time.className="timestamp";
-  time.textContent=formatUKTime(ts);
-
-  row.appendChild(bubble);
-  row.appendChild(time);
-  chatWindow.appendChild(row);
-  chatWindow.scrollTop=chatWindow.scrollHeight;
-
-  pushToTranscript(type, html ? sanitizeHTML(text) : text, { ts, html });
-
-  if (type==="bot" && speak) speakIfEnabled(html ? htmlToPlainText(text) : text);
-}
-function addTyping(){
-  const row=document.createElement("div");
-  row.className="msg bot";
-  row.dataset.typing="true";
-  const bubble=document.createElement("div");
-  bubble.className="bubble bot typing-bubble";
-  bubble.innerHTML='Typing <span class="typing"><span></span><span></span><span></span></span>';
-  row.appendChild(bubble);
-  chatWindow.appendChild(row);
-  chatWindow.scrollTop=chatWindow.scrollHeight;
-}
-function removeTyping(){
-  const t=chatWindow.querySelector('[data-typing="true"]');
-  if (t) t.remove();
-}
-
-/* Chips */
-function addChips(questions, onClick){
-  const qs=questions ?? [];
-  if (!qs.length) return;
-  const wrap=document.createElement("div");
-  wrap.className="chips";
-  qs.slice(0, SETTINGS.chipLimit).forEach((q)=>{
-    const b=document.createElement("button");
-    b.type="button";
-    b.className="chip-btn";
-    b.textContent=q;
-    b.addEventListener("click", ()=>{
-      const now=Date.now();
-      if (isResponding) return;
-      if (now-lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
-      lastChipClickAt=now;
-      wrap.querySelectorAll(".chip-btn").forEach((btn)=>btn.disabled=true);
-      if (typeof onClick==="function") onClick(q);
-      else handleUserMessage(q);
-      input.focus();
-    });
-    wrap.appendChild(b);
-  });
-  if (isResponding) wrap.querySelectorAll(".chip-btn").forEach((btn)=>btn.disabled=true);
-  chatWindow.appendChild(wrap);
-  chatWindow.scrollTop=chatWindow.scrollHeight;
-}
-
-/* Drawer + Suggestions: keep your existing from prior working version */
-function buildCategoryIndex() {
-  categoryIndex = new Map();
-  FAQS.forEach((item) => {
-    const key = (item.category ?? "general").toLowerCase();
-    if (!categoryIndex.has(key)) categoryIndex.set(key, []);
-    categoryIndex.get(key).push(item);
-  });
-  const labelMap = { general:"General", support:"Support", location:"Location", opening:"Opening times", actions:"Actions" };
-  categories = Array.from(categoryIndex.keys()).sort().map((key)=>({
-    key, label: labelMap[key] ?? (key.charAt(0).toUpperCase() + key.slice(1)), count: categoryIndex.get(key).length
-  }));
-}
-
-function openDrawer(){ overlay.hidden=false; drawer.hidden=false; drawer.setAttribute("aria-hidden","false"); drawerCloseBtn?.focus(); }
-function closeDrawer(){ overlay.hidden=true; drawer.hidden=true; drawer.setAttribute("aria-hidden","true"); topicsBtn?.focus(); }
-
-function renderDrawer(selectedKey){
-  const selected = selectedKey ?? null;
-  drawerCategoriesEl.innerHTML = "";
-  drawerQuestionsEl.innerHTML = "";
-
-  categories.forEach((c)=>{
-    const pill=document.createElement("button");
-    pill.type="button";
-    pill.className="cat-pill";
-    pill.textContent = `${c.label} (${c.count})`;
-    pill.setAttribute("aria-selected", String(c.key === selected));
-    pill.addEventListener("click", ()=>renderDrawer(c.key));
-    drawerCategoriesEl.appendChild(pill);
-  });
-
-  const list = selected && categoryIndex.has(selected) ? categoryIndex.get(selected) : FAQS;
-  list.forEach((item)=>{
-    const q=document.createElement("button");
-    q.type="button";
-    q.className="drawer-q";
-    q.textContent=item.question;
-    q.addEventListener("click", ()=>{
-      closeDrawer();
-      handleUserMessage(item.question);
-    });
-    drawerQuestionsEl.appendChild(q);
-  });
-}
-
-function bindClose(el){
-  if (!el) return;
-  el.addEventListener("click",(e)=>{ e.preventDefault(); closeDrawer(); });
-  el.addEventListener("touchstart",(e)=>{ e.preventDefault(); closeDrawer(); }, { passive:false });
-}
-
-topicsBtn?.addEventListener("click", ()=>{ if (faqsLoaded) openDrawer(); });
-drawer?.addEventListener("click",(e)=>e.stopPropagation());
-drawer?.addEventListener("touchstart",(e)=>e.stopPropagation(), { passive:true });
-bindClose(drawerCloseBtn);
-bindClose(overlay);
-document.addEventListener("keydown",(e)=>{ if (!drawer.hidden && e.key==="Escape") closeDrawer(); });
-
-function showSuggestions(items){
-  currentSuggestions=items;
-  activeSuggestionIndex=-1;
-  if (!items.length){
-    suggestionsEl.hidden=true;
-    suggestionsEl.innerHTML="";
-    return;
-  }
-  suggestionsEl.innerHTML="";
-  items.forEach((it, idx)=>{
-    const div=document.createElement("div");
-    div.className="suggestion-item";
-    div.setAttribute("role","option");
-    div.setAttribute("aria-selected","false");
-    div.tabIndex=-1;
-    div.innerHTML=`${escapeHTML(it.question)}<small>${escapeHTML(it.categoryLabel)}</small>`;
-    div.addEventListener("mousedown",(ev)=>{ ev.preventDefault(); pickSuggestion(idx); });
-    div.addEventListener("touchstart",(ev)=>{ ev.preventDefault(); pickSuggestion(idx); }, { passive:false });
-    suggestionsEl.appendChild(div);
-  });
-  suggestionsEl.hidden=false;
-}
-
-function updateSuggestionSelection(){
-  const nodes=suggestionsEl.querySelectorAll(".suggestion-item");
-  nodes.forEach((n,i)=>n.setAttribute("aria-selected", String(i===activeSuggestionIndex)));
-}
-
-function pickSuggestion(index){
-  const picked=currentSuggestions[index];
-  if (!picked) return;
-  suggestionsEl.hidden=true;
-  suggestionsEl.innerHTML="";
-  currentSuggestions=[];
-  activeSuggestionIndex=-1;
-  handleUserMessage(picked.question);
-}
-
-function computeSuggestions(query){
-  let q=normalize(query);
-  if (!q || q.length<2) return [];
-
-  const qTokens=tokenSet(q);
-  const labelMap=new Map(categories.map((c)=>[c.key, c.label]));
-
-  const scored=FAQS.map((item)=>{
-    const question=item.question ?? "";
-    const syns=item.synonyms ?? [];
-    const keys=item.canonicalKeywords ?? [];
-    const tags=item.tags ?? [];
-
-    const scoreJ=Math.max(
-      jaccard(qTokens, tokenSet(question)),
-      syns.length ? Math.max(...syns.map((s)=>jaccard(qTokens, tokenSet(s)))) : 0,
-      keys.length ? Math.max(...keys.map((k)=>jaccard(qTokens, tokenSet(k)))) : 0,
-      tags.length ? Math.max(...tags.map((t)=>jaccard(qTokens, tokenSet(t)))) : 0
-    );
-
-    const scoreB=Math.max(
-      diceCoefficient(q, question),
-      syns.length ? Math.max(...syns.map((s)=>diceCoefficient(q, s))) : 0
-    );
-
-    const anyField=[question, ...syns, ...keys, ...tags].map(normalize).join(" ");
-    const boost = anyField.includes(q) ? SETTINGS.boostSubstring : 0;
-
-    const learned=learnedChoiceFor(q);
-    const learnedBoost = learned && learned.chosen === question ? Math.min(0.18, 0.06 + 0.02 * Math.min(6, learned.count || 1)) : 0;
-
-    const score = 0.62*scoreJ + 0.30*scoreB + boost + learnedBoost;
-    return { item, score };
-  })
-  .sort((a,b)=>b.score-a.score)
-  .slice(0, SETTINGS.suggestionLimit)
-  .filter((x)=>x.score>0);
-
-  return scored.map((s)=>({
-    question: s.item.question,
-    categoryLabel: labelMap.get((s.item.category ?? "general").toLowerCase()) ?? "General"
-  }));
-}
-
-input.addEventListener("input", ()=>{ if (!faqsLoaded) return; showSuggestions(computeSuggestions(input.value)); });
-input.addEventListener("blur", ()=>{ setTimeout(()=>{ suggestionsEl.hidden=true; }, 120); });
-input.addEventListener("keydown",(e)=>{
-  if (suggestionsEl.hidden){
-    if (e.key==="Enter"){ e.preventDefault(); sendChat(); }
-    return;
-  }
-  if (e.key==="ArrowDown"){
-    e.preventDefault();
-    activeSuggestionIndex=Math.min(activeSuggestionIndex+1, currentSuggestions.length-1);
-    updateSuggestionSelection();
-  } else if (e.key==="ArrowUp"){
-    e.preventDefault();
-    activeSuggestionIndex=Math.max(activeSuggestionIndex-1, 0);
-    updateSuggestionSelection();
-  } else if (e.key==="Enter"){
-    e.preventDefault();
-    if (activeSuggestionIndex>=0) pickSuggestion(activeSuggestionIndex);
-    else sendChat();
-  } else if (e.key==="Escape"){
-    suggestionsEl.hidden=true;
-  }
-});
-
-/* Ticket + other special cases */
-function specialCases(query){
+/* Ticket + depot special cases */
+function specialCases(query) {
   const q = normalize(query);
 
-  // ✅ Ticket trigger
+  // Ticket start
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -718,7 +326,6 @@ function specialCases(query){
       ticketCtx = null;
       return { matched: true, answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>." };
     }
-
     if (ticketCtx.stage === "needType") { ticketCtx.type = query.trim(); ticketCtx.stage = "needName"; return { matched:true, answerHTML:"Thanks — what’s your name?" }; }
     if (ticketCtx.stage === "needName") { ticketCtx.name = query.trim(); memory.name=ticketCtx.name; saveMemory(); ticketCtx.stage="needEmail"; return { matched:true, answerHTML:"And what email should we reply to?" }; }
     if (ticketCtx.stage === "needEmail") {
@@ -741,7 +348,6 @@ function specialCases(query){
         `Name: ${ticketCtx.name}\nEmail: ${ticketCtx.email}\nContact number: ${ticketCtx.phone}\nUrgency: ${ticketCtx.urgency}\nType: ${ticketCtx.type}\n\nDescription:\n${ticketCtx.description}\n\nChat transcript:\n${transcript}\n\n— Sent from Welfare Support chatbot`
       );
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
-
       const summary =
         `<b>Request summary</b><br>` +
         `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
@@ -749,168 +355,133 @@ function specialCases(query){
         `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
         `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
-        `${linkHTML(mailtoHref, "Email support with this request (includes transcript)")}<br>` +
+        `${aHTML(mailtoHref, "Email support with this request (includes transcript)")}<br>` +
         `<small>(This opens your email app with the message prefilled — you then press Send.)</small>`;
-
       ticketCtx=null;
-      return { matched:true, answerHTML: summary, chips:["Raise a request (create a ticket)"] };
+      return { matched:true, answerHTML: summary };
+    }
+  }
+
+  // Depot flow trigger
+  if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")) {
+    const cityKey = Object.keys(PLACES).find(k => q.includes(k));
+    if (!cityKey) {
+      distanceCtx = { stage: "needOrigin" };
+      return { matched: true, answerHTML: "What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips: ["Use my location","Coventry","Birmingham","Leicester","London"] };
+    }
+  }
+
+  // Depot: if waiting origin
+  if (distanceCtx && distanceCtx.stage === "needOrigin") {
+    if (q === "use my location" || q === "my location") {
+      return { matched: true, answerHTML: "Okay — please allow location access in your browser. One moment…", doGeo: true };
+    }
+    const cityKey = Object.keys(PLACES).find(k => q === k || q.includes(k));
+    if (cityKey) {
+      const closest = findClosestDepot(PLACES[cityKey]);
+      const depot = DEPOTS[closest.depotKey];
+      distanceCtx = { stage: "haveClosest", originKey: cityKey, depotKey: closest.depotKey, miles: closest.miles };
+      return { matched: true, answerHTML: `Thanks — your closest depot is <b>${escapeHTML(depot.label)}</b>. How are you travelling?`, chips: ["By car","By train","By bus","Walking"] };
+    }
+  }
+
+  // Depot: travel mode
+  if (distanceCtx && distanceCtx.stage === "haveClosest") {
+    if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
+      const mode = q === "walking" ? "walk" : q.replace("by ","");
+      const depot = DEPOTS[distanceCtx.depotKey];
+      const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
+      const tile = osmTileURL(depot.lat, depot.lon, 13);
+      return {
+        matched: true,
+        answerHTML:
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
+          `${aHTML(url, "Get directions in Google Maps")}<br>` +
+          `${imgTagHTML(tile, "Map preview (OpenStreetMap)")}`
+      };
     }
   }
 
   return null;
 }
 
-/* MAIN */
-function handleUserMessage(text){
+/* Main handler */
+function handleUserMessage(text) {
   if (!text) return;
 
-  suggestionsEl.hidden=true;
-  suggestionsEl.innerHTML="";
-  currentSuggestions=[];
-  activeSuggestionIndex=-1;
+  suggestionsEl.hidden = true;
+  suggestionsEl.innerHTML = "";
+  currentSuggestions = [];
+  activeSuggestionIndex = -1;
 
-  addBubble(text, "user", { ts:new Date(), speak:false });
-  input.value="";
+  addBubble(text, "user", { ts: new Date(), speak:false });
+  input.value = "";
 
-  isResponding=true;
+  isResponding = true;
   setUIEnabled(false);
   addTyping();
 
-  setTimeout(()=>{
+  setTimeout(async () => {
     removeTyping();
 
-    if (!faqsLoaded){
-      addBubble("Loading knowledge base… please try again in a second.", "bot", { speak:false });
-      isResponding=false;
-      setUIEnabled(true);
-      input.focus();
-      return;
-    }
-
-    // special cases (ticket etc)
     const special = specialCases(text);
-    if (special && special.matched){
-      addBubble(special.answerHTML, "bot", { html:true });
+    if (special && special.matched) {
+      addBubble(special.answerHTML, "bot", { html: true });
+
       if (special.chips && special.chips.length) addChips(special.chips);
-      missCount=0;
-      isResponding=false;
+
+      if (special.doGeo) {
+        try {
+          const loc = await requestBrowserLocation();
+          const closest = findClosestDepot({ lat: loc.lat, lon: loc.lon });
+          const depot = DEPOTS[closest.depotKey];
+          distanceCtx = { stage:"haveClosest", originKey:"your location", depotKey: closest.depotKey, miles: closest.miles };
+
+          addBubble(
+            `Thanks — your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`,
+            "bot",
+            { html:true }
+          );
+          addChips(["By car","By train","By bus","Walking"]);
+        } catch (e) {
+          addBubble("I couldn’t access your location. You can type a town/city instead (e.g., Coventry).", "bot");
+          addChips(["Coventry","Birmingham","Leicester","London"]);
+        }
+      }
+
+      isResponding = false;
       setUIEnabled(true);
       input.focus();
       return;
     }
 
-    // normal FAQ match
-    const res = matchFAQ(text);
-    if (res.matched){
-      addBubble(res.answerHTML, "bot", { html:true });
-      if (res.followUps && res.followUps.length){
-        addBubble("You can also ask:", "bot", { speak:false });
-        addChips(res.followUps);
-      }
-      missCount=0;
-    } else {
-      missCount++;
-      addBubble("I’m not sure. Did you mean:", "bot", { speak:false });
-      addChips(res.suggestions ?? [], (picked)=>{
-        handleUserMessage(picked);
-      });
-      if (missCount >= 2){
-        addBubble(
-          `If you’d like, you can contact support at ${linkHTML(`mailto:${SETTINGS.supportEmail}`, SETTINGS.supportEmail)} or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
-          "bot",
-          { html:true, speak:false }
-        );
-        missCount=0;
-      }
-    }
-
-    isResponding=false;
+    addBubble("I’m not sure. Try the Topics button or ask about opening times / support / location / closest depot.", "bot");
+    isResponding = false;
     setUIEnabled(true);
     input.focus();
   }, 250);
 }
 
-function sendChat(){
+function sendChat() {
   if (isResponding) return;
-  const text=input.value.trim();
+  const text = input.value.trim();
   if (!text) return;
   handleUserMessage(text);
 }
-
 sendBtn.addEventListener("click", sendChat);
 
-clearBtn.addEventListener("click", ()=>{
-  chatWindow.innerHTML="";
-  missCount=0;
-  ticketCtx=null;
-  CHAT_LOG=[];
+clearBtn.addEventListener("click", () => {
+  chatWindow.innerHTML = "";
+  ticketCtx = null;
+  distanceCtx = null;
+  CHAT_LOG = [];
   init();
   input.focus();
 });
 
-/* FAQ match */
-function matchFAQ(query){
-  const qNorm=normalize(query);
-  const qTokens=tokenSet(qNorm);
-
-  const scored=FAQS.map((item)=>{
-    const question=item.question ?? "";
-    const syns=item.synonyms ?? [];
-    const keys=item.canonicalKeywords ?? [];
-    const tags=item.tags ?? [];
-
-    const scoreJ=Math.max(
-      jaccard(qTokens, tokenSet(question)),
-      syns.length ? Math.max(...syns.map((s)=>jaccard(qTokens, tokenSet(s)))) : 0,
-      keys.length ? Math.max(...keys.map((k)=>jaccard(qTokens, tokenSet(k)))) : 0,
-      tags.length ? Math.max(...tags.map((t)=>jaccard(qTokens, tokenSet(t)))) : 0
-    );
-
-    const scoreB=Math.max(
-      diceCoefficient(qNorm, question),
-      syns.length ? Math.max(...syns.map((s)=>diceCoefficient(qNorm, s))) : 0
-    );
-
-    const anyField=[question, ...syns, ...keys, ...tags].map(normalize).join(" ");
-    const boost=anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
-
-    const learned=learnedChoiceFor(qNorm);
-    const learnedBoost = learned && learned.chosen===question ? Math.min(0.22, 0.08 + 0.02*Math.min(7, learned.count || 1)) : 0;
-
-    const score = 0.62*scoreJ + 0.30*scoreB + boost + learnedBoost;
-    return { item, score };
-  }).sort((a,b)=>b.score-a.score);
-
-  const top=scored[0];
-  if (!top || top.score<SETTINGS.minConfidence){
-    return { matched:false, suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r)=>r.item.question) };
-  }
-  return { matched:true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps ?? [] };
-}
-
-/* Load FAQs */
-fetch("./public/config/faqs.json")
-  .then((res)=>res.json())
-  .then((data)=>{
-    FAQS=Array.isArray(data) ? data : [];
-    faqsLoaded=true;
-    buildCategoryIndex();
-    renderDrawer();
-  })
-  .catch(()=>{
-    FAQS=[];
-    faqsLoaded=true;
-    buildCategoryIndex();
-    renderDrawer();
-  });
-
 /* INIT (greeting only) */
-function init(){
-  addBubble(SETTINGS.greeting, "bot", { html:true, speak:false, ts:new Date() });
+function init() {
+  addBubble(SETTINGS.greeting, "bot", { html: true, speak:false, ts: new Date() });
 }
-
-if (document.readyState === "loading"){
-  window.addEventListener("DOMContentLoaded", init);
-} else {
-  init();
-}
+if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", init);
+else init();
