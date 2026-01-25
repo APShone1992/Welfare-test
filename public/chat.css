@@ -11,6 +11,7 @@
 [hidden]{ display:none !important; }
 *{ box-sizing:border-box; }
 html, body{ height:100%; }
+
 body{
   margin:0;
   background:var(--bg);
@@ -97,8 +98,6 @@ body{
   padding:0 10px;
   user-select:none;
 }
-.msg.user .timestamp{ text-align:right; color:rgba(0,0,0,0.55); }
-.msg.bot .timestamp{ text-align:left; color:rgba(0,0,0,0.55); }
 
 .bubble{
   position:relative;
@@ -113,7 +112,6 @@ body{
   border:1px solid rgba(15,23,42,0.06);
   animation:bubbleIn .14s ease-out;
 }
-
 .bubble.bot{
   background:linear-gradient(180deg,#f7f9ff 0%,#eef4ff 100%);
   color:var(--bot-text);
@@ -126,36 +124,6 @@ body{
   border-bottom-right-radius:10px;
 }
 
-.bubble.bot::before{
-  content:"";
-  position:absolute;
-  left:-6px;
-  bottom:10px;
-  width:12px;
-  height:12px;
-  background:#eef4ff;
-  transform:rotate(45deg);
-  border-left:1px solid rgba(15,23,42,0.06);
-  border-bottom:1px solid rgba(15,23,42,0.06);
-  border-bottom-left-radius:3px;
-  box-shadow:-3px 3px 10px rgba(0,0,0,0.06);
-}
-.bubble.user::before{
-  content:"";
-  position:absolute;
-  right:-6px;
-  bottom:10px;
-  width:12px;
-  height:12px;
-  background:#0078ff;
-  transform:rotate(45deg);
-  border-right:1px solid rgba(255,255,255,0.14);
-  border-bottom:1px solid rgba(255,255,255,0.14);
-  border-bottom-right-radius:3px;
-  box-shadow:3px 3px 10px rgba(0,0,0,0.06);
-}
-.typing-bubble::before{ display:none; }
-
 .bubble.bot a{
   color:#0b4fd8;
   font-weight:600;
@@ -163,7 +131,7 @@ body{
   text-underline-offset:2px;
 }
 
-/* ✅ Map preview */
+/* Map preview image */
 .map-preview{
   display:block;
   width:100%;
@@ -215,7 +183,7 @@ body{
   cursor:not-allowed;
 }
 
-/* ✅ Smaller mic/speaker buttons */
+/* Smaller icon buttons */
 .icon-btn{
   width:34px;
   min-width:34px;
@@ -232,8 +200,6 @@ body{
   align-items:center;
   justify-content:center;
 }
-.icon-btn:hover,
-.icon-btn:focus{ background:rgba(0,120,255,0.18); }
 .icon-btn.on{
   background:rgba(30,180,90,0.20);
   border-color:rgba(30,180,90,0.35);
@@ -298,21 +264,13 @@ body{
   overflow:hidden;
   text-overflow:ellipsis;
 }
-.chip-btn:hover,.chip-btn:focus{
-  border-color:#8ab6ff;
-  box-shadow:0 0 0 3px rgba(0,120,255,.12);
-  outline:none;
-}
-.chip-btn:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
 
-/* Drawer overlay & drawer */
+/* Drawer */
 .drawer-overlay{
   position:fixed;
   inset:0;
   background:rgba(15,23,42,0.40);
   z-index:99998;
-  pointer-events:auto;
-  touch-action:manipulation;
 }
 .drawer{
   position:fixed;
@@ -326,31 +284,16 @@ body{
   border-left:1px solid rgba(15,23,42,0.12);
   display:flex;
   flex-direction:column;
-  touch-action:pan-y;
 }
 .drawer-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding: calc(14px + env(safe-area-inset-top)) 14px 14px;
+  padding:14px;
   border-bottom:1px solid rgba(15,23,42,0.10);
 }
-.drawer-header h2{ margin:0; font-size:16px; }
-.drawer-close{
-  border:1px solid rgba(15,23,42,0.14);
-  background:#fff;
-  border-radius:10px;
-  padding:6px 10px;
-  cursor:pointer;
-}
 .drawer-body{ padding:14px; overflow:auto; }
-.drawer-hint{ margin:0 0 12px; opacity:0.75; font-size:13px; }
-.drawer-categories{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-bottom:14px;
-}
+.drawer-categories{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
 .cat-pill{
   border:1px solid rgba(15,23,42,0.12);
   background:#f6f9ff;
@@ -360,15 +303,7 @@ body{
   cursor:pointer;
   font-size:13px;
 }
-.cat-pill[aria-selected="true"]{
-  background:#e8f1ff;
-  border-color:#8ab6ff;
-}
-.drawer-questions{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
+.drawer-questions{ display:flex; flex-direction:column; gap:8px; }
 .drawer-q{
   text-align:left;
   border:1px solid rgba(15,23,42,0.10);
@@ -377,23 +312,4 @@ body{
   padding:10px 12px;
   cursor:pointer;
   font-size:14px;
-}
-.drawer-q:hover,.drawer-q:focus{
-  border-color:#8ab6ff;
-  box-shadow:0 0 0 3px rgba(0,120,255,.10);
-  outline:none;
-}
-
-@media (max-width:560px){
-  .chat-container{ margin:0; min-height:100vh; border-radius:0; }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce){
-  *{
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  .bubble{ animation:none !important; }
 }
