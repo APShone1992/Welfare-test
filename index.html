@@ -13,10 +13,15 @@
     <header class="chat-header">
       <img src="./public/assets/bot-icon.svg" class="bot-avatar" alt="Welfare Support bot" />
       <h1>Welfare Support</h1>
+
       <div class="header-actions">
-        <button id="topicsBtn" class="header-btn" type="button" aria-haspopup="dialog" aria-controls="topicsDrawer">
+        <span id="statusBadge" class="status-badge" aria-live="polite">Checking…</span>
+
+        <button id="topicsBtn" class="header-btn" type="button"
+          aria-haspopup="dialog" aria-controls="topicsDrawer">
           Topics
         </button>
+
         <button id="clearBtn" class="clear-btn" type="button" aria-label="Clear chat">
           Clear
         </button>
@@ -41,8 +46,18 @@
           autocomplete="off"
           aria-label="Ask a question"
         />
-        <div id="suggestions" class="suggestions" role="listbox" aria-label="Suggestions" hidden></div>
+        <div id="suggestions" class="suggestions" role="listbox"
+          aria-label="Suggestions" hidden></div>
       </div>
+
+      <button id="micBtn" class="icon-btn" type="button" aria-label="Voice input" title="Voice input">
+        🎤
+      </button>
+
+      <button id="voiceBtn" class="icon-btn" type="button" aria-label="Toggle voice output" title="Toggle voice output">
+        🔊
+      </button>
+
       <button id="sendBtn" type="button">Send</button>
     </div>
   </div>
@@ -62,3 +77,4 @@
   </aside>
 </body>
 </html>
+
