@@ -1,5 +1,4 @@
 
-// Welfare Support – Floating Widget (Stable)
 (function () {
   const currentScript =
     document.currentScript ||
@@ -53,33 +52,29 @@
     "transition: opacity .2s ease",
     "overflow: hidden"
   ].join("; ");
-
-  // Stable sandbox: allow scripts/forms + allow user-initiated navigation/popups for mailto
-  frame.setAttribute(
-    "sandbox",
-    "allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-  );
-
-  // Allow mic + gps in iframe environments that support it
-  frame.setAttribute("allow", "geolocation; microphone");
-
+  frame.setAttribute("sandbox", "allow-scripts allow-forms allow-same-origin");
   document.body.appendChild(frame);
 
   function openFrame() {
     frame.style.display = "block";
-    requestAnimationFrame(() => (frame.style.opacity = "1"));
+    requestAnimationFrame(function () { frame.style.opacity = "1"; });
   }
   function closeFrame() {
     frame.style.opacity = "0";
-    setTimeout(() => (frame.style.display = "none"), 180);
+    setTimeout(function () { frame.style.display = "none"; }, 180);
   }
-  function isOpen() {
-    return frame.style.display === "block";
-  }
+  function isOpen() { return frame.style.display === "block"; }
 
-  btn.addEventListener("click", () => (isOpen() ? closeFrame() : openFrame()));
-  document.addEventListener("keydown", (e) => e.key === "Escape" && closeFrame());
-  document.addEventListener("click", (e) => {
+  btn.addEventListener("click", function () {
+    if (isOpen()) closeFrame();
+    else openFrame();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeFrame();
+  });
+
+  document.addEventListener("click", function (e) {
     const clickedLauncher = e.target === btn;
     const clickedFrame = frame.contains(e.target);
     if (!clickedLauncher && !clickedFrame && isOpen()) closeFrame();
