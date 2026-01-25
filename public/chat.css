@@ -388,7 +388,7 @@ body{
   .chat-container{ margin:0; min-height:100vh; border-radius:0; }
 }
 
-/* Accessibility: Reduced motion */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce){
   *{
     animation-duration: 0.01ms !important;
