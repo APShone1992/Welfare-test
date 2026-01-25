@@ -1,8 +1,5 @@
 
-// Welfare Support – Floating Widget (Clean + Polished)
-// - Embeds the chat page in an iframe
-// - Auto-detects base URL from this script src
-// - Adds ESC close + click-outside close
+// Welfare Support – Floating Widget
 (function () {
   const currentScript =
     document.currentScript ||
@@ -33,19 +30,8 @@
     "cursor: pointer",
     "box-shadow: 0 10px 25px rgba(0,0,0,0.22)",
     "font-size: 24px",
-    "line-height: 60px",
-    "transition: transform .15s ease, box-shadow .15s ease"
+    "line-height: 60px"
   ].join("; ");
-
-  btn.addEventListener("mouseenter", function () {
-    btn.style.transform = "scale(1.06)";
-    btn.style.boxShadow = "0 14px 35px rgba(0,0,0,0.26)";
-  });
-  btn.addEventListener("mouseleave", function () {
-    btn.style.transform = "scale(1)";
-    btn.style.boxShadow = "0 10px 25px rgba(0,0,0,0.22)";
-  });
-
   document.body.appendChild(btn);
 
   const frame = document.createElement("iframe");
@@ -68,41 +54,31 @@
     "overflow: hidden"
   ].join("; ");
 
-  // ✅ FIX: allow mailto links to open from inside the iframe
-  // allow-popups + allow-top-navigation-by-user-activation enables mailto: to open user mail client.
+  // Allow mailto + popups + user navigation
   frame.setAttribute(
     "sandbox",
     "allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
   );
+  // ✅ Allow geolocation inside iframe
+  frame.setAttribute("allow", "geolocation");
 
   document.body.appendChild(frame);
 
   function openFrame() {
     frame.style.display = "block";
-    requestAnimationFrame(function () {
-      frame.style.opacity = "1";
-    });
+    requestAnimationFrame(() => (frame.style.opacity = "1"));
   }
   function closeFrame() {
     frame.style.opacity = "0";
-    setTimeout(function () {
-      frame.style.display = "none";
-    }, 180);
+    setTimeout(() => (frame.style.display = "none"), 180);
   }
   function isOpen() {
     return frame.style.display === "block";
   }
 
-  btn.addEventListener("click", function () {
-    if (isOpen()) closeFrame();
-    else openFrame();
-  });
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeFrame();
-  });
-
-  document.addEventListener("click", function (e) {
+  btn.addEventListener("click", () => (isOpen() ? closeFrame() : openFrame()));
+  document.addEventListener("keydown", (e) => e.key === "Escape" && closeFrame());
+  document.addEventListener("click", (e) => {
     const clickedLauncher = e.target === btn;
     const clickedFrame = frame.contains(e.target);
     if (!clickedLauncher && !clickedFrame && isOpen()) closeFrame();
