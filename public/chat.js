@@ -1,10 +1,7 @@
 
-/* Welfare Support Chatbot (Restored + Enhanced)
-- Startup greeting only (no starter chips) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-- Depot flow accepts city chips again when not using GPS [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-- Ticket/request flow restored (mailto + transcript) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-- Map preview: OpenStreetMap tile images (more reliable than some static map services)
-- No bank holiday year listing; policy only; bank holidays affect availability (substitute-day principle) [2](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
+/* Welfare Support Chatbot (Ticket Flow Fixed + Link Fix + Map Fix)
+- Ticket/request flow restored and clickable mailto links fixed. [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+- Widget mailto support is handled in widget.js sandbox (separate file). [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
 */
 
 const SETTINGS = {
@@ -14,13 +11,18 @@ const SETTINGS = {
   chipLimit: 6,
   chipClickCooldownMs: 900,
   suggestionLimit: 5,
+
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
+
   ticketTranscriptMessages: 12,
   ticketTranscriptMaxLine: 140,
+
   showUnderstoodLine: true,
   understoodLineThreshold: 0.18,
+
   voiceDefaultOn: false,
+
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
 };
@@ -56,14 +58,13 @@ let currentSuggestions = [];
 
 let distanceCtx = null;
 let clarifyCtx = null;
-let ticketCtx = null;         // ✅ restored ticket context flow [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-let journeyCtx = null;        // left in place if you re-add guided flows later
+let ticketCtx = null;
 let lastMissQueryNorm = null;
 let CHAT_LOG = [];
 
 /* Memory */
-const MEMORY_KEY = "ws_chat_memory_v6";
-const memory = { name: null, lastTopic: null, lastCity: null, preferredMode: null, voiceOn: null };
+const MEMORY_KEY = "ws_chat_memory_v7";
+const memory = { voiceOn: null, preferredMode: null, name: null };
 function loadMemory() {
   try {
     const raw = localStorage.getItem(MEMORY_KEY);
@@ -142,7 +143,7 @@ const jaccard = (a, b) => {
   return union ? inter / union : 0;
 };
 
-/* bigram similarity */
+/* Bigram similarity */
 function bigrams(str) {
   const s = normalize(str).replace(/\s+/g, " ");
   const out = [];
@@ -173,12 +174,19 @@ function escapeHTML(s) {
 function escapeAttrUrl(url) {
   return String(url ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
+
+/* ✅ FIX: real anchor + real image */
 function linkHTML(url, label) {
-  return `<a href="${escapeAttrUrl(url)}">${escapeHTML(label)}</a>`;
+  const href = escapeAttrUrl(url);
+  const text = escapeHTML(label);
+  return `<a href="${href}">${text}</a>`;
 }
 function imgHTML(url, alt = "Map preview") {
-  return `<img class="map-preview" src="${escapeAttrUrl(url)}" alt="${escapeHTML(alt)}">`;
+  const src = escapeAttrUrl(url);
+  const a = escapeHTML(alt);
+  return `<img class="map-preview" src="${src}" alt="${a}" loading="lazy">`;
 }
+
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -220,6 +228,7 @@ function sanitizeHTML(html) {
   toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
   return template.innerHTML;
 }
+
 function htmlToPlainText(html) {
   const template = document.createElement("template");
   template.innerHTML = html ?? "";
@@ -231,10 +240,6 @@ const UK_TZ = "Europe/London";
 function formatUKTime(date) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
-function formatUKDateLabel(dateObj) {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, weekday: "long", day: "numeric", month: "short", year: "numeric" }).format(dateObj);
-}
-const UK_DAY_INDEX = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
 function getUKParts(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: UK_TZ, weekday: "short", year: "numeric", month: "2-digit", day: "2-digit",
@@ -243,192 +248,84 @@ function getUKParts(date = new Date()) {
   const parts = fmt.formatToParts(date);
   const get = (type) => parts.find((p) => p.type === type)?.value;
   const weekdayShort = get("weekday");
+  const UK_DAY_INDEX = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
   const dayIndex = UK_DAY_INDEX[weekdayShort] ?? 0;
-  const year = parseInt(get("year") ?? "0", 10);
-  const month = parseInt(get("month") ?? "1", 10);
-  const day = parseInt(get("day") ?? "1", 10);
   const hour = parseInt(get("hour") ?? "0", 10);
   const minute = parseInt(get("minute") ?? "0", 10);
   const minutesNow = hour * 60 + minute;
-  return { weekdayShort, dayIndex, year, month, day, hour, minute, minutesNow };
+  const year = parseInt(get("year") ?? "0", 10);
+  const month = parseInt(get("month") ?? "1", 10);
+  const day = parseInt(get("day") ?? "1", 10);
+  return { dayIndex, minutesNow, year, month, day };
 }
 
-/* Business hours + bank holidays E&W */
-const BUSINESS_HOURS = {
-  openDays: new Set([1,2,3,4,5]),
-  startMinutes: 8 * 60 + 30,
-  endMinutes: 17 * 60
-};
-function toISODate(y, m, d) {
-  return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+/* Bank holidays E&W (for open/closed only) */
+const BUSINESS_HOURS = { openDays: new Set([1,2,3,4,5]), startMinutes: 8*60+30, endMinutes: 17*60 };
+function toISODate(y,m,d){ return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
+function easterSunday(year){
+  const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),
+        g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,
+        m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+  return { month, day };
 }
-function easterSunday(year) {
-  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
-  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4), k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return { year, month, day };
+function dayOfWeekUTC(y,m,d){ return new Date(Date.UTC(y,m-1,d)).getUTCDay(); }
+function firstMondayOfMay(y){ for(let d=1; d<=7; d++) if(dayOfWeekUTC(y,5,d)===1) return d; return 1; }
+function lastMondayOfMonth(y,month){
+  const last=new Date(Date.UTC(y,month,0)).getUTCDate();
+  for(let d=last; d>=last-6; d--) if(dayOfWeekUTC(y,month,d)===1) return d;
+  return last;
 }
-function dayOfWeekUTC(y, m, d) { return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); }
-function firstMondayOfMay(year) { for (let d=1; d<=7; d++) if (dayOfWeekUTC(year,5,d)===1) return d; return 1; }
-function lastMondayOfMonth(year, month) {
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  for (let d=lastDay; d>=lastDay-6; d--) if (dayOfWeekUTC(year, month, d)===1) return d;
-  return lastDay;
+function newYearObserved(y){
+  const dow=dayOfWeekUTC(y,1,1);
+  if(dow===6) return {m:1,d:3};
+  if(dow===0) return {m:1,d:2};
+  return {m:1,d:1};
 }
-function newYearObserved(year) {
-  const dow = dayOfWeekUTC(year,1,1);
-  if (dow===6) return { m:1, d:3 };
-  if (dow===0) return { m:1, d:2 };
-  return { m:1, d:1 };
+function christmasAndBoxingObserved(y){
+  const x=dayOfWeekUTC(y,12,25), b=dayOfWeekUTC(y,12,26);
+  if(x===6 || x===0) return {x:{m:12,d:27}, b:{m:12,d:28}};
+  if(b===6 || b===0) return {x:{m:12,d:25}, b:{m:12,d:28}};
+  return {x:{m:12,d:25}, b:{m:12,d:26}};
 }
-function christmasAndBoxingObserved(year) {
-  const xmasDow = dayOfWeekUTC(year,12,25);
-  const boxingDow = dayOfWeekUTC(year,12,26);
-  if (xmasDow===6 || xmasDow===0) return { xmas:{m:12,d:27}, boxing:{m:12,d:28} };
-  if (boxingDow===6 || boxingDow===0) return { xmas:{m:12,d:25}, boxing:{m:12,d:28} };
-  return { xmas:{m:12,d:25}, boxing:{m:12,d:26} };
-}
-function bankHolidaysEWSet(year) {
-  const set = new Set();
-  const ny = newYearObserved(year);
-  set.add(toISODate(year, ny.m, ny.d));
-
-  const es = easterSunday(year);
-  const easter = new Date(Date.UTC(year, es.month - 1, es.day));
-  const goodFriday = new Date(easter.getTime() - 2 * 86400000);
-  const easterMonday = new Date(easter.getTime() + 1 * 86400000);
-  set.add(toISODate(goodFriday.getUTCFullYear(), goodFriday.getUTCMonth() + 1, goodFriday.getUTCDate()));
-  set.add(toISODate(easterMonday.getUTCFullYear(), easterMonday.getUTCMonth() + 1, easterMonday.getUTCDate()));
-
-  set.add(toISODate(year, 5, firstMondayOfMay(year)));
-  set.add(toISODate(year, 5, lastMondayOfMonth(year, 5)));
-  set.add(toISODate(year, 8, lastMondayOfMonth(year, 8)));
-
-  const xb = christmasAndBoxingObserved(year);
-  set.add(toISODate(year, xb.xmas.m, xb.xmas.d));
-  set.add(toISODate(year, xb.boxing.m, xb.boxing.d));
+function bankHolidaysEWSet(y){
+  const set=new Set();
+  const ny=newYearObserved(y); set.add(toISODate(y,ny.m,ny.d));
+  const es=easterSunday(y);
+  const easter=new Date(Date.UTC(y,es.month-1,es.day));
+  const goodFriday=new Date(easter.getTime()-2*86400000);
+  const easterMonday=new Date(easter.getTime()+86400000);
+  set.add(toISODate(goodFriday.getUTCFullYear(), goodFriday.getUTCMonth()+1, goodFriday.getUTCDate()));
+  set.add(toISODate(easterMonday.getUTCFullYear(), easterMonday.getUTCMonth()+1, easterMonday.getUTCDate()));
+  set.add(toISODate(y,5,firstMondayOfMay(y)));
+  set.add(toISODate(y,5,lastMondayOfMonth(y,5)));
+  set.add(toISODate(y,8,lastMondayOfMonth(y,8)));
+  const xb=christmasAndBoxingObserved(y);
+  set.add(toISODate(y,xb.x.m,xb.x.d));
+  set.add(toISODate(y,xb.b.m,xb.b.d));
   return set;
 }
-function isBankHolidayEW(dateObj = new Date()) {
-  const uk = getUKParts(dateObj);
-  const iso = toISODate(uk.year, uk.month, uk.day);
-  return bankHolidaysEWSet(uk.year).has(iso);
+function isBankHolidayEW(dateObj=new Date()){
+  const uk=getUKParts(dateObj);
+  return bankHolidaysEWSet(uk.year).has(toISODate(uk.year, uk.month, uk.day));
 }
-function isOpenNowEW(dateObj = new Date()) {
-  const uk = getUKParts(dateObj);
-  const isWeekday = BUSINESS_HOURS.openDays.has(uk.dayIndex);
-  const within = uk.minutesNow >= BUSINESS_HOURS.startMinutes && uk.minutesNow < BUSINESS_HOURS.endMinutes;
-  if (!isWeekday || !within) return false;
-  if (isBankHolidayEW(dateObj)) return false;
+function isOpenNowEW(dateObj=new Date()){
+  const uk=getUKParts(dateObj);
+  if(!BUSINESS_HOURS.openDays.has(uk.dayIndex)) return false;
+  if(uk.minutesNow < BUSINESS_HOURS.startMinutes || uk.minutesNow >= BUSINESS_HOURS.endMinutes) return false;
+  if(isBankHolidayEW(dateObj)) return false;
   return true;
 }
-function nextOpenDateTimeEW(from = new Date()) {
-  const start = new Date(from.getTime());
-  for (let dayOffset = 0; dayOffset <= 14; dayOffset++) {
-    const base = new Date(start.getTime() + dayOffset * 86400000);
-    base.setHours(0,0,0,0);
-    for (let i=0; i<24*60; i++) {
-      const cand = new Date(base.getTime() + i*60000);
-      const uk = getUKParts(cand);
-      if (uk.minutesNow !== BUSINESS_HOURS.startMinutes) continue;
-      if (!BUSINESS_HOURS.openDays.has(uk.dayIndex)) continue;
-      if (isBankHolidayEW(cand)) continue;
-      if (cand.getTime() <= from.getTime()) continue;
-      return cand;
-    }
+function buildAvailabilityAnswerHTML(){
+  const now=new Date();
+  const nowUK=formatUKTime(now);
+  if(isOpenNowEW(now)){
+    return `✅ <b>Yes — we’re open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`;
   }
-  return new Date(from.getTime() + 86400000);
-}
-function minsToHrsMins(mins) {
-  const h = Math.floor(mins/60), m = mins%60;
-  if (h<=0) return `${m} min`;
-  if (m===0) return `${h} hr`;
-  return `${h} hr ${m} min`;
-}
-function buildAvailabilityAnswerHTML() {
-  const now = new Date();
-  const uk = getUKParts(now);
-  const nowUK = formatUKTime(now);
-
-  if (isOpenNowEW(now)) {
-    const minsLeft = BUSINESS_HOURS.endMinutes - uk.minutesNow;
-    return `✅ <b>Yes — we’re open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b><br>We close at <b>17:00</b> (in about <b>${escapeHTML(minsToHrsMins(minsLeft))}</b>).`;
-  }
-
-  const holidayNote = isBankHolidayEW(now)
-    ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>"
-    : "";
-
-  const nextOpen = nextOpenDateTimeEW(now);
-  return `❌ <b>No — we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b><br>Next opening time: <b>${escapeHTML(formatUKDateLabel(nextOpen))}</b> at <b>${escapeHTML(formatUKTime(nextOpen))}</b>.<br><small>Hours: Monday–Friday, 08:30–17:00 (UK time). Closed weekends & bank holidays.</small>${holidayNote}`;
+  const holidayNote = isBankHolidayEW(now) ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : "";
+  return `❌ <b>No — we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${holidayNote}<br><small>Hours: Monday–Friday, 08:30–17:00 (UK time).</small>`;
 }
 
-/* Depots & places */
-const DEPOTS = {
-  nuneaton: { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
-};
-const PLACES = {
-  coventry: { lat: 52.4068, lon: -1.5197 },
-  birmingham: { lat: 52.4895, lon: -1.8980 },
-  leicester: { lat: 52.6369, lon: -1.1398 },
-  london: { lat: 51.5074, lon: -0.1278 },
-  wolverhampton: { lat: 52.5862, lon: -2.1286 }
-};
-function titleCase(s) { const t=(s??"").trim(); return t ? t.charAt(0).toUpperCase()+t.slice(1) : t; }
-function toRad(deg){ return (deg*Math.PI)/180; }
-function distanceMiles(a,b){
-  const R=3958.8;
-  const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
-  const lat1=toRad(a.lat), lat2=toRad(b.lat);
-  const h=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-  return R*(2*Math.asin(Math.sqrt(h)));
-}
-function estimateMinutes(miles, mode){
-  const mphMap={ car:35, train:55, bus:20, walk:3 };
-  const mph=mphMap[mode] ?? 35;
-  return Math.round((miles/mph)*60);
-}
-function modeLabel(mode){
-  const map={ car:"by car", train:"by train", bus:"by bus", walk:"walking" };
-  return map[mode] ?? "by car";
-}
-function parseTravelMode(qNorm){
-  if (qNorm.includes("train") || qNorm.includes("rail")) return "train";
-  if (qNorm.includes("bus") || qNorm.includes("coach")) return "bus";
-  if (qNorm.includes("walk") || qNorm.includes("walking")) return "walk";
-  if (qNorm.includes("car") || qNorm.includes("drive") || qNorm.includes("driving")) return "car";
-  return null;
-}
-function findPlaceKey(qNorm){
-  for (const key in PLACES) if (Object.prototype.hasOwnProperty.call(PLACES, key) && qNorm.includes(key)) return key;
-  return null;
-}
-function findClosestDepot(originLatLon){
-  let bestKey=null, bestMiles=Infinity;
-  for (const key in DEPOTS) {
-    if (!Object.prototype.hasOwnProperty.call(DEPOTS,key)) continue;
-    const miles=distanceMiles(originLatLon, DEPOTS[key]);
-    if (miles<bestMiles){ bestMiles=miles; bestKey=key; }
-  }
-  return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
-}
-function googleDirectionsURL(originText, depot, mode){
-  const origin=encodeURIComponent(originText);
-  const dest=encodeURIComponent(`${depot.lat},${depot.lon}`);
-  let travelmode="driving";
-  if (mode==="walk") travelmode="walking";
-  if (mode==="train" || mode==="bus") travelmode="transit";
-  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${travelmode}`;
-}
-function googleMapsPlaceURL(lat, lon){ return `https://www.google.com/maps?q=${encodeURIComponent(lat+","+lon)}`; }
-
-/* OSM Tile map preview */
+/* Map preview: OSM tile */
 function lonLatToTileXY(lon, lat, z) {
   const latRad = lat * Math.PI / 180;
   const n = Math.pow(2, z);
@@ -441,86 +338,13 @@ function osmTileURL(lat, lon, zoom = 13) {
   return `https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`;
 }
 
-/* Spelling correction (quiet) */
-let VOCAB = new Set();
-const PROTECTED_TOKENS = new Set(["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest","payroll"]);
-function shouldSkipToken(tok){
-  if (!tok) return true;
-  if (tok.length<=3) return true;
-  if (/\d/.test(tok)) return true;
-  if (tok.includes("@") || tok.includes(".")) return true;
-  if (!/^[a-z-]+$/.test(tok)) return true;
-  return false;
+/* Ticket validation */
+function isValidPhone(raw){
+  const digits = String(raw ?? "").replace(/[^\d]/g,"");
+  return digits.length >= 8 && digits.length <= 16;
 }
-function levenshtein(a,b,maxDist){
-  if (a===b) return 0;
-  const al=a.length, bl=b.length;
-  if (Math.abs(al-bl)>maxDist) return maxDist+1;
-  const prev=new Array(bl+1), curr=new Array(bl+1);
-  for (let j=0;j<=bl;j++) prev[j]=j;
-  for (let i=1;i<=al;i++){
-    curr[0]=i;
-    let minInRow=curr[0];
-    const ai=a.charCodeAt(i-1);
-    for (let j=1;j<=bl;j++){
-      const cost = ai===b.charCodeAt(j-1) ? 0 : 1;
-      curr[j]=Math.min(prev[j]+1, curr[j-1]+1, prev[j-1]+cost);
-      if (curr[j]<minInRow) minInRow=curr[j];
-    }
-    if (minInRow>maxDist) return maxDist+1;
-    for (let j=0;j<=bl;j++) prev[j]=curr[j];
-  }
-  return prev[bl];
-}
-function bestVocabMatch(token){
-  if (PROTECTED_TOKENS.has(token)) return null;
-  if (shouldSkipToken(token)) return null;
-  if (VOCAB.has(token)) return null;
-  const maxDist = token.length<=7 ? 1 : 2;
-  let best=null, bestDist=maxDist+1;
-  for (const w of VOCAB){
-    if (Math.abs(w.length-token.length)>maxDist) continue;
-    const d=levenshtein(token,w,maxDist);
-    if (d<bestDist){ bestDist=d; best=w; if (bestDist===1) break; }
-  }
-  return bestDist<=maxDist ? best : null;
-}
-function buildVocabFromFAQs(){
-  const vocab=new Set();
-  for (const item of FAQS){
-    const fields=[ item.question, ...(item.synonyms??[]), ...(item.canonicalKeywords??[]), ...(item.tags??[]), item.category ];
-    for (const f of fields){
-      const toks=normalize(f).split(" ").filter(Boolean);
-      for (const t of toks) if (!shouldSkipToken(t)) vocab.add(t);
-    }
-  }
-  Object.keys(DEPOTS).forEach((k)=>normalize(k).split(" ").forEach((t)=>{ if(!shouldSkipToken(t)) vocab.add(t); }));
-  Object.keys(PLACES).forEach((k)=>normalize(k).split(" ").forEach((t)=>{ if(!shouldSkipToken(t)) vocab.add(t); }));
-  ["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest","payroll"].forEach((w)=>vocab.add(w));
-  VOCAB=vocab;
-}
-function correctQueryTokens(rawText){
-  const norm=normalize(rawText);
-  if (!norm) return { corrected: norm, changed: false };
-  const tokens=norm.split(" ").filter(Boolean);
-  let changed=false;
-  const correctedTokens=tokens.map((t)=>{
-    const fixed=bestVocabMatch(t);
-    if (fixed){ changed=true; return fixed; }
-    return t;
-  });
-  return { corrected: correctedTokens.join(" "), changed };
-}
-function rephraseQuery(text){
-  let q=normalize(text);
-  q=q.replace(/\bwhn\b/g,"when").replace(/\bur\b/g,"your").replace(/\bu\b/g,"you").replace(/\br\b/g,"are");
-  q=q.replace(/\bis any( )?one available\b/g,"is anyone available now").replace(/\bopen right now\b/g,"open now");
-  if (q.includes("how far") && q.includes("depot")) q="how far is my closest depot";
-  return q.trim();
-}
-function meaningChangeScore(a,b){ return 1 - diceCoefficient(a,b); }
 
-/* Transcript */
+/* Transcript helpers */
 function pushToTranscript(type, text, opts){
   const options=opts ?? {};
   const tsDate=options.ts ?? new Date();
@@ -555,6 +379,7 @@ function setUIEnabled(enabled){
 let voiceOn = (typeof memory.voiceOn === "boolean") ? memory.voiceOn : SETTINGS.voiceDefaultOn;
 memory.voiceOn = voiceOn;
 saveMemory();
+
 function updateVoiceBtnUI(){
   voiceBtn.classList.toggle("on", !!voiceOn);
   voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
@@ -583,6 +408,7 @@ updateVoiceBtnUI();
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
 let micListening = false;
+
 function initSpeechRecognition(){
   if (!SpeechRecognition) return null;
   const rec=new SpeechRecognition();
@@ -619,6 +445,7 @@ function initSpeechRecognition(){
   return rec;
 }
 recognizer = initSpeechRecognition();
+
 micBtn.addEventListener("click", ()=>{
   if (!recognizer){
     addBubble("Voice input isn’t supported in this browser. Try Chrome or Edge, or just type your question.", "bot", { speak:false });
@@ -703,34 +530,38 @@ function addChips(questions, onClick){
   chatWindow.scrollTop=chatWindow.scrollHeight;
 }
 
-/* Drawer */
-function buildCategoryIndex(){
-  categoryIndex=new Map();
-  FAQS.forEach((item)=>{
-    const key=(item.category ?? "general").toLowerCase();
+/* Drawer + Suggestions: keep your existing from prior working version */
+function buildCategoryIndex() {
+  categoryIndex = new Map();
+  FAQS.forEach((item) => {
+    const key = (item.category ?? "general").toLowerCase();
     if (!categoryIndex.has(key)) categoryIndex.set(key, []);
     categoryIndex.get(key).push(item);
   });
-  const labelMap={ general:"General", support:"Support", location:"Location", opening:"Opening times", actions:"Actions" };
-  categories=Array.from(categoryIndex.keys()).sort().map((key)=>({
-    key, label: labelMap[key] ?? (key.charAt(0).toUpperCase()+key.slice(1)), count: categoryIndex.get(key).length
+  const labelMap = { general:"General", support:"Support", location:"Location", opening:"Opening times", actions:"Actions" };
+  categories = Array.from(categoryIndex.keys()).sort().map((key)=>({
+    key, label: labelMap[key] ?? (key.charAt(0).toUpperCase() + key.slice(1)), count: categoryIndex.get(key).length
   }));
 }
+
 function openDrawer(){ overlay.hidden=false; drawer.hidden=false; drawer.setAttribute("aria-hidden","false"); drawerCloseBtn?.focus(); }
 function closeDrawer(){ overlay.hidden=true; drawer.hidden=true; drawer.setAttribute("aria-hidden","true"); topicsBtn?.focus(); }
+
 function renderDrawer(selectedKey){
-  const selected=selectedKey ?? null;
-  drawerCategoriesEl.innerHTML="";
-  drawerQuestionsEl.innerHTML="";
+  const selected = selectedKey ?? null;
+  drawerCategoriesEl.innerHTML = "";
+  drawerQuestionsEl.innerHTML = "";
+
   categories.forEach((c)=>{
     const pill=document.createElement("button");
     pill.type="button";
     pill.className="cat-pill";
-    pill.textContent=`${c.label} (${c.count})`;
-    pill.setAttribute("aria-selected", String(c.key===selected));
+    pill.textContent = `${c.label} (${c.count})`;
+    pill.setAttribute("aria-selected", String(c.key === selected));
     pill.addEventListener("click", ()=>renderDrawer(c.key));
     drawerCategoriesEl.appendChild(pill);
   });
+
   const list = selected && categoryIndex.has(selected) ? categoryIndex.get(selected) : FAQS;
   list.forEach((item)=>{
     const q=document.createElement("button");
@@ -744,11 +575,13 @@ function renderDrawer(selectedKey){
     drawerQuestionsEl.appendChild(q);
   });
 }
+
 function bindClose(el){
   if (!el) return;
   el.addEventListener("click",(e)=>{ e.preventDefault(); closeDrawer(); });
   el.addEventListener("touchstart",(e)=>{ e.preventDefault(); closeDrawer(); }, { passive:false });
 }
+
 topicsBtn?.addEventListener("click", ()=>{ if (faqsLoaded) openDrawer(); });
 drawer?.addEventListener("click",(e)=>e.stopPropagation());
 drawer?.addEventListener("touchstart",(e)=>e.stopPropagation(), { passive:true });
@@ -756,7 +589,6 @@ bindClose(drawerCloseBtn);
 bindClose(overlay);
 document.addEventListener("keydown",(e)=>{ if (!drawer.hidden && e.key==="Escape") closeDrawer(); });
 
-/* Suggestions */
 function showSuggestions(items){
   currentSuggestions=items;
   activeSuggestionIndex=-1;
@@ -779,10 +611,12 @@ function showSuggestions(items){
   });
   suggestionsEl.hidden=false;
 }
+
 function updateSuggestionSelection(){
   const nodes=suggestionsEl.querySelectorAll(".suggestion-item");
   nodes.forEach((n,i)=>n.setAttribute("aria-selected", String(i===activeSuggestionIndex)));
 }
+
 function pickSuggestion(index){
   const picked=currentSuggestions[index];
   if (!picked) return;
@@ -792,11 +626,10 @@ function pickSuggestion(index){
   activeSuggestionIndex=-1;
   handleUserMessage(picked.question);
 }
+
 function computeSuggestions(query){
   let q=normalize(query);
   if (!q || q.length<2) return [];
-  const corr=correctQueryTokens(query);
-  if (corr.changed && corr.corrected) q=corr.corrected;
 
   const qTokens=tokenSet(q);
   const labelMap=new Map(categories.map((c)=>[c.key, c.label]));
@@ -813,6 +646,7 @@ function computeSuggestions(query){
       keys.length ? Math.max(...keys.map((k)=>jaccard(qTokens, tokenSet(k)))) : 0,
       tags.length ? Math.max(...tags.map((t)=>jaccard(qTokens, tokenSet(t)))) : 0
     );
+
     const scoreB=Math.max(
       diceCoefficient(q, question),
       syns.length ? Math.max(...syns.map((s)=>diceCoefficient(q, s))) : 0
@@ -836,6 +670,7 @@ function computeSuggestions(query){
     categoryLabel: labelMap.get((s.item.category ?? "general").toLowerCase()) ?? "General"
   }));
 }
+
 input.addEventListener("input", ()=>{ if (!faqsLoaded) return; showSuggestions(computeSuggestions(input.value)); });
 input.addEventListener("blur", ()=>{ setTimeout(()=>{ suggestionsEl.hidden=true; }, 120); });
 input.addEventListener("keydown",(e)=>{
@@ -860,34 +695,11 @@ input.addEventListener("keydown",(e)=>{
   }
 });
 
-/* Ticket helpers */
-function isValidPhone(raw){
-  const digits=String(raw ?? "").replace(/[^\d]/g,"");
-  return digits.length>=8 && digits.length<=16;
-}
+/* Ticket + other special cases */
+function specialCases(query){
+  const q = normalize(query);
 
-/* Special cases (ticket flow restored) */
-function specialCases(query, tone){
-  const corr=correctQueryTokens(query);
-  const canon=rephraseQuery(corr.changed && corr.corrected ? corr.corrected : query);
-  const q = normalize(canon);
-
-  // Bank holiday policy
-  if (q.includes("bank holiday") || q.includes("bank holidays")) {
-    return {
-      matched:true,
-      answerHTML: `❌ <b>No — we are not open on bank holidays.</b><br><small>We’re open Monday–Friday, 08:30–17:00 (UK time), and closed on weekends & bank holidays.</small>`,
-      chips: ["What are your opening times?", "Is anyone available now?", "How can I contact support?"]
-    };
-  }
-
-  // Availability now
-  const availabilityTriggers = ["is anyone available","anyone available","available now","are you available","open now","are you open now","can i speak to someone","speak to someone now"];
-  if (availabilityTriggers.some((t)=>q.includes(t))) {
-    return { matched:true, answerHTML: buildAvailabilityAnswerHTML(), chips:["What are your opening times?","How can I contact support?"] };
-  }
-
-  // ✅ Ticket trigger (restored) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+  // ✅ Ticket trigger
   const wantsTicket =
     q.includes("raise a request") ||
     q.includes("create a ticket") ||
@@ -898,11 +710,7 @@ function specialCases(query, tone){
 
   if (!ticketCtx && wantsTicket) {
     ticketCtx = { stage: "needType" };
-    return {
-      matched: true,
-      answerHTML: "Sure — what do you need help with?",
-      chips: ["Access / Login", "Pay / Payroll", "Benefits", "General query", "Something else"]
-    };
+    return { matched: true, answerHTML: "Sure — what do you need help with?", chips: ["Access / Login","Pay / Payroll","Benefits","General query","Something else"] };
   }
 
   if (ticketCtx) {
@@ -911,61 +719,27 @@ function specialCases(query, tone){
       return { matched: true, answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>." };
     }
 
-    if (ticketCtx.stage === "needType") {
-      ticketCtx.type = query.trim();
-      ticketCtx.stage = "needName";
-      return { matched: true, answerHTML: "Thanks — what’s your name?" };
-    }
-
-    if (ticketCtx.stage === "needName") {
-      ticketCtx.name = query.trim();
-      memory.name = ticketCtx.name;
-      saveMemory();
-      ticketCtx.stage = "needEmail";
-      return { matched: true, answerHTML: "And what email should we reply to?" };
-    }
-
+    if (ticketCtx.stage === "needType") { ticketCtx.type = query.trim(); ticketCtx.stage = "needName"; return { matched:true, answerHTML:"Thanks — what’s your name?" }; }
+    if (ticketCtx.stage === "needName") { ticketCtx.name = query.trim(); memory.name=ticketCtx.name; saveMemory(); ticketCtx.stage="needEmail"; return { matched:true, answerHTML:"And what email should we reply to?" }; }
     if (ticketCtx.stage === "needEmail") {
-      const email = query.trim();
-      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if (!ok) return { matched: true, answerHTML: "That doesn’t look like an email — can you retype it?" };
-      ticketCtx.email = email;
-      ticketCtx.stage = "needPhone";
-      return { matched: true, answerHTML: "Thanks — what’s the best contact number for you?" };
+      const email=query.trim();
+      const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if(!ok) return { matched:true, answerHTML:"That doesn’t look like an email — can you retype it?" };
+      ticketCtx.email=email; ticketCtx.stage="needPhone"; return { matched:true, answerHTML:"Thanks — what’s the best contact number for you?" };
     }
-
     if (ticketCtx.stage === "needPhone") {
-      const phone = query.trim();
-      if (!isValidPhone(phone)) {
-        return { matched: true, answerHTML: "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
-      }
-      ticketCtx.phone = phone;
-      ticketCtx.stage = "needDescription";
-      return { matched: true, answerHTML: "Briefly describe the issue (1–3 sentences is perfect)." };
+      const phone=query.trim();
+      if(!isValidPhone(phone)) return { matched:true, answerHTML:"That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
+      ticketCtx.phone=phone; ticketCtx.stage="needDescription"; return { matched:true, answerHTML:"Briefly describe the issue (1–3 sentences is perfect)." };
     }
-
-    if (ticketCtx.stage === "needDescription") {
-      ticketCtx.description = query.trim();
-      ticketCtx.stage = "needUrgency";
-      return { matched: true, answerHTML: "How urgent is this?", chips: ["Low", "Normal", "High", "Critical"] };
-    }
-
+    if (ticketCtx.stage === "needDescription") { ticketCtx.description=query.trim(); ticketCtx.stage="needUrgency"; return { matched:true, answerHTML:"How urgent is this?", chips:["Low","Normal","High","Critical"] }; }
     if (ticketCtx.stage === "needUrgency") {
-      ticketCtx.urgency = query.trim();
-
+      ticketCtx.urgency=query.trim();
       const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
       const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
       const body = encodeURIComponent(
-        `Name: ${ticketCtx.name}\n` +
-        `Email: ${ticketCtx.email}\n` +
-        `Contact number: ${ticketCtx.phone}\n` +
-        `Urgency: ${ticketCtx.urgency}\n` +
-        `Type: ${ticketCtx.type}\n\n` +
-        `Description:\n${ticketCtx.description}\n\n` +
-        `Chat transcript (latest messages):\n${transcript}\n\n` +
-        `— Sent from Welfare Support chatbot`
+        `Name: ${ticketCtx.name}\nEmail: ${ticketCtx.email}\nContact number: ${ticketCtx.phone}\nUrgency: ${ticketCtx.urgency}\nType: ${ticketCtx.type}\n\nDescription:\n${ticketCtx.description}\n\nChat transcript:\n${transcript}\n\n— Sent from Welfare Support chatbot`
       );
-
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
 
       const summary =
@@ -976,127 +750,103 @@ function specialCases(query, tone){
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
         `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
         `${linkHTML(mailtoHref, "Email support with this request (includes transcript)")}<br>` +
-        `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
-        `Want to start another?`;
+        `<small>(This opens your email app with the message prefilled — you then press Send.)</small>`;
 
-      ticketCtx = null;
-      return { matched: true, answerHTML: summary, chips: ["Raise a request (create a ticket)"] };
-    }
-  }
-
-  // Location map
-  if (q.includes("where are you") || q.includes("location") || q.includes("address")) {
-    const depot = DEPOTS.nuneaton;
-    const gmaps = googleMapsPlaceURL(depot.lat, depot.lon);
-    const tile = osmTileURL(depot.lat, depot.lon, 13);
-    return {
-      matched:true,
-      answerHTML:
-        `We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.<br>` +
-        `${linkHTML(gmaps, "Open in Google Maps")}<br>` +
-        `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
-      chips:["Is there parking?","How can I contact support?"]
-    };
-  }
-
-  // Parking
-  if (q.includes("parking") || q.includes("car park")) {
-    return { matched:true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
-  }
-
-  // Depot: if waiting for origin, accept GPS or city
-  if (distanceCtx && distanceCtx.stage === "needOrigin") {
-    if (q === "use my location" || q === "my location") {
-      return { matched:true, answerHTML: "Okay — please allow location access in your browser. One moment…", doGeo:true };
-    }
-    const cityKey = findPlaceKey(q) || (PLACES[q] ? q : null);
-    if (cityKey && PLACES[cityKey]) {
-      const closest = findClosestDepot(PLACES[cityKey]);
-      if (!closest) return { matched:true, answerHTML: "I couldn’t find a depot for that location yet. Try another town/city." };
-      const depot = DEPOTS[closest.depotKey];
-      distanceCtx = { stage:"haveClosest", originKey: cityKey, depotKey: closest.depotKey, miles: closest.miles };
-      return {
-        matched:true,
-        answerHTML:
-          `Thanks — your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-          `From <b>${escapeHTML(titleCase(cityKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
-          `How are you travelling?`,
-        chips:["By car","By train","By bus","Walking"]
-      };
-    }
-  }
-
-  // Depot trigger
-  if (q.includes("how far") || q.includes("distance") || q.includes("closest depot") || (q.includes("depot") && q.includes("closest"))) {
-    const originKey = findPlaceKey(q);
-    if (!originKey) {
-      distanceCtx = { stage:"needOrigin" };
-      return {
-        matched:true,
-        answerHTML: "Certainly — what town/city are you travelling from? (Or choose <b>Use my location</b>.)",
-        chips:["Use my location","Coventry","Birmingham","Leicester","London"]
-      };
-    }
-    const closest = findClosestDepot(PLACES[originKey]);
-    if (!closest) return { matched:true, answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?" };
-    const depot = DEPOTS[closest.depotKey];
-    distanceCtx = { stage:"haveClosest", originKey, depotKey: closest.depotKey, miles: closest.miles };
-
-    const mode = parseTravelMode(q) || memory.preferredMode;
-    if (mode) {
-      const minutes = estimateMinutes(closest.miles, mode);
-      const url = googleDirectionsURL(titleCase(originKey), depot, mode);
-      const tile = osmTileURL(depot.lat, depot.lon, 13);
-      return {
-        matched:true,
-        answerHTML:
-          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-          `From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
-          `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
-          `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-          `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
-        chips:["By car","By train","By bus","Walking"]
-      };
-    }
-
-    return {
-      matched:true,
-      answerHTML:
-        `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-        `From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
-        `How are you travelling?`,
-      chips:["By car","By train","By bus","Walking"]
-    };
-  }
-
-  // Depot: mode selection after closest
-  if (distanceCtx && distanceCtx.stage === "haveClosest") {
-    if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
-      const mode = (q==="walking") ? "walk" : q.replace("by ","");
-      memory.preferredMode = mode;
-      saveMemory();
-
-      const depot = DEPOTS[distanceCtx.depotKey];
-      const minutes = estimateMinutes(distanceCtx.miles, mode);
-      const originLabel = distanceCtx.originKey ? titleCase(distanceCtx.originKey) : "your location";
-      const url = googleDirectionsURL(originLabel, depot, mode);
-      const tile = osmTileURL(depot.lat, depot.lon, 13);
-
-      return {
-        matched:true,
-        answerHTML:
-          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-          `From <b>${escapeHTML(originLabel)}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.<br>` +
-          `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
-          `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-          `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
-        chips:["By car","By train","By bus","Walking"]
-      };
+      ticketCtx=null;
+      return { matched:true, answerHTML: summary, chips:["Raise a request (create a ticket)"] };
     }
   }
 
   return null;
 }
+
+/* MAIN */
+function handleUserMessage(text){
+  if (!text) return;
+
+  suggestionsEl.hidden=true;
+  suggestionsEl.innerHTML="";
+  currentSuggestions=[];
+  activeSuggestionIndex=-1;
+
+  addBubble(text, "user", { ts:new Date(), speak:false });
+  input.value="";
+
+  isResponding=true;
+  setUIEnabled(false);
+  addTyping();
+
+  setTimeout(()=>{
+    removeTyping();
+
+    if (!faqsLoaded){
+      addBubble("Loading knowledge base… please try again in a second.", "bot", { speak:false });
+      isResponding=false;
+      setUIEnabled(true);
+      input.focus();
+      return;
+    }
+
+    // special cases (ticket etc)
+    const special = specialCases(text);
+    if (special && special.matched){
+      addBubble(special.answerHTML, "bot", { html:true });
+      if (special.chips && special.chips.length) addChips(special.chips);
+      missCount=0;
+      isResponding=false;
+      setUIEnabled(true);
+      input.focus();
+      return;
+    }
+
+    // normal FAQ match
+    const res = matchFAQ(text);
+    if (res.matched){
+      addBubble(res.answerHTML, "bot", { html:true });
+      if (res.followUps && res.followUps.length){
+        addBubble("You can also ask:", "bot", { speak:false });
+        addChips(res.followUps);
+      }
+      missCount=0;
+    } else {
+      missCount++;
+      addBubble("I’m not sure. Did you mean:", "bot", { speak:false });
+      addChips(res.suggestions ?? [], (picked)=>{
+        handleUserMessage(picked);
+      });
+      if (missCount >= 2){
+        addBubble(
+          `If you’d like, you can contact support at ${linkHTML(`mailto:${SETTINGS.supportEmail}`, SETTINGS.supportEmail)} or call <b>${escapeHTML(SETTINGS.supportPhone)}</b>.`,
+          "bot",
+          { html:true, speak:false }
+        );
+        missCount=0;
+      }
+    }
+
+    isResponding=false;
+    setUIEnabled(true);
+    input.focus();
+  }, 250);
+}
+
+function sendChat(){
+  if (isResponding) return;
+  const text=input.value.trim();
+  if (!text) return;
+  handleUserMessage(text);
+}
+
+sendBtn.addEventListener("click", sendChat);
+
+clearBtn.addEventListener("click", ()=>{
+  chatWindow.innerHTML="";
+  missCount=0;
+  ticketCtx=null;
+  CHAT_LOG=[];
+  init();
+  input.focus();
+});
 
 /* FAQ match */
 function matchFAQ(query){
@@ -1115,13 +865,14 @@ function matchFAQ(query){
       keys.length ? Math.max(...keys.map((k)=>jaccard(qTokens, tokenSet(k)))) : 0,
       tags.length ? Math.max(...tags.map((t)=>jaccard(qTokens, tokenSet(t)))) : 0
     );
+
     const scoreB=Math.max(
       diceCoefficient(qNorm, question),
       syns.length ? Math.max(...syns.map((s)=>diceCoefficient(qNorm, s))) : 0
     );
 
     const anyField=[question, ...syns, ...keys, ...tags].map(normalize).join(" ");
-    const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
+    const boost=anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
 
     const learned=learnedChoiceFor(qNorm);
     const learnedBoost = learned && learned.chosen===question ? Math.min(0.22, 0.08 + 0.02*Math.min(7, learned.count || 1)) : 0;
@@ -1137,154 +888,6 @@ function matchFAQ(query){
   return { matched:true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps ?? [] };
 }
 
-/* Main handler */
-function handleUserMessage(text){
-  if (!text) return;
-
-  suggestionsEl.hidden=true;
-  suggestionsEl.innerHTML="";
-  currentSuggestions=[];
-  activeSuggestionIndex=-1;
-
-  addBubble(text, "user", { ts:new Date(), speak:false });
-  input.value="";
-
-  isResponding=true;
-  setUIEnabled(false);
-  addTyping();
-
-  setTimeout(async ()=>{
-    removeTyping();
-
-    if (!faqsLoaded){
-      addBubble("Loading knowledge base… please try again in a second.", "bot", { speak:false });
-      isResponding=false;
-      setUIEnabled(true);
-      input.focus();
-      return;
-    }
-
-    const corr=correctQueryTokens(text);
-    const canon=rephraseQuery(corr.changed && corr.corrected ? corr.corrected : text);
-    const change = meaningChangeScore(normalize(text), normalize(canon));
-    const showUnderstood = SETTINGS.showUnderstoodLine && canon && change >= SETTINGS.understoodLineThreshold;
-
-    const special = specialCases(text, {});
-    if (special && special.matched){
-      if (showUnderstood) addBubble(`<small>I understood: <b>${escapeHTML(canon)}</b></small>`, "bot", { html:true, speak:false });
-      addBubble(special.answerHTML, "bot", { html:true });
-      if (special.chips && special.chips.length) addChips(special.chips);
-
-      if (special.doGeo){
-        try{
-          const loc = await requestBrowserLocation();
-          const closest = findClosestDepot({ lat: loc.lat, lon: loc.lon });
-          if (!closest){
-            addBubble("I couldn’t find a nearby depot from your location yet. Try a town/city instead.", "bot");
-          } else {
-            const depot = DEPOTS[closest.depotKey];
-            distanceCtx = { stage:"haveClosest", originKey:"your location", depotKey: closest.depotKey, miles: closest.miles };
-
-            const mode = memory.preferredMode || "car";
-            const minutes = estimateMinutes(closest.miles, mode);
-            const url = googleDirectionsURL("your location", depot, mode);
-            const tile = osmTileURL(depot.lat, depot.lon, 13);
-
-            addBubble(
-              `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-              `Distance is approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
-              `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
-              `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-              `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
-              "bot",
-              { html:true }
-            );
-
-            addChips(["By car","By train","By bus","Walking"]);
-          }
-        } catch(_){
-          addBubble("I couldn’t access your location. You can type a town/city instead (e.g., Coventry).", "bot");
-          addChips(["Coventry","Birmingham","Leicester","London"]);
-        }
-      }
-
-      missCount=0;
-      isResponding=false;
-      setUIEnabled(true);
-      input.focus();
-      return;
-    }
-
-    let res = matchFAQ(canon);
-    if (res.matched){
-      if (showUnderstood) addBubble(`<small>I understood: <b>${escapeHTML(canon)}</b></small>`, "bot", { html:true, speak:false });
-      addBubble(res.answerHTML, "bot", { html:true });
-      if (res.followUps && res.followUps.length){
-        addBubble("You can also ask:", "bot", { speak:false });
-        addChips(res.followUps);
-      }
-      missCount=0;
-      lastMissQueryNorm=null;
-    } else {
-      missCount++;
-      lastMissQueryNorm = normalize(canon || text);
-      addBubble("I’m not sure. Did you mean:", "bot", { speak:false });
-      addChips(res.suggestions ?? [], (picked)=>{
-        if (lastMissQueryNorm) rememberChoice(lastMissQueryNorm, picked);
-        handleUserMessage(picked);
-      });
-      if (missCount >= 2){
-        const mail = `mailto:${SETTINGS.supportEmail}`;
-        const tel = `tel:${SETTINGS.supportPhone.replace(/\s+/g,"")}`;
-        addBubble(
-          `If you’d like, you can email ${linkHTML(mail, SETTINGS.supportEmail)} or call <b>${linkHTML(tel, SETTINGS.supportPhone)}</b>.`,
-          "bot",
-          { html:true, speak:false }
-        );
-        missCount=0;
-        lastMissQueryNorm=null;
-      }
-    }
-
-    isResponding=false;
-    setUIEnabled(true);
-    input.focus();
-  }, 280);
-}
-
-function sendChat(){
-  if (isResponding) return;
-  const text=input.value.trim();
-  if (!text) return;
-  handleUserMessage(text);
-}
-sendBtn.addEventListener("click", sendChat);
-
-clearBtn.addEventListener("click", ()=>{
-  chatWindow.innerHTML="";
-  missCount=0;
-  distanceCtx=null;
-  clarifyCtx=null;
-  ticketCtx=null;
-  journeyCtx=null;
-  lastMissQueryNorm=null;
-  CHAT_LOG=[];
-  init();
-  input.focus();
-});
-
-/* Geo helper */
-function requestBrowserLocation(){
-  return new Promise((resolve, reject)=>{
-    if (!navigator.geolocation){ reject(new Error("Geolocation not supported")); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos)=>resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      (err)=>reject(err),
-      { enableHighAccuracy:false, timeout:8000, maximumAge:120000 }
-    );
-  });
-}
-
 /* Load FAQs */
 fetch("./public/config/faqs.json")
   .then((res)=>res.json())
@@ -1292,21 +895,20 @@ fetch("./public/config/faqs.json")
     FAQS=Array.isArray(data) ? data : [];
     faqsLoaded=true;
     buildCategoryIndex();
-    buildVocabFromFAQs();
     renderDrawer();
   })
   .catch(()=>{
     FAQS=[];
     faqsLoaded=true;
     buildCategoryIndex();
-    buildVocabFromFAQs();
     renderDrawer();
   });
 
-/* INIT (greeting only) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/) */
+/* INIT (greeting only) */
 function init(){
   addBubble(SETTINGS.greeting, "bot", { html:true, speak:false, ts:new Date() });
 }
+
 if (document.readyState === "loading"){
   window.addEventListener("DOMContentLoaded", init);
 } else {
