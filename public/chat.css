@@ -8,7 +8,6 @@
   --panel:#ffffff;
 }
 
-/* Ensure hidden attribute truly hides everywhere */
 [hidden]{ display:none !important; }
 *{ box-sizing:border-box; }
 html, body{ height:100%; }
@@ -66,7 +65,6 @@ body{
   padding:8px 10px;
   cursor:pointer;
 }
-
 .header-btn:hover,.header-btn:focus,
 .clear-btn:hover,.clear-btn:focus{
   background:rgba(255,255,255,0.26);
@@ -79,11 +77,6 @@ body{
   background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
 }
 
-@keyframes bubbleIn{
-  from{ opacity:0; transform:translateY(4px); }
-  to{ opacity:1; transform:translateY(0); }
-}
-
 /* Message rows + timestamps */
 .msg{
   display:flex;
@@ -92,7 +85,6 @@ body{
   margin:10px 0;
   max-width:100%;
 }
-
 .msg.bot{ align-items:flex-start; }
 .msg.user{ align-items:flex-end; }
 
@@ -103,10 +95,7 @@ body{
   user-select:none;
 }
 
-.msg.user .timestamp{ text-align:right; color:rgba(0,0,0,0.55); }
-.msg.bot .timestamp{ text-align:left; color:rgba(0,0,0,0.55); }
-
-/* Polished bubbles */
+/* bubbles */
 .bubble{
   position:relative;
   max-width:min(82%, 420px);
@@ -118,70 +107,25 @@ body{
   white-space:pre-wrap;
   box-shadow:0 10px 25px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
   border:1px solid rgba(15,23,42,0.06);
-  animation:bubbleIn .14s ease-out;
 }
-
 .bubble.bot{
   background:linear-gradient(180deg,#f7f9ff 0%,#eef4ff 100%);
   color:var(--bot-text);
-  border-bottom-left-radius:10px;
 }
-
 .bubble.user{
   background:linear-gradient(180deg,#2a8cff 0%,#0078ff 100%);
   color:#fff;
   border-color:rgba(255,255,255,0.14);
-  border-bottom-right-radius:10px;
 }
 
-/* Bubble tails */
-.bubble.bot::before{
-  content:"";
-  position:absolute;
-  left:-6px;
-  bottom:10px;
-  width:12px;
-  height:12px;
-  background:#eef4ff;
-  transform:rotate(45deg);
-  border-left:1px solid rgba(15,23,42,0.06);
-  border-bottom:1px solid rgba(15,23,42,0.06);
-  border-bottom-left-radius:3px;
-  box-shadow:-3px 3px 10px rgba(0,0,0,0.06);
-}
-
-.bubble.user::before{
-  content:"";
-  position:absolute;
-  right:-6px;
-  bottom:10px;
-  width:12px;
-  height:12px;
-  background:#0078ff;
-  transform:rotate(45deg);
-  border-right:1px solid rgba(255,255,255,0.14);
-  border-bottom:1px solid rgba(255,255,255,0.14);
-  border-bottom-right-radius:3px;
-  box-shadow:3px 3px 10px rgba(0,0,0,0.06);
-}
-
-.typing-bubble::before{ display:none; }
-
-/* Links */
 .bubble.bot a{
   color:#0b4fd8;
   font-weight:600;
   text-decoration:underline;
   text-underline-offset:2px;
 }
-.bubble.user a{
-  color:#fff;
-  font-weight:600;
-  text-decoration:underline;
-  text-underline-offset:2px;
-}
 
-/* ✅ Map preview image */
+/* map preview */
 .map-preview{
   display:block;
   width:100%;
@@ -192,20 +136,15 @@ body{
   box-shadow:0 8px 18px rgba(0,0,0,0.08);
 }
 
-/* Input area */
+/* input */
 .input-area{
   display:flex;
   gap:10px;
   border-top:1px solid #e5e5e5;
   padding:10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
   align-items:center;
 }
-
-/* Helps iPhone safe area avoid hiding input */
-.input-area{
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
-}
-
 .input-wrap{ position:relative; flex:1; }
 
 .input-area input{
@@ -216,12 +155,6 @@ body{
   font-size:15px;
   outline:none;
 }
-
-.input-area input:focus{
-  border-color:#8ab6ff;
-  box-shadow:0 0 0 3px rgba(0,120,255,.15);
-}
-
 .input-area button{
   padding:10px 16px;
   font-size:15px;
@@ -231,24 +164,15 @@ body{
   border-radius:10px;
   cursor:pointer;
 }
-.input-area button:hover,
-.input-area button:focus{
-  background:var(--blue-600);
-}
-.input-area button:disabled{
-  opacity:.6;
-  cursor:not-allowed;
-}
+.input-area button:disabled{ opacity:.6; cursor:not-allowed; }
 
-/* ✅ Smaller mic/speaker buttons */
+/* smaller icon buttons */
 .icon-btn{
   width:34px;
   min-width:34px;
   height:34px;
   padding:0;
   font-size:16px;
-  line-height:32px;
-  text-align:center;
   border-radius:10px;
   background:rgba(0,120,255,0.12);
   color:#0b2a66;
@@ -257,18 +181,12 @@ body{
   align-items:center;
   justify-content:center;
 }
-
-.icon-btn:hover,
-.icon-btn:focus{
-  background:rgba(0,120,255,0.18);
-}
-
 .icon-btn.on{
   background:rgba(30,180,90,0.20);
   border-color:rgba(30,180,90,0.35);
 }
 
-/* Suggestions dropdown */
+/* suggestions */
 .suggestions{
   position:absolute;
   left:0;
@@ -277,11 +195,10 @@ body{
   background:#fff;
   border:1px solid rgba(15,23,42,0.12);
   border-radius:12px;
-  box-shadow:0 14px 35px rgba(0,0,0,0.14);
   overflow:hidden;
   z-index:50;
+  box-shadow:0 14px 35px rgba(0,0,0,0.14);
 }
-
 .suggestion-item{
   padding:10px 12px;
   cursor:pointer;
@@ -289,44 +206,9 @@ body{
   border-bottom:1px solid rgba(15,23,42,0.06);
 }
 .suggestion-item:last-child{ border-bottom:none; }
-.suggestion-item:hover,
-.suggestion-item[aria-selected="true"]{
-  background:#f2f7ff;
-}
-.suggestion-item small{
-  display:block;
-  opacity:0.72;
-  margin-top:2px;
-}
 
-/* Typing dots */
-.typing{
-  display:inline-block;
-  height:8px;
-  margin-left:6px;
-  vertical-align:middle;
-}
-.typing span{
-  display:inline-block;
-  width:6px;
-  height:6px;
-  margin:0 2px;
-  background:#9bb8f8;
-  border-radius:50%;
-  animation:blink 1.2s infinite ease-in-out;
-}
-.typing span:nth-child(2){ animation-delay:.15s; }
-.typing span:nth-child(3){ animation-delay:.3s; }
-@keyframes blink{ 0%,80%,100%{ opacity:.3; } 40%{ opacity:1; } }
-
-/* Chips */
-.chips{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin:8px 0 2px;
-  max-width:92%;
-}
+/* chips */
+.chips{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 2px; max-width:92%; }
 .chip-btn{
   border:1px solid #cfd8ea;
   background:#f6f9ff;
@@ -335,28 +217,14 @@ body{
   border-radius:999px;
   cursor:pointer;
   font-size:13px;
-  line-height:1;
-  max-width:100%;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
 }
-.chip-btn:hover,.chip-btn:focus{
-  border-color:#8ab6ff;
-  box-shadow:0 0 0 3px rgba(0,120,255,.12);
-  outline:none;
-}
-.chip-btn:active{ transform:translateY(1px); }
-.chip-btn:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; transform:none; }
 
-/* Drawer overlay & drawer */
+/* drawer */
 .drawer-overlay{
   position:fixed;
   inset:0;
   background:rgba(15,23,42,0.40);
   z-index:99998;
-  pointer-events:auto;
-  touch-action:manipulation;
 }
 .drawer{
   position:fixed;
@@ -367,10 +235,8 @@ body{
   background:var(--panel);
   z-index:99999;
   box-shadow:-18px 0 55px rgba(0,0,0,0.20);
-  border-left:1px solid rgba(15,23,42,0.12);
   display:flex;
   flex-direction:column;
-  touch-action:pan-y;
 }
 .drawer-header{
   display:flex;
@@ -379,22 +245,8 @@ body{
   padding: calc(14px + env(safe-area-inset-top)) 14px 14px;
   border-bottom:1px solid rgba(15,23,42,0.10);
 }
-.drawer-header h2{ margin:0; font-size:16px; }
-.drawer-close{
-  border:1px solid rgba(15,23,42,0.14);
-  background:#fff;
-  border-radius:10px;
-  padding:6px 10px;
-  cursor:pointer;
-}
 .drawer-body{ padding:14px; overflow:auto; }
-.drawer-hint{ margin:0 0 12px; opacity:0.75; font-size:13px; }
-.drawer-categories{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-bottom:14px;
-}
+.drawer-categories{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
 .cat-pill{
   border:1px solid rgba(15,23,42,0.12);
   background:#f6f9ff;
@@ -404,15 +256,7 @@ body{
   cursor:pointer;
   font-size:13px;
 }
-.cat-pill[aria-selected="true"]{
-  background:#e8f1ff;
-  border-color:#8ab6ff;
-}
-.drawer-questions{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
+.drawer-questions{ display:flex; flex-direction:column; gap:8px; }
 .drawer-q{
   text-align:left;
   border:1px solid rgba(15,23,42,0.10);
@@ -422,32 +266,15 @@ body{
   cursor:pointer;
   font-size:14px;
 }
-.drawer-q:hover,.drawer-q:focus{
-  border-color:#8ab6ff;
-  box-shadow:0 0 0 3px rgba(0,120,255,.10);
-  outline:none;
-}
 
-/* ✅ MOBILE FULLSCREEN FIX (restores your old behaviour) */
+/* ✅ mobile fullscreen (restores your old behaviour) */
 @media (max-width:560px){
   .chat-container{
     max-width:100%;
     margin:0;
-    min-height:100vh;  /* fallback */
-    min-height:100dvh; /* modern mobile browsers */
+    min-height:100vh;
+    min-height:100dvh;
     border-radius:0;
   }
-  body{
-    background:#fff; /* removes outer blue background on mobile */
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce){
-  *{
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  .bubble{ animation:none !important; }
+  body{ background:#fff; }
 }
