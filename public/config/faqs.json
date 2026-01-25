@@ -49,7 +49,7 @@
   },
   {
     "question": "What are your opening times?",
-    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b> (UK time). If you contact us outside these hours, we’ll reply on the next working day.",
+    "answer": "We’re open <b>Monday–Friday, 8:30–17:00</b> (UK time). We’re <b>closed on weekends and UK bank holidays</b>. If you contact us outside these hours, we’ll reply on the next working day.",
     "synonyms": [
       "opening times",
       "opening hours",
@@ -67,11 +67,39 @@
       "timetable",
       "availability"
     ],
-    "category": "general",
+    "category": "opening",
     "followUps": [
       "Are you open tomorrow?",
       "Is anyone available now?",
       "Are you open on weekends or bank holidays?"
+    ]
+  },
+  {
+    "question": "Is anyone available now?",
+    "answer": "Ask <b>is anyone available</b> to check if we’re open right now (based on UK time, weekends, and bank holidays).",
+    "synonyms": [
+      "is anyone available",
+      "anyone available",
+      "available now",
+      "are you available",
+      "open now",
+      "are you open now",
+      "can i speak to someone",
+      "speak to someone now",
+      "is someone there",
+      "is anybody there"
+    ],
+    "canonicalKeywords": [
+      "available",
+      "open",
+      "opening time",
+      "closing time",
+      "hours"
+    ],
+    "category": "opening",
+    "followUps": [
+      "What are your opening times?",
+      "How can I contact support?"
     ]
   },
   {
@@ -128,3 +156,4 @@
     ]
   }
 ]
+
