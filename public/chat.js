@@ -2,7 +2,8 @@
 /* Welfare Support Chatbot (Restored + Enhanced)
 - Startup greeting only (no starter chips) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
 - Depot flow accepts city chips again when not using GPS [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
-- Map preview FIXED: uses OpenStreetMap tile images instead of staticmap.openstreetmap.de
+- Ticket/request flow restored (mailto + transcript) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+- Map preview: OpenStreetMap tile images (more reliable than some static map services)
 - No bank holiday year listing; policy only; bank holidays affect availability (substitute-day principle) [2](https://www.publicholidayguide.com/bank-holiday/uk-bank-holidays-2025/)
 */
 
@@ -55,13 +56,13 @@ let currentSuggestions = [];
 
 let distanceCtx = null;
 let clarifyCtx = null;
-let ticketCtx = null;
-let journeyCtx = null;
+let ticketCtx = null;         // ✅ restored ticket context flow [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+let journeyCtx = null;        // left in place if you re-add guided flows later
 let lastMissQueryNorm = null;
 let CHAT_LOG = [];
 
 /* Memory */
-const MEMORY_KEY = "ws_chat_memory_v5";
+const MEMORY_KEY = "ws_chat_memory_v6";
 const memory = { name: null, lastTopic: null, lastCity: null, preferredMode: null, voiceOn: null };
 function loadMemory() {
   try {
@@ -176,7 +177,7 @@ function linkHTML(url, label) {
   return `<a href="${escapeAttrUrl(url)}">${escapeHTML(label)}</a>`;
 }
 function imgHTML(url, alt = "Map preview") {
-  return `<img class="map-preview" src="${escapeAttrUrl(url)}" alt="${escapeHTML(alt)}" loading="lazy" />`;
+  return `<img class="map-preview" src="${escapeAttrUrl(url)}" alt="${escapeHTML(alt)}">`;
 }
 function sanitizeHTML(html) {
   const template = document.createElement("template");
@@ -427,7 +428,7 @@ function googleDirectionsURL(originText, depot, mode){
 }
 function googleMapsPlaceURL(lat, lon){ return `https://www.google.com/maps?q=${encodeURIComponent(lat+","+lon)}`; }
 
-/* ✅ MAP PREVIEW FIX: use standard OSM tile */
+/* OSM Tile map preview */
 function lonLatToTileXY(lon, lat, z) {
   const latRad = lat * Math.PI / 180;
   const n = Math.pow(2, z);
@@ -519,13 +520,7 @@ function rephraseQuery(text){
 }
 function meaningChangeScore(a,b){ return 1 - diceCoefficient(a,b); }
 
-/* UI helpers */
-function setUIEnabled(enabled){
-  input.disabled=!enabled;
-  sendBtn.disabled=!enabled;
-  micBtn.disabled=!enabled;
-  chatWindow.querySelectorAll(".chip-btn").forEach((b)=>b.disabled=!enabled);
-}
+/* Transcript */
 function pushToTranscript(type, text, opts){
   const options=opts ?? {};
   const tsDate=options.ts ?? new Date();
@@ -548,11 +543,18 @@ function buildTranscript(limit=12){
   }).join("\n");
 }
 
+/* UI enable/disable */
+function setUIEnabled(enabled){
+  input.disabled=!enabled;
+  sendBtn.disabled=!enabled;
+  micBtn.disabled=!enabled;
+  chatWindow.querySelectorAll(".chip-btn").forEach((b)=>b.disabled=!enabled);
+}
+
 /* Voice output */
 let voiceOn = (typeof memory.voiceOn === "boolean") ? memory.voiceOn : SETTINGS.voiceDefaultOn;
 memory.voiceOn = voiceOn;
 saveMemory();
-
 function updateVoiceBtnUI(){
   voiceBtn.classList.toggle("on", !!voiceOn);
   voiceBtn.textContent = voiceOn ? "🔊" : "🔈";
@@ -581,7 +583,6 @@ updateVoiceBtnUI();
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
 let micListening = false;
-
 function initSpeechRecognition(){
   if (!SpeechRecognition) return null;
   const rec=new SpeechRecognition();
@@ -859,100 +860,131 @@ input.addEventListener("keydown",(e)=>{
   }
 });
 
-/* Tone */
-function analyzeTone(userText){
-  const q=normalize(userText);
-  return {
-    greeting: /\b(hi|hello|hey|morning|afternoon|evening)\b/.test(q),
-    thanks: /\b(thank|thanks|cheers)\b/.test(q),
-    frustrated: /\b(angry|annoyed|upset|ridiculous|useless|hate|not working|broken)\b/.test(q),
-    urgent: /\b(urgent|asap|immediately|right now|now)\b/.test(q)
-  };
-}
-function tonePrefix(t){
-  if (t.frustrated) return "I’m sorry about that — ";
-  if (t.urgent) return "Got it — ";
-  if (t.greeting) return "Hello! ";
-  if (t.thanks) return "You’re welcome — ";
-  return "";
-}
-
-/* FAQ match */
-function matchFAQ(query){
-  const qNorm=normalize(query);
-  const qTokens=tokenSet(qNorm);
-
-  const scored=FAQS.map((item)=>{
-    const question=item.question ?? "";
-    const syns=item.synonyms ?? [];
-    const keys=item.canonicalKeywords ?? [];
-    const tags=item.tags ?? [];
-
-    const scoreQ=jaccard(qTokens, tokenSet(question));
-    const scoreSyn=syns.length ? Math.max(...syns.map((s)=>jaccard(qTokens, tokenSet(s)))) : 0;
-    const scoreKeys=keys.length ? Math.max(...keys.map((k)=>jaccard(qTokens, tokenSet(k)))) : 0;
-    const scoreTags=tags.length ? Math.max(...tags.map((t)=>jaccard(qTokens, tokenSet(t)))) : 0;
-
-    const bigramQ=diceCoefficient(qNorm, question);
-    const bigramSyn=syns.length ? Math.max(...syns.map((s)=>diceCoefficient(qNorm, s))) : 0;
-
-    const anyField=[question, ...syns, ...keys, ...tags].map(normalize).join(" ");
-    const boost=anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
-
-    const learned=learnedChoiceFor(qNorm);
-    const learnedBoost = learned && learned.chosen===question ? Math.min(0.22, 0.08 + 0.02*Math.min(7, learned.count || 1)) : 0;
-
-    const score=(0.52*scoreQ + 0.22*scoreSyn + 0.10*scoreKeys + 0.06*scoreTags) + (0.10*bigramQ + 0.08*bigramSyn) + boost + learnedBoost;
-    return { item, score };
-  }).sort((a,b)=>b.score-a.score);
-
-  const top=scored[0];
-  if (!top || top.score<SETTINGS.minConfidence){
-    return { matched:false, suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r)=>r.item.question) };
-  }
-  return { matched:true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps ?? [] };
-}
-
-/* Geolocation */
-function requestBrowserLocation(){
-  return new Promise((resolve, reject)=>{
-    if (!navigator.geolocation){ reject(new Error("Geolocation not supported")); return; }
-    navigator.geolocation.getCurrentPosition(
-      (pos)=>resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      (err)=>reject(err),
-      { enableHighAccuracy:false, timeout:8000, maximumAge:120000 }
-    );
-  });
-}
-
-/* Validation */
+/* Ticket helpers */
 function isValidPhone(raw){
   const digits=String(raw ?? "").replace(/[^\d]/g,"");
   return digits.length>=8 && digits.length<=16;
 }
 
-/* Special cases */
+/* Special cases (ticket flow restored) */
 function specialCases(query, tone){
   const corr=correctQueryTokens(query);
   const canon=rephraseQuery(corr.changed && corr.corrected ? corr.corrected : query);
   const q = normalize(canon);
 
-  // bank holiday policy (no lists)
+  // Bank holiday policy
   if (q.includes("bank holiday") || q.includes("bank holidays")) {
     return {
       matched:true,
-      answerHTML: `${tonePrefix(tone)}❌ <b>No — we are not open on bank holidays.</b><br><small>We’re open Monday–Friday, 08:30–17:00 (UK time), and closed on weekends & bank holidays.</small>`,
+      answerHTML: `❌ <b>No — we are not open on bank holidays.</b><br><small>We’re open Monday–Friday, 08:30–17:00 (UK time), and closed on weekends & bank holidays.</small>`,
       chips: ["What are your opening times?", "Is anyone available now?", "How can I contact support?"]
     };
   }
 
-  // availability now
+  // Availability now
   const availabilityTriggers = ["is anyone available","anyone available","available now","are you available","open now","are you open now","can i speak to someone","speak to someone now"];
   if (availabilityTriggers.some((t)=>q.includes(t))) {
-    return { matched:true, answerHTML: tonePrefix(tone) + buildAvailabilityAnswerHTML(), chips:["What are your opening times?","How can I contact support?"] };
+    return { matched:true, answerHTML: buildAvailabilityAnswerHTML(), chips:["What are your opening times?","How can I contact support?"] };
   }
 
-  // location map
+  // ✅ Ticket trigger (restored) [1](https://www.publicholidayguide.com/bank-holiday/england-wales-bank-holidays-2025/)
+  const wantsTicket =
+    q.includes("raise a request") ||
+    q.includes("create a ticket") ||
+    q.includes("open a ticket") ||
+    q.includes("log a ticket") ||
+    q.includes("submit a request") ||
+    q === "ticket";
+
+  if (!ticketCtx && wantsTicket) {
+    ticketCtx = { stage: "needType" };
+    return {
+      matched: true,
+      answerHTML: "Sure — what do you need help with?",
+      chips: ["Access / Login", "Pay / Payroll", "Benefits", "General query", "Something else"]
+    };
+  }
+
+  if (ticketCtx) {
+    if (q === "cancel" || q === "stop" || q === "restart") {
+      ticketCtx = null;
+      return { matched: true, answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>." };
+    }
+
+    if (ticketCtx.stage === "needType") {
+      ticketCtx.type = query.trim();
+      ticketCtx.stage = "needName";
+      return { matched: true, answerHTML: "Thanks — what’s your name?" };
+    }
+
+    if (ticketCtx.stage === "needName") {
+      ticketCtx.name = query.trim();
+      memory.name = ticketCtx.name;
+      saveMemory();
+      ticketCtx.stage = "needEmail";
+      return { matched: true, answerHTML: "And what email should we reply to?" };
+    }
+
+    if (ticketCtx.stage === "needEmail") {
+      const email = query.trim();
+      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!ok) return { matched: true, answerHTML: "That doesn’t look like an email — can you retype it?" };
+      ticketCtx.email = email;
+      ticketCtx.stage = "needPhone";
+      return { matched: true, answerHTML: "Thanks — what’s the best contact number for you?" };
+    }
+
+    if (ticketCtx.stage === "needPhone") {
+      const phone = query.trim();
+      if (!isValidPhone(phone)) {
+        return { matched: true, answerHTML: "That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
+      }
+      ticketCtx.phone = phone;
+      ticketCtx.stage = "needDescription";
+      return { matched: true, answerHTML: "Briefly describe the issue (1–3 sentences is perfect)." };
+    }
+
+    if (ticketCtx.stage === "needDescription") {
+      ticketCtx.description = query.trim();
+      ticketCtx.stage = "needUrgency";
+      return { matched: true, answerHTML: "How urgent is this?", chips: ["Low", "Normal", "High", "Critical"] };
+    }
+
+    if (ticketCtx.stage === "needUrgency") {
+      ticketCtx.urgency = query.trim();
+
+      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
+      const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
+      const body = encodeURIComponent(
+        `Name: ${ticketCtx.name}\n` +
+        `Email: ${ticketCtx.email}\n` +
+        `Contact number: ${ticketCtx.phone}\n` +
+        `Urgency: ${ticketCtx.urgency}\n` +
+        `Type: ${ticketCtx.type}\n\n` +
+        `Description:\n${ticketCtx.description}\n\n` +
+        `Chat transcript (latest messages):\n${transcript}\n\n` +
+        `— Sent from Welfare Support chatbot`
+      );
+
+      const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
+
+      const summary =
+        `<b>Request summary</b><br>` +
+        `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
+        `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
+        `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
+        `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
+        `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
+        `${linkHTML(mailtoHref, "Email support with this request (includes transcript)")}<br>` +
+        `<small>(This opens your email app with the message prefilled — you then press Send.)</small><br><br>` +
+        `Want to start another?`;
+
+      ticketCtx = null;
+      return { matched: true, answerHTML: summary, chips: ["Raise a request (create a ticket)"] };
+    }
+  }
+
+  // Location map
   if (q.includes("where are you") || q.includes("location") || q.includes("address")) {
     const depot = DEPOTS.nuneaton;
     const gmaps = googleMapsPlaceURL(depot.lat, depot.lon);
@@ -962,17 +994,17 @@ function specialCases(query, tone){
       answerHTML:
         `We’re based in <b>Nuneaton, UK</b>. Visits are by appointment only.<br>` +
         `${linkHTML(gmaps, "Open in Google Maps")}<br>` +
-        `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
+        `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
       chips:["Is there parking?","How can I contact support?"]
     };
   }
 
-  // parking
+  // Parking
   if (q.includes("parking") || q.includes("car park")) {
     return { matched:true, answerHTML: "Yes — we have <b>visitor parking</b>. Spaces can be limited during busy times." };
   }
 
-  // depot: if waiting for origin, accept GPS or city (RESTORED)
+  // Depot: if waiting for origin, accept GPS or city
   if (distanceCtx && distanceCtx.stage === "needOrigin") {
     if (q === "use my location" || q === "my location") {
       return { matched:true, answerHTML: "Okay — please allow location access in your browser. One moment…", doGeo:true };
@@ -994,7 +1026,7 @@ function specialCases(query, tone){
     }
   }
 
-  // depot trigger
+  // Depot trigger
   if (q.includes("how far") || q.includes("distance") || q.includes("closest depot") || (q.includes("depot") && q.includes("closest"))) {
     const originKey = findPlaceKey(q);
     if (!originKey) {
@@ -1022,7 +1054,7 @@ function specialCases(query, tone){
           `From <b>${escapeHTML(titleCase(originKey))}</b> it’s approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
           `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
           `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-          `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
+          `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
         chips:["By car","By train","By bus","Walking"]
       };
     }
@@ -1037,7 +1069,7 @@ function specialCases(query, tone){
     };
   }
 
-  // depot: mode selection after closest
+  // Depot: mode selection after closest
   if (distanceCtx && distanceCtx.stage === "haveClosest") {
     if (q === "by car" || q === "by train" || q === "by bus" || q === "walking") {
       const mode = (q==="walking") ? "walk" : q.replace("by ","");
@@ -1057,13 +1089,52 @@ function specialCases(query, tone){
           `From <b>${escapeHTML(originLabel)}</b> it’s approximately <b>${Math.round(distanceCtx.miles)} miles</b>.<br>` +
           `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
           `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-          `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
+          `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
         chips:["By car","By train","By bus","Walking"]
       };
     }
   }
 
   return null;
+}
+
+/* FAQ match */
+function matchFAQ(query){
+  const qNorm=normalize(query);
+  const qTokens=tokenSet(qNorm);
+
+  const scored=FAQS.map((item)=>{
+    const question=item.question ?? "";
+    const syns=item.synonyms ?? [];
+    const keys=item.canonicalKeywords ?? [];
+    const tags=item.tags ?? [];
+
+    const scoreJ=Math.max(
+      jaccard(qTokens, tokenSet(question)),
+      syns.length ? Math.max(...syns.map((s)=>jaccard(qTokens, tokenSet(s)))) : 0,
+      keys.length ? Math.max(...keys.map((k)=>jaccard(qTokens, tokenSet(k)))) : 0,
+      tags.length ? Math.max(...tags.map((t)=>jaccard(qTokens, tokenSet(t)))) : 0
+    );
+    const scoreB=Math.max(
+      diceCoefficient(qNorm, question),
+      syns.length ? Math.max(...syns.map((s)=>diceCoefficient(qNorm, s))) : 0
+    );
+
+    const anyField=[question, ...syns, ...keys, ...tags].map(normalize).join(" ");
+    const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
+
+    const learned=learnedChoiceFor(qNorm);
+    const learnedBoost = learned && learned.chosen===question ? Math.min(0.22, 0.08 + 0.02*Math.min(7, learned.count || 1)) : 0;
+
+    const score = 0.62*scoreJ + 0.30*scoreB + boost + learnedBoost;
+    return { item, score };
+  }).sort((a,b)=>b.score-a.score);
+
+  const top=scored[0];
+  if (!top || top.score<SETTINGS.minConfidence){
+    return { matched:false, suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r)=>r.item.question) };
+  }
+  return { matched:true, item: top.item, answerHTML: top.item.answer, followUps: top.item.followUps ?? [] };
 }
 
 /* Main handler */
@@ -1074,8 +1145,6 @@ function handleUserMessage(text){
   suggestionsEl.innerHTML="";
   currentSuggestions=[];
   activeSuggestionIndex=-1;
-
-  const tone = analyzeTone(text);
 
   addBubble(text, "user", { ts:new Date(), speak:false });
   input.value="";
@@ -1100,12 +1169,10 @@ function handleUserMessage(text){
     const change = meaningChangeScore(normalize(text), normalize(canon));
     const showUnderstood = SETTINGS.showUnderstoodLine && canon && change >= SETTINGS.understoodLineThreshold;
 
-    const special = specialCases(text, tone);
+    const special = specialCases(text, {});
     if (special && special.matched){
       if (showUnderstood) addBubble(`<small>I understood: <b>${escapeHTML(canon)}</b></small>`, "bot", { html:true, speak:false });
-
       addBubble(special.answerHTML, "bot", { html:true });
-
       if (special.chips && special.chips.length) addChips(special.chips);
 
       if (special.doGeo){
@@ -1128,7 +1195,7 @@ function handleUserMessage(text){
               `Distance is approximately <b>${Math.round(closest.miles)} miles</b>.<br>` +
               `Estimated time ${escapeHTML(modeLabel(mode))} is around <b>${minutes} minutes</b>.<br>` +
               `${linkHTML(url, "Get directions in Google Maps")}<br>` +
-              `${imgHTML(tile, "Map tile preview (OpenStreetMap)")}`,
+              `${imgHTML(tile, "Map preview (OpenStreetMap)")}`,
               "bot",
               { html:true }
             );
@@ -1148,37 +1215,24 @@ function handleUserMessage(text){
       return;
     }
 
-    // normal FAQ match
     let res = matchFAQ(canon);
-    if (!res.matched && canon !== text){
-      const res2 = matchFAQ(text);
-      if (res2.matched || (res2.suggestions?.length ?? 0) > (res.suggestions?.length ?? 0)) res = res2;
-    }
-
     if (res.matched){
       if (showUnderstood) addBubble(`<small>I understood: <b>${escapeHTML(canon)}</b></small>`, "bot", { html:true, speak:false });
-
-      addBubble(tonePrefix(tone) + res.answerHTML, "bot", { html:true });
-
+      addBubble(res.answerHTML, "bot", { html:true });
       if (res.followUps && res.followUps.length){
         addBubble("You can also ask:", "bot", { speak:false });
         addChips(res.followUps);
       }
-
       missCount=0;
-      clarifyCtx=null;
       lastMissQueryNorm=null;
     } else {
       missCount++;
       lastMissQueryNorm = normalize(canon || text);
-
-      addBubble(tonePrefix(tone) + "I’m not sure. Did you mean:", "bot", { speak:false });
-
-      addChips(res.suggestions ?? [], (pickedQuestion)=>{
-        if (lastMissQueryNorm) rememberChoice(lastMissQueryNorm, pickedQuestion);
-        handleUserMessage(pickedQuestion);
+      addBubble("I’m not sure. Did you mean:", "bot", { speak:false });
+      addChips(res.suggestions ?? [], (picked)=>{
+        if (lastMissQueryNorm) rememberChoice(lastMissQueryNorm, picked);
+        handleUserMessage(picked);
       });
-
       if (missCount >= 2){
         const mail = `mailto:${SETTINGS.supportEmail}`;
         const tel = `tel:${SETTINGS.supportPhone.replace(/\s+/g,"")}`;
@@ -1219,6 +1273,18 @@ clearBtn.addEventListener("click", ()=>{
   input.focus();
 });
 
+/* Geo helper */
+function requestBrowserLocation(){
+  return new Promise((resolve, reject)=>{
+    if (!navigator.geolocation){ reject(new Error("Geolocation not supported")); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (err)=>reject(err),
+      { enableHighAccuracy:false, timeout:8000, maximumAge:120000 }
+    );
+  });
+}
+
 /* Load FAQs */
 fetch("./public/config/faqs.json")
   .then((res)=>res.json())
@@ -1241,7 +1307,6 @@ fetch("./public/config/faqs.json")
 function init(){
   addBubble(SETTINGS.greeting, "bot", { html:true, speak:false, ts:new Date() });
 }
-
 if (document.readyState === "loading"){
   window.addEventListener("DOMContentLoaded", init);
 } else {
