@@ -1,7 +1,6 @@
 
-/* ---------------------------------------------------------
+/* ---------------------------------------------------------------
  Welfare Support – Static FAQ Chatbot (Polished + Human-like)
-
  Includes:
  - Topics drawer (browse by category)
  - Search-as-you-type suggestions (with safe escaping)
@@ -10,13 +9,10 @@
  - Closest depot flow (origin -> choose travel mode)
  - Ticket/request flow (prefilled email + transcript)
  - Google Maps directions link for depot answers
-
  NOTE: Static hosting (GitHub Pages) cannot send emails directly.
  Ticket flow uses mailto: (opens user's email app with prefilled content).
-
  NOTE: Feedback thumbs (👍/👎) REMOVED.
---------------------------------------------------------- */
-
+---------------------------------------------------------------- */
 const SETTINGS = {
   minConfidence: 0.20,
   topSuggestions: 3,
@@ -24,34 +20,28 @@ const SETTINGS = {
   chipLimit: 6,
   chipClickCooldownMs: 900,
   suggestionLimit: 4,
-
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
-
   // Keep mailto size safe
-  ticketTranscriptMessages: 12,  // last N messages (user + bot)
-  ticketTranscriptMaxLine: 140,  // max chars per transcript line
-
-  // ✅ Use real HTML tags (not &lt;...&gt;)
+  ticketTranscriptMessages: 12, // last N messages (user + bot)
+  ticketTranscriptMaxLine: 140, // max chars per transcript line
+  // ✅ Use real HTML tags (not <...>)
   greeting:
     "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
 };
-
 let FAQS = [];
 let faqsLoaded = false;
 let categories = [];
 let categoryIndex = new Map();
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // DOM
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 const chatWindow = document.getElementById("chatWindow");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
-
 const suggestionsEl = document.getElementById("suggestions");
-
 const topicsBtn = document.getElementById("topicsBtn");
 const drawer = document.getElementById("topicsDrawer");
 const overlay = document.getElementById("drawerOverlay");
@@ -59,9 +49,9 @@ const drawerCloseBtn = document.getElementById("drawerCloseBtn");
 const drawerCategoriesEl = document.getElementById("drawerCategories");
 const drawerQuestionsEl = document.getElementById("drawerQuestions");
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // UI State
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 let isResponding = false;
 let lastChipClickAt = 0;
 let missCount = 0;
@@ -80,11 +70,11 @@ let clarifyCtx = null; // { stage: "needCategory", originalQuery: "..." }
 let ticketCtx = null; // { stage, type, name, email, phone, description, urgency }
 
 // in-memory transcript log (latest messages for ticket emails)
-let CHAT_LOG = []; // { role: "User"|"Bot", text: string, ts: number }
+let CHAT_LOG = []; // { role: "User" "Bot", text: string, ts: number }
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // NORMALISATION + MATCHING
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 const normalize = (s) =>
   (s ?? "")
     .toLowerCase()
@@ -122,30 +112,26 @@ const jaccard = (a, b) => {
   return union ? inter / union : 0;
 };
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // SAFE HTML RENDERING
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
-
   const allowedTags = new Set(["B", "STRONG", "I", "EM", "BR", "A", "SMALL"]);
   const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
   const toReplace = [];
-
   while (walker.nextNode()) {
     const el = walker.currentNode;
     if (!allowedTags.has(el.tagName)) {
       toReplace.push(el);
       continue;
     }
-
     [...el.attributes].forEach((attr) => {
       const name = attr.name.toLowerCase();
       if (el.tagName === "A" && (name === "href" || name === "target" || name === "rel")) return;
       el.removeAttribute(attr.name);
     });
-
     if (el.tagName === "A") {
       const href = el.getAttribute("href") ?? "";
       const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href);
@@ -154,7 +140,6 @@ function sanitizeHTML(html) {
       el.setAttribute("target", "_blank");
     }
   }
-
   toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent)));
   return template.innerHTML;
 }
@@ -169,14 +154,15 @@ function htmlToPlainText(html) {
 // Safely embed URLs in HTML attributes
 function escapeAttrUrl(url) {
   return String(url ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;");
+    .replace(/&/g, "&")
+    .replace(/"/g, """");
 }
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // TIMESTAMPS (UK, 24-HOUR)
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 const UK_TZ = "Europe/London";
+
 function formatUKTime(date) {
   return new Intl.DateTimeFormat("en-GB", {
     timeZone: UK_TZ,
@@ -186,13 +172,236 @@ function formatUKTime(date) {
   }).format(date);
 }
 
-// ---------------------------------------------------------
+/* ===============================================================
+   ✅ OPENING HOURS + AVAILABILITY + BANK HOLIDAYS (Hardcoded)
+   - Mon–Fri 08:30–17:00 (UK time)
+   - Closed weekends
+   - Closed England & Wales bank holidays (hardcoded list)
+   Source for dates: GOV.UK bank holidays page. [2](https://www.gov.uk/bank-holidays)
+================================================================ */
+const BUSINESS_HOURS = {
+  openDays: new Set([1, 2, 3, 4, 5]), // Mon..Fri (ISO-ish: Mon=1)
+  startMinutes: 8 * 60 + 30,          // 08:30
+  endMinutes: 17 * 60                // 17:00 (closed at/after)
+};
+
+const UK_DAY_INDEX = {
+  Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7
+};
+
+// England & Wales bank holidays (hardcoded)
+// - 2025 list appears under "Past bank holidays in England and Wales 2025" [2](https://www.gov.uk/bank-holidays)
+// - 2026–2028 lists appear under "Upcoming bank holidays in England and Wales" [2](https://www.gov.uk/bank-holidays)
+const BANK_HOLIDAYS_EW = new Set([
+  // 2025 [2](https://www.gov.uk/bank-holidays)
+  "2025-01-01",
+  "2025-04-18",
+  "2025-04-21",
+  "2025-05-05",
+  "2025-05-26",
+  "2025-08-25",
+  "2025-12-25",
+  "2025-12-26",
+
+  // 2026 [2](https://www.gov.uk/bank-holidays)
+  "2026-01-01",
+  "2026-04-03",
+  "2026-04-06",
+  "2026-05-04",
+  "2026-05-25",
+  "2026-08-31",
+  "2026-12-25",
+  "2026-12-28",
+
+  // 2027 [2](https://www.gov.uk/bank-holidays)
+  "2027-01-01",
+  "2027-03-26",
+  "2027-03-29",
+  "2027-05-03",
+  "2027-05-31",
+  "2027-08-30",
+  "2027-12-27",
+  "2027-12-28",
+
+  // 2028 [2](https://www.gov.uk/bank-holidays)
+  "2028-01-03",
+  "2028-04-14",
+  "2028-04-17",
+  "2028-05-01",
+  "2028-05-29",
+  "2028-08-28",
+  "2028-12-25",
+  "2028-12-26"
+]);
+
+function getUKNowParts(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: UK_TZ,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+
+  const parts = fmt.formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type)?.value;
+
+  const weekdayShort = get("weekday"); // Mon, Tue, ...
+  const dayIndex = UK_DAY_INDEX[weekdayShort] ?? 0;
+
+  const year = get("year");
+  const month = get("month");
+  const day = get("day");
+
+  const hour = parseInt(get("hour") ?? "0", 10);
+  const minute = parseInt(get("minute") ?? "0", 10);
+  const minutesNow = hour * 60 + minute;
+
+  return {
+    weekdayShort,
+    dayIndex,
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    minutesNow,
+    isoDate: `${year}-${month}-${day}` // UK date in YYYY-MM-DD
+  };
+}
+
+function isBankHolidayEW(dateObj = new Date()) {
+  const uk = getUKNowParts(dateObj);
+  return BANK_HOLIDAYS_EW.has(uk.isoDate);
+}
+
+function formatUKDateLabel(dateObj) {
+  // e.g. "Monday 4 May"
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: UK_TZ,
+    weekday: "long",
+    day: "numeric",
+    month: "short"
+  }).format(dateObj);
+}
+
+function minsToHrsMins(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h <= 0) return `${m} min`;
+  if (m === 0) return `${h} hr`;
+  return `${h} hr ${m} min`;
+}
+
+function isOpenNowEW(dateObj = new Date()) {
+  const uk = getUKNowParts(dateObj);
+  const isWeekday = BUSINESS_HOURS.openDays.has(uk.dayIndex);
+  const withinHours =
+    uk.minutesNow >= BUSINESS_HOURS.startMinutes &&
+    uk.minutesNow < BUSINESS_HOURS.endMinutes;
+
+  if (!isWeekday) return false;
+  if (!withinHours) return false;
+  if (isBankHolidayEW(dateObj)) return false;
+  return true;
+}
+
+function nextOpenDateTimeEW(dateObj = new Date()) {
+  // Returns a Date object for the next opening time (08:30 UK time on a working day)
+  // Strategy:
+  // - If it's a valid working day but before 08:30 and not a bank holiday => today 08:30
+  // - Otherwise iterate day-by-day to find next weekday that isn't a bank holiday => 08:30
+  const now = dateObj;
+  const uk = getUKNowParts(now);
+
+  // Candidate: today at 08:30 if before opening, weekday, and not bank holiday
+  const isWeekday = BUSINESS_HOURS.openDays.has(uk.dayIndex);
+  const beforeOpening = uk.minutesNow < BUSINESS_HOURS.startMinutes;
+  const bankHol = BANK_HOLIDAYS_EW.has(uk.isoDate);
+
+  if (isWeekday && beforeOpening && !bankHol) {
+    // Build a Date that represents "today 08:30 UK time"
+    // We'll find it by taking "now" and nudging until the UK parts match 08:30.
+    // Simple approach: start from now's UTC midnight and search forward.
+    const probe = new Date(now.getTime());
+    // go back ~24h then forward to stabilize (avoid DST edge cases)
+    probe.setHours(0, 0, 0, 0);
+    // search forward minute-by-minute up to 24h for 08:30 UK
+    for (let i = 0; i < 24 * 60; i++) {
+      const p = new Date(probe.getTime() + i * 60000);
+      const ukp = getUKNowParts(p);
+      if (ukp.isoDate === uk.isoDate && ukp.minutesNow === BUSINESS_HOURS.startMinutes) {
+        return p;
+      }
+    }
+  }
+
+  // Otherwise find the next working day that isn't a bank holiday
+  for (let d = 1; d <= 14; d++) {
+    const candidate = new Date(now.getTime() + d * 24 * 60 * 60 * 1000);
+    const ukc = getUKNowParts(candidate);
+    const weekdayOk = BUSINESS_HOURS.openDays.has(ukc.dayIndex);
+    const holiday = BANK_HOLIDAYS_EW.has(ukc.isoDate);
+    if (weekdayOk && !holiday) {
+      // Find 08:30 on that UK date
+      const probe = new Date(candidate.getTime());
+      probe.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 24 * 60; i++) {
+        const p = new Date(probe.getTime() + i * 60000);
+        const ukp = getUKNowParts(p);
+        if (ukp.isoDate === ukc.isoDate && ukp.minutesNow === BUSINESS_HOURS.startMinutes) {
+          return p;
+        }
+      }
+      // fallback (shouldn't happen)
+      return candidate;
+    }
+  }
+
+  // Fallback: if something goes wrong, just return tomorrow
+  return new Date(now.getTime() + 24 * 60 * 60 * 1000);
+}
+
+function buildAvailabilityAnswerHTML() {
+  const now = new Date();
+  const uk = getUKNowParts(now);
+  const nowUK = formatUKTime(now);
+
+  if (isOpenNowEW(now)) {
+    const minsLeft = BUSINESS_HOURS.endMinutes - uk.minutesNow;
+    return (
+      `✅ <b>Yes — we’re open right now.</b><br>` +
+      `Current UK time: <b>${escapeHTML(nowUK)}</b><br>` +
+      `We close at <b>17:00</b> (in about <b>${escapeHTML(minsToHrsMins(minsLeft))}</b>).`
+    );
+  }
+
+  const holidayNote = isBankHolidayEW(now)
+    ? "<br><small>Today is a <b>bank holiday</b> (England & Wales), so we’re closed.</small>"
+    : "";
+
+  const nextOpen = nextOpenDateTimeEW(now);
+  const nextLabel = formatUKDateLabel(nextOpen);
+  const nextTime = formatUKTime(nextOpen);
+
+  return (
+    `❌ <b>No — we’re closed right now.</b><br>` +
+    `Current UK time: <b>${escapeHTML(nowUK)}</b><br>` +
+    `Next opening time: <b>${escapeHTML(nextLabel)}</b> at <b>${escapeHTML(nextTime)}</b> (UK time).` +
+    holidayNote +
+    `<br><small>Hours: Monday–Friday, 08:30–17:00 (UK time). Closed weekends & bank holidays.</small>`
+  );
+}
+
+// ---------------------------------------------------------------
 // DEPOTS + ORIGIN PLACES (EDIT THESE)
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 const DEPOTS = {
   nuneaton: { label: "Nuneaton Depot", lat: 52.5230, lon: -1.4652 }
 };
-
 const PLACES = {
   coventry: { lat: 52.4068, lon: -1.5197 },
   birmingham: { lat: 52.4895, lon: -1.8980 },
@@ -205,11 +414,9 @@ function titleCase(s) {
   const t = (s ?? "").trim();
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
-
 function toRad(deg) {
   return (deg * Math.PI) / 180;
 }
-
 function distanceMiles(a, b) {
   const R = 3958.8;
   const dLat = toRad(b.lat - a.lat);
@@ -221,7 +428,6 @@ function distanceMiles(a, b) {
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
   return R * (2 * Math.asin(Math.sqrt(h)));
 }
-
 function parseTravelMode(qNorm) {
   if (qNorm.includes("train") || qNorm.includes("rail")) return "train";
   if (qNorm.includes("bus") || qNorm.includes("coach")) return "bus";
@@ -229,18 +435,15 @@ function parseTravelMode(qNorm) {
   if (qNorm.includes("car") || qNorm.includes("drive") || qNorm.includes("driving")) return "car";
   return null;
 }
-
 function estimateMinutes(miles, mode) {
   const mphMap = { car: 35, train: 55, bus: 20, walk: 3 };
   const mph = mphMap[mode] ?? 35;
   return Math.round((miles / mph) * 60);
 }
-
 function modeLabel(mode) {
   const map = { car: "by car", train: "by train", bus: "by bus", walk: "walking" };
   return map[mode] ?? "by car";
 }
-
 function findPlaceKey(qNorm) {
   for (const key in PLACES) {
     if (!Object.prototype.hasOwnProperty.call(PLACES, key)) continue;
@@ -248,7 +451,6 @@ function findPlaceKey(qNorm) {
   }
   return null;
 }
-
 function findClosestDepot(originLatLon) {
   let bestKey = null;
   let bestMiles = Infinity;
@@ -262,7 +464,6 @@ function findClosestDepot(originLatLon) {
   }
   return bestKey ? { depotKey: bestKey, miles: bestMiles } : null;
 }
-
 // Google Maps directions link (✅ use raw '&' in JS)
 function googleDirectionsURL(originText, depot, mode) {
   const origin = encodeURIComponent(originText);
@@ -273,11 +474,10 @@ function googleDirectionsURL(originText, depot, mode) {
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=${travelmode}`;
 }
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // QUIET SPELLING CORRECTION
-// ---------------------------------------------------------
-let VOCAB = new Set();
-
+// ---------------------------------------------------------------
+let VOCAB = new Set([]);
 const PROTECTED_TOKENS = new Set([
   "walking","walk",
   "by","car","train","bus",
@@ -299,22 +499,18 @@ function levenshtein(a, b, maxDist) {
   if (a === b) return 0;
   const al = a.length, bl = b.length;
   if (Math.abs(al - bl) > maxDist) return maxDist + 1;
-
   const prev = new Array(bl + 1);
   const curr = new Array(bl + 1);
   for (let j = 0; j <= bl; j++) prev[j] = j;
-
   for (let i = 1; i <= al; i++) {
     curr[0] = i;
     let minInRow = curr[0];
     const ai = a.charCodeAt(i - 1);
-
     for (let j = 1; j <= bl; j++) {
       const cost = ai === b.charCodeAt(j - 1) ? 0 : 1;
       curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
       if (curr[j] < minInRow) minInRow = curr[j];
     }
-
     if (minInRow > maxDist) return maxDist + 1;
     for (let j = 0; j <= bl; j++) prev[j] = curr[j];
   }
@@ -344,7 +540,6 @@ function bestVocabMatch(token) {
 
 function buildVocabFromFAQs() {
   const vocab = new Set();
-
   for (const item of FAQS) {
     const fields = [
       item.question,
@@ -353,7 +548,6 @@ function buildVocabFromFAQs() {
       ...(item.tags ?? []),
       item.category
     ];
-
     for (const f of fields) {
       const toks = normalize(f).split(" ").filter(Boolean);
       for (const t of toks) {
@@ -361,18 +555,15 @@ function buildVocabFromFAQs() {
       }
     }
   }
-
   for (const dk in DEPOTS) {
     if (!Object.prototype.hasOwnProperty.call(DEPOTS, dk)) continue;
     normalize(dk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
     normalize(DEPOTS[dk].label).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
   }
-
   for (const pk in PLACES) {
     if (!Object.prototype.hasOwnProperty.call(PLACES, pk)) continue;
     normalize(pk).split(" ").forEach((t) => { if (!shouldSkipToken(t)) vocab.add(t); });
   }
-
   ["walking","walk","by","car","train","bus","rail","coach","depot","depots","closest"].forEach((w) => vocab.add(w));
   VOCAB = vocab;
 }
@@ -382,7 +573,6 @@ function correctQueryTokens(rawText) {
   if (!norm) return { corrected: norm, changed: false };
   const tokens = norm.split(" ").filter(Boolean);
   let changed = false;
-
   const correctedTokens = tokens.map((t) => {
     const fixed = bestVocabMatch(t);
     if (fixed) {
@@ -391,13 +581,12 @@ function correctQueryTokens(rawText) {
     }
     return t;
   });
-
   return { corrected: correctedTokens.join(" "), changed };
 }
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // UI / BUBBLES + TRANSCRIPT (No feedback UI)
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function setUIEnabled(enabled) {
   input.disabled = !enabled;
   sendBtn.disabled = !enabled;
@@ -408,14 +597,11 @@ function pushToTranscript(type, text, opts) {
   const options = opts ?? {};
   const tsDate = options.ts ?? new Date();
   const ts = tsDate.getTime();
-
   let plain = "";
   if (options.html) plain = htmlToPlainText(text);
   else plain = String(text ?? "").trim();
-
   const role = (type === "bot") ? "Bot" : "User";
   if (plain) CHAT_LOG.push({ role, text: plain, ts });
-
   // keep transcript from growing endlessly
   const keep = Math.max(SETTINGS.ticketTranscriptMessages ?? 12, 12) * 4;
   if (CHAT_LOG.length > keep) CHAT_LOG = CHAT_LOG.slice(-keep);
@@ -425,7 +611,6 @@ function buildTranscript(limit = 12) {
   const take = Math.max(1, limit);
   const slice = CHAT_LOG.slice(-take);
   const MAX_LINE = Math.max(40, SETTINGS.ticketTranscriptMaxLine ?? 140);
-
   return slice.map((m) => {
     const time = formatUKTime(new Date(m.ts));
     const msg = (m.text ?? "").replace(/\s+/g, " ").trim();
@@ -438,7 +623,6 @@ function addBubble(text, type, opts) {
   const options = opts ?? {};
   const html = !!options.html;
   const ts = options.ts ?? new Date();
-
   const row = document.createElement("div");
   row.className = "msg " + type;
   row.dataset.ts = String(ts.getTime());
@@ -457,6 +641,7 @@ function addBubble(text, type, opts) {
 
   row.appendChild(bubble);
   row.appendChild(time);
+
   chatWindow.appendChild(row);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -467,11 +652,9 @@ function addTyping() {
   const row = document.createElement("div");
   row.className = "msg bot";
   row.dataset.typing = "true";
-
   const bubble = document.createElement("div");
   bubble.className = "bubble bot typing-bubble";
   bubble.innerHTML = 'Typing <span class="typing"><span></span><span></span><span></span></span>';
-
   row.appendChild(bubble);
   chatWindow.appendChild(row);
   chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -485,40 +668,33 @@ function removeTyping() {
 function addChips(questions, onClick) {
   const qs = questions ?? [];
   if (!qs.length) return;
-
   const wrap = document.createElement("div");
   wrap.className = "chips";
-
   qs.slice(0, SETTINGS.chipLimit).forEach((q) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip-btn";
     b.textContent = q;
-
     b.addEventListener("click", () => {
       const now = Date.now();
       if (isResponding) return;
       if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
       lastChipClickAt = now;
-
       wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
       if (typeof onClick === "function") onClick(q);
       else handleUserMessage(q);
-
       input.focus();
     });
-
     wrap.appendChild(b);
   });
-
   if (isResponding) wrap.querySelectorAll(".chip-btn").forEach((btn) => (btn.disabled = true));
   chatWindow.appendChild(wrap);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // TOPICS DRAWER
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function buildCategoryIndex() {
   categoryIndex = new Map();
   FAQS.forEach((item) => {
@@ -526,7 +702,6 @@ function buildCategoryIndex() {
     if (!categoryIndex.has(key)) categoryIndex.set(key, []);
     categoryIndex.get(key).push(item);
   });
-
   const labelMap = {
     general: "General",
     support: "Support",
@@ -534,7 +709,6 @@ function buildCategoryIndex() {
     opening: "Opening times",
     actions: "Actions"
   };
-
   categories = Array.from(categoryIndex.keys())
     .sort()
     .map((key) => ({
@@ -550,7 +724,6 @@ function openDrawer() {
   drawer.setAttribute("aria-hidden", "false");
   drawerCloseBtn?.focus();
 }
-
 function closeDrawer() {
   overlay.hidden = true;
   drawer.hidden = true;
@@ -562,7 +735,6 @@ function renderDrawer(selectedKey) {
   const selected = selectedKey ?? null;
   drawerCategoriesEl.innerHTML = "";
   drawerQuestionsEl.innerHTML = "";
-
   categories.forEach((c) => {
     const pill = document.createElement("button");
     pill.type = "button";
@@ -615,25 +787,23 @@ document.addEventListener("keydown", (e) => {
   if (!drawer.hidden && e.key === "Escape") closeDrawer();
 });
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // TYPEAHEAD SUGGESTIONS
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function escapeHTML(s) {
   const str = String(s ?? "");
-  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+  const map = { "&": "&", "<": "<", ">": ">", '"': """", "'": "&#039;" };
   return str.replace(/[&<>"']/g, (ch) => map[ch]);
 }
 
 function showSuggestions(items) {
   currentSuggestions = items;
   activeSuggestionIndex = -1;
-
   if (!items.length) {
     suggestionsEl.hidden = true;
     suggestionsEl.innerHTML = "";
     return;
   }
-
   suggestionsEl.innerHTML = "";
   items.forEach((it, idx) => {
     const div = document.createElement("div");
@@ -641,51 +811,48 @@ function showSuggestions(items) {
     div.setAttribute("role", "option");
     div.setAttribute("aria-selected", "false");
     div.tabIndex = -1;
-
     div.innerHTML = `${escapeHTML(it.question)}<small>${escapeHTML(it.categoryLabel)}</small>`;
-
     div.addEventListener("mousedown", (ev) => {
       ev.preventDefault();
       pickSuggestion(idx);
     });
-
-    div.addEventListener("touchstart", (ev) => {
-      ev.preventDefault();
-      pickSuggestion(idx);
-    }, { passive: false });
-
+    div.addEventListener(
+      "touchstart",
+      (ev) => {
+        ev.preventDefault();
+        pickSuggestion(idx);
+      },
+      { passive: false }
+    );
     suggestionsEl.appendChild(div);
   });
-
   suggestionsEl.hidden = false;
 }
 
 function updateSuggestionSelection() {
   const nodes = suggestionsEl.querySelectorAll(".suggestion-item");
-  nodes.forEach((n, i) => n.setAttribute("aria-selected", String(i === activeSuggestionIndex)));
+  nodes.forEach((n, i) =>
+    n.setAttribute("aria-selected", String(i === activeSuggestionIndex))
+  );
 }
 
 function pickSuggestion(index) {
   const picked = currentSuggestions[index];
   if (!picked) return;
-
   suggestionsEl.hidden = true;
   suggestionsEl.innerHTML = "";
   currentSuggestions = [];
   activeSuggestionIndex = -1;
-
   handleUserMessage(picked.question);
 }
 
 function computeSuggestions(query) {
   let q = normalize(query);
   if (!q || q.length < 2) return [];
-
   const corr = correctQueryTokens(query);
   if (corr.changed && corr.corrected) q = corr.corrected;
 
   const qTokens = tokenSet(q);
-
   const scored = FAQS.map((item) => {
     const question = item.question ?? "";
     const syns = item.synonyms ?? [];
@@ -708,10 +875,10 @@ function computeSuggestions(query) {
     .filter((x) => x.score > 0);
 
   const labelMap = new Map(categories.map((c) => [c.key, c.label]));
-
   return scored.map((s) => ({
     question: s.item.question,
-    categoryLabel: labelMap.get((s.item.category ?? "general").toLowerCase()) ?? "General"
+    categoryLabel:
+      labelMap.get((s.item.category ?? "general").toLowerCase()) ?? "General"
   }));
 }
 
@@ -721,7 +888,9 @@ input.addEventListener("input", () => {
 });
 
 input.addEventListener("blur", () => {
-  setTimeout(() => { suggestionsEl.hidden = true; }, 120);
+  setTimeout(() => {
+    suggestionsEl.hidden = true;
+  }, 120);
 });
 
 input.addEventListener("keydown", (e) => {
@@ -732,7 +901,6 @@ input.addEventListener("keydown", (e) => {
     }
     return;
   }
-
   if (e.key === "ArrowDown") {
     e.preventDefault();
     activeSuggestionIndex = Math.min(activeSuggestionIndex + 1, currentSuggestions.length - 1);
@@ -750,28 +918,24 @@ input.addEventListener("keydown", (e) => {
   }
 });
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // FAQ MATCHING
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function matchFAQ(query) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
-
   const scored = FAQS
     .map((item) => {
       const question = item.question ?? "";
       const syns = item.synonyms ?? [];
       const keys = item.canonicalKeywords ?? [];
       const tags = item.tags ?? [];
-
       const scoreQ = jaccard(qTokens, tokenSet(question));
       const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
       const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
       const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
-
       const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
       const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
-
       const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
       return { item, score };
     })
@@ -784,7 +948,6 @@ function matchFAQ(query) {
       suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
     };
   }
-
   return {
     matched: true,
     item: top.item,
@@ -813,22 +976,18 @@ function categoryKeyFromLabelOrKey(textNorm) {
 function matchFAQFromList(query, list) {
   const qNorm = normalize(query);
   const qTokens = tokenSet(query);
-
-  const scored = (list || [])
+  const scored = (list ?? [])
     .map((item) => {
       const question = item.question ?? "";
       const syns = item.synonyms ?? [];
       const keys = item.canonicalKeywords ?? [];
       const tags = item.tags ?? [];
-
       const scoreQ = jaccard(qTokens, tokenSet(question));
       const scoreSyn = syns.length ? Math.max(...syns.map((s) => jaccard(qTokens, tokenSet(s)))) : 0;
       const scoreKeys = keys.length ? Math.max(...keys.map((k) => jaccard(qTokens, tokenSet(k)))) : 0;
       const scoreTags = tags.length ? Math.max(...tags.map((t) => jaccard(qTokens, tokenSet(t)))) : 0;
-
       const anyField = [question, ...syns, ...keys, ...tags].map(normalize).join(" ");
       const boost = anyField.includes(qNorm) ? SETTINGS.boostSubstring : 0;
-
       const score = 0.55 * scoreQ + 0.25 * scoreSyn + 0.12 * scoreKeys + 0.08 * scoreTags + boost;
       return { item, score };
     })
@@ -841,7 +1000,6 @@ function matchFAQFromList(query, list) {
       suggestions: scored.slice(0, SETTINGS.topSuggestions).map((r) => r.item.question)
     };
   }
-
   return {
     matched: true,
     item: top.item,
@@ -850,39 +1008,56 @@ function matchFAQFromList(query, list) {
   };
 }
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // Ticket field validation (new phone step)
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function normalizePhoneForValidation(raw) {
   // allow +, spaces, brackets, dashes - but validate by digit count
   const s = String(raw ?? "").trim();
   const digits = s.replace(/[^\d]/g, "");
   return { original: s, digits };
 }
-
 function isValidPhone(raw) {
   const { digits } = normalizePhoneForValidation(raw);
   // 8 to 16 digits is a decent generic range for UK/international
   return digits.length >= 8 && digits.length <= 16;
 }
 
-// ---------------------------------------------------------
-// SPECIAL CASES (category clarification + ticket + depot + parking)
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
+// SPECIAL CASES (availability + category clarification + ticket + depot + parking)
+// ---------------------------------------------------------------
 function specialCases(query) {
   const corr = correctQueryTokens(query);
   const q = corr.changed && corr.corrected ? corr.corrected : normalize(query);
 
+  // ✅ (0) Availability / open-now logic (UK hours + weekends + bank holidays)
+  const availabilityTriggers = [
+    "is anyone available",
+    "anyone available",
+    "available now",
+    "are you available",
+    "open now",
+    "are you open now",
+    "can i speak to someone",
+    "speak to someone now",
+    "is someone there",
+    "is anybody there"
+  ];
+  if (availabilityTriggers.some((t) => q.includes(t))) {
+    return {
+      matched: true,
+      answerHTML: buildAvailabilityAnswerHTML(),
+      chips: ["What are your opening times?", "How can I contact support?"]
+    };
+  }
+
   // (4) Category clarification flow
   if (clarifyCtx && clarifyCtx.stage === "needCategory") {
     const pickedKey = categoryKeyFromLabelOrKey(q);
-
     if (pickedKey && categoryIndex.has(pickedKey)) {
       const list = categoryIndex.get(pickedKey);
       const res = matchFAQFromList(clarifyCtx.originalQuery, list);
-
       clarifyCtx = null;
-
       if (res.matched) {
         return {
           matched: true,
@@ -890,7 +1065,6 @@ function specialCases(query) {
           chips: (res.followUps && res.followUps.length) ? res.followUps : null
         };
       }
-
       return {
         matched: true,
         answerHTML: `Thanks — I still couldn’t match that under <b>${escapeHTML(pickedKey)}</b>. Try one of these:`,
@@ -925,19 +1099,16 @@ function specialCases(query) {
         answerHTML: "No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>."
       };
     }
-
     if (ticketCtx.stage === "needType") {
       ticketCtx.type = query.trim();
       ticketCtx.stage = "needName";
       return { matched: true, answerHTML: "Thanks — what’s your name?" };
     }
-
     if (ticketCtx.stage === "needName") {
       ticketCtx.name = query.trim();
       ticketCtx.stage = "needEmail";
       return { matched: true, answerHTML: "And what email should we reply to?" };
     }
-
     if (ticketCtx.stage === "needEmail") {
       const email = query.trim();
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -946,7 +1117,6 @@ function specialCases(query) {
       ticketCtx.stage = "needPhone";
       return { matched: true, answerHTML: "Thanks — what’s the best contact number for you?" };
     }
-
     // ✅ NEW required step: phone number
     if (ticketCtx.stage === "needPhone") {
       const phone = query.trim();
@@ -960,7 +1130,6 @@ function specialCases(query) {
       ticketCtx.stage = "needDescription";
       return { matched: true, answerHTML: "Briefly describe the issue (1–3 sentences is perfect)." };
     }
-
     if (ticketCtx.stage === "needDescription") {
       ticketCtx.description = query.trim();
       ticketCtx.stage = "needUrgency";
@@ -970,12 +1139,9 @@ function specialCases(query) {
         chips: ["Low", "Normal", "High", "Critical"]
       };
     }
-
     if (ticketCtx.stage === "needUrgency") {
       ticketCtx.urgency = query.trim();
-
       const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
-
       const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
       const body = encodeURIComponent(
         `Name: ${ticketCtx.name}\n` +
@@ -987,11 +1153,9 @@ function specialCases(query) {
         `Chat transcript (latest messages):\n${transcript}\n\n` +
         `— Sent from Welfare Support chatbot`
       );
-
-      // ✅ use '&' not '&amp;' in JS
+      // ✅ use '&' not '&' in JS
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
       const safeMailtoAttr = escapeAttrUrl(mailtoHref);
-
       const summary =
         `<b>Request summary</b><br>` +
         `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
@@ -1004,7 +1168,6 @@ function specialCases(query) {
         `Want to start another?`;
 
       ticketCtx = null;
-
       return {
         matched: true,
         answerHTML: summary,
@@ -1021,7 +1184,6 @@ function specialCases(query) {
       const minutes = estimateMinutes(distanceCtx.miles, mode);
       const url = googleDirectionsURL(titleCase(distanceCtx.originKey), depot, mode);
       const safeUrlAttr = escapeAttrUrl(url);
-
       return {
         matched: true,
         answerHTML:
@@ -1042,7 +1204,6 @@ function specialCases(query) {
     (q.includes("depot") && q.includes("closest"))
   ) {
     const originKey = findPlaceKey(q);
-
     if (!originKey) {
       distanceCtx = { stage: "needOrigin" };
       return {
@@ -1051,7 +1212,6 @@ function specialCases(query) {
         chips: ["Coventry", "Birmingham", "Leicester", "London"]
       };
     }
-
     const closest = findClosestDepot(PLACES[originKey]);
     if (!closest) {
       return {
@@ -1059,7 +1219,6 @@ function specialCases(query) {
         answerHTML: "I can do that once I know your starting town/city. Where are you travelling from?"
       };
     }
-
     const depot = DEPOTS[closest.depotKey];
     distanceCtx = {
       stage: "haveClosest",
@@ -1067,13 +1226,11 @@ function specialCases(query) {
       depotKey: closest.depotKey,
       miles: closest.miles
     };
-
     const modeInText = parseTravelMode(q);
     if (modeInText) {
       const minutes = estimateMinutes(closest.miles, modeInText);
       const url = googleDirectionsURL(titleCase(originKey), depot, modeInText);
       const safeUrlAttr = escapeAttrUrl(url);
-
       return {
         matched: true,
         answerHTML:
@@ -1084,7 +1241,6 @@ function specialCases(query) {
         chips: ["By car", "By train", "By bus", "Walking"]
       };
     }
-
     return {
       matched: true,
       answerHTML:
@@ -1101,14 +1257,12 @@ function specialCases(query) {
     if (originKey2) {
       const closest2 = findClosestDepot(PLACES[originKey2]);
       const depot2 = DEPOTS[closest2.depotKey];
-
       distanceCtx = {
         stage: "haveClosest",
         originKey: originKey2,
         depotKey: closest2.depotKey,
         miles: closest2.miles
       };
-
       return {
         matched: true,
         answerHTML:
@@ -1128,9 +1282,9 @@ function specialCases(query) {
   return null;
 }
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // MAIN HANDLER
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function handleUserMessage(text) {
   if (!text) return;
 
@@ -1157,12 +1311,11 @@ function handleUserMessage(text) {
       return;
     }
 
-    // 1) Special cases first (ticket + depot + category clarification)
+    // 1) Special cases first (availability + ticket + depot + category clarification)
     const special = specialCases(text);
     if (special && special.matched) {
       addBubble(special.answerHTML, "bot", { html: true, ts: new Date() });
       if (special.chips && special.chips.length) addChips(special.chips);
-
       missCount = 0;
       isResponding = false;
       setUIEnabled(true);
@@ -1182,12 +1335,10 @@ function handleUserMessage(text) {
 
     if (res.matched) {
       addBubble(res.answerHTML, "bot", { html: true, ts: new Date() });
-
       if (res.followUps && res.followUps.length) {
         addBubble("You can also ask:", "bot", { ts: new Date() });
         addChips(res.followUps);
       }
-
       missCount = 0;
       clarifyCtx = null;
     } else {
@@ -1240,9 +1391,9 @@ clearBtn.addEventListener("click", () => {
   init();
 });
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // LOAD FAQS (SINGLE FETCH)
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 fetch("./public/config/faqs.json")
   .then((res) => res.json())
   .then((data) => {
@@ -1260,9 +1411,9 @@ fetch("./public/config/faqs.json")
     renderDrawer();
   });
 
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 // INIT
-// ---------------------------------------------------------
+// ---------------------------------------------------------------
 function init() {
   addBubble(SETTINGS.greeting, "bot", { html: true, ts: new Date() });
 }
