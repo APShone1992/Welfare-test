@@ -1,13 +1,4 @@
 
-/* Welfare Support Chat – stable integrated build (NO ATTACHMENTS)
-   Includes:
-   - FAQ answering from faqs.json (topics + typed questions)
-   - Entity decoding so <b>, <a> render even if faqs.json uses &lt;...&gt;
-   - Ticket flow (mailto + transcript)
-   - Depot flow (GPS, cities, directions)
-   - Mic + voice output
-*/
-
 const SETTINGS = {
   minConfidence: 0.20,
   suggestionLimit: 5,
