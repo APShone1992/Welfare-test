@@ -26,7 +26,7 @@
   },
   {
     "question": "Are you open on bank holidays?",
-    "answer": "❌ <b>No — we are not open on bank holidays.</b>",
+    "answer": "<b>No — we are not open on bank holidays.</b>",
     "synonyms": ["bank holiday","bank holidays","open on bank holidays","closed on bank holidays"],
     "canonicalKeywords": ["bank holiday","open","closed"],
     "category": "opening",
