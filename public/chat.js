@@ -183,7 +183,7 @@ function linkTag(href, label) {
 }
 
 // Depots/places
-const DEPOTS = { nuneaton: { label:"Nuneaton Depot", lat:52.5230, lon:-1.4652 } };
+const DEPOTS = { nuneaton: { label:"Nuneaton Depot", lat:52.515770, lon:-1.4507820 } };
 const PLACES = {
   coventry:{ lat:52.4068, lon:-1.5197 },
   birmingham:{ lat:52.4895, lon:-1.8980 },
