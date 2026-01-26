@@ -8,8 +8,7 @@ const SETTINGS = {
   supportPhone: "01234 567890",
   ticketTranscriptMessages: 12,
   greeting:
-    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."
-};
+    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."};
 
 let FAQS = [];
 let faqsLoaded = false;
@@ -41,7 +40,7 @@ let CHAT_LOG = [];
 let ticketCtx = null;
 let distanceCtx = null;
 
-// ---------- helpers
+// helpers
 const normalize = (s) =>
   (s ?? "")
     .toLowerCase()
@@ -59,29 +58,26 @@ function escapeHTML(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+    .replace(/'/g, "&#039;");}
+
 function escapeAttrUrl(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+    .replace(/>/g, "&gt;");}
 
 // decode entities so legacy &lt;b&gt; works too
 function decodeHTMLEntities(str) {
   const t = document.createElement("textarea");
   t.innerHTML = str ?? "";
-  return t.value;
-}
+  return t.value;}
 
 function htmlToPlainText(html) {
   const t = document.createElement("template");
   t.innerHTML = decodeHTMLEntities(html ?? "");
-  return (t.content.textContent ?? "").trim();
-}
+  return (t.content.textContent ?? "").trim();}
 
 function sanitizeHTML(html) {
   const template = document.createElement("template");
@@ -93,54 +89,49 @@ function sanitizeHTML(html) {
 
   while (walker.nextNode()) {
     const el = walker.currentNode;
-    if (!allowedTags.has(el.tagName)) { toReplace.push(el); continue; }
+    if (!allowedTags.has(el.tagName)) { toReplace.push(el); continue;}
 
     [...el.attributes].forEach((attr) => {
       const name = attr.name.toLowerCase();
       if (el.tagName === "A" && (name === "href" || name === "target" || name === "rel")) return;
       if (el.tagName === "IMG" && (name === "src" || name === "alt" || name === "class" || name === "loading")) return;
-      el.removeAttribute(attr.name);
-    });
+      el.removeAttribute(attr.name);});
 
     if (el.tagName === "A") {
       const href = el.getAttribute("href") ?? "";
       const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href);
       if (!safe) el.removeAttribute("href");
       el.setAttribute("rel", "noopener noreferrer");
-      el.setAttribute("target", "_blank");
-    }
+      el.setAttribute("target", "_blank");}
 
     if (el.tagName === "IMG") {
       const src = el.getAttribute("src") ?? "";
       if (!/^https:\/\//i.test(src)) toReplace.push(el);
       else el.setAttribute("loading", "lazy");
-      if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");
-    }
-  }
+      if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");}}
 
   toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
-  return template.innerHTML;
-}
+  return template.innerHTML;}
 
 // UK time
 const UK_TZ = "Europe/London";
 function formatUKTime(date) {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
-}
+  return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);}
+
 function getUKDateISO(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, year:"numeric", month:"2-digit", day:"2-digit" });
   const parts = fmt.formatToParts(date);
   const y = parts.find(p=>p.type==="year")?.value ?? "0000";
   const m = parts.find(p=>p.type==="month")?.value ?? "01";
   const d = parts.find(p=>p.type==="day")?.value ?? "01";
-  return `${y}-${m}-${d}`;
-}
+  return `${y}-${m}-${d}`;}
+
 function getUKDayIndex(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, weekday:"short" });
   const wd = fmt.format(date);
   const map = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
-  return map[wd] ?? 0;
-}
+  return map[wd] ?? 0;}
+
 function getUKMinutesNow(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour:"2-digit", minute:"2-digit", hour12:false });
   const parts = fmt.formatToParts(date);
@@ -471,17 +462,17 @@ function specialCases(text){
   const q = normalize(text);
 
   if (q.includes("bank holiday") || q.includes("bank holidays")){
-    return { html:"❌ <b>No — we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
+    return { html:"❌ <b>No we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
   }
 
   if (q.includes("is anyone available") || q.includes("available now") || q.includes("open now")){
     const open = isOpenNow();
     const nowUK = formatUKTime(new Date());
     if (open){
-      return { html:`✅ <b>Yes — we’re open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips:["How can I contact support?"] };
+      return { html:`✅ <b>Yes we’re open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips:["How can I contact support?"] };
     }
     const bh = isBankHolidayToday();
-    return { html:`❌ <b>No — we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
+    return { html:`❌ <b>No we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
   }
 
   const wantsTicket =
@@ -490,27 +481,27 @@ function specialCases(text){
 
   if (!ticketCtx && wantsTicket){
     ticketCtx = { stage:"needType" };
-    return { html:"Sure — what do you need help with?", chips:["Access / Login","Pay / Payroll","Benefits","General query","Something else"] };
+    return { html:"Sure — what do you need help with?", chips:["Access / Login","Pay / Payroll","General query","Something else"] };
   }
 
   if (ticketCtx){
     if (q==="cancel" || q==="stop" || q==="restart"){
       ticketCtx=null;
-      return { html:"No problem — I’ve cancelled that request. If you want to start again, type <b>raise a request</b>." };
+      return { html:"No problem, I’ve cancelled that request. If you want to start again, type <b>raise a request</b>." };
     }
     if (ticketCtx.stage==="needType"){ ticketCtx.type=text.trim(); ticketCtx.stage="needName"; return { html:"Thanks — what’s your name?" }; }
     if (ticketCtx.stage==="needName"){ ticketCtx.name=text.trim(); ticketCtx.stage="needEmail"; return { html:"And what email should we reply to?" }; }
     if (ticketCtx.stage==="needEmail"){
       const email=text.trim();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { html:"That doesn’t look like an email — can you retype it?" };
-      ticketCtx.email=email; ticketCtx.stage="needPhone"; return { html:"Thanks — what’s the best contact number for you?" };
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { html:"That doesn’t look like an email, can you retype it?" };
+      ticketCtx.email=email; ticketCtx.stage="needPhone"; return { html:"Thank you, what’s the best contact number for you?" };
     }
     if (ticketCtx.stage==="needPhone"){
       const phone=text.trim();
-      if(!isValidPhone(phone)) return { html:"That number doesn’t look right — please enter a valid contact number (digits only is fine, or include +)." };
+      if(!isValidPhone(phone)) return { html:"That number doesn’t look right, please enter a valid contact number (digits only is fine, or include +)." };
       ticketCtx.phone=phone; ticketCtx.stage="needDescription"; return { html:"Briefly describe the issue (1–3 sentences is perfect)." };
     }
-    if (ticketCtx.stage==="needDescription"){ ticketCtx.description=text.trim(); ticketCtx.stage="needUrgency"; return { html:"How urgent is this?", chips:["Low","Normal","High","Critical"] }; }
+    if (ticketCtx.stage==="needDescription"){ ticketCtx.description=text.trim(); ticketCtx.stage="needUrgency"; return { html:"How urgent is this?", chips:["Low","Normal","High"] }; }
     if (ticketCtx.stage==="needUrgency"){
       ticketCtx.urgency=text.trim();
       const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
@@ -528,7 +519,7 @@ function specialCases(text){
         `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
         `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
         `${linkTag(mailtoHref, "Email support with this request (includes transcript)")}` +
-        `<br><small>(This opens your email app with the message prefilled — you then press Send.)</small>`;
+        `<br><small>(This opens your email app with the message prefilled, you then press Send.)</small>`;
 
       ticketCtx=null;
       return { html, chips:["Raise a request (create a ticket)"] };
@@ -546,7 +537,7 @@ function specialCases(text){
       const closest = findClosestDepot(PLACES[cityKey]);
       const depot = DEPOTS[closest.depotKey];
       distanceCtx = { stage:"haveClosest", originKey: cityKey, depotKey: closest.depotKey, miles: closest.miles };
-      return { html:`Thanks — your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, chips:["By car","By train","By bus","Walking"] };
+      return { html:`Thanks, your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, chips:["By car","By train","By bus","Walking"] };
     }
   }
 
@@ -623,7 +614,7 @@ clearBtn.addEventListener("click", ()=>{
   init();
 });
 
-// ---------- drawer
+// drawer
 function buildCategoryIndex(){
   categoryIndex=new Map();
   FAQS.forEach((item)=>{
@@ -678,7 +669,7 @@ topicsBtn.addEventListener("click", ()=>{ if(faqsLoaded) openDrawer(); });
 overlay.addEventListener("click", closeDrawer);
 drawerCloseBtn.addEventListener("click", closeDrawer);
 
-// ---------- load faqs
+// load faqs
 fetch("./public/config/faqs.json")
   .then((res)=>res.json())
   .then((data)=>{
@@ -694,7 +685,7 @@ fetch("./public/config/faqs.json")
     renderDrawer(null);
   });
 
-// ---------- init greeting
+//Greeting
 function init(){
   addBubble(SETTINGS.greeting, "bot", { html:true, speak:false });
 }
