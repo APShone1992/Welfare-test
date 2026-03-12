@@ -1,4 +1,3 @@
-
 const SETTINGS = {
   minConfidence: 0.20,
   suggestionLimit: 5,
@@ -7,8 +6,12 @@ const SETTINGS = {
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
   ticketTranscriptMessages: 12,
+  // Updated greeting:
   greeting:
-    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."};
+    "Hi! I’m <b>Welfare Support</b>, please let me know what your query is regarding using the <b>Topics</b> button.",
+  // Optional: set this if you want “Send via text” for Pay/Deductions queries
+  textSystemNumber: "" // e.g. "+4420xxxxxxx"
+};
 
 let FAQS = [];
 let faqsLoaded = false;
@@ -20,14 +23,12 @@ const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
 const suggestionsEl = document.getElementById("suggestions");
-
 const topicsBtn = document.getElementById("topicsBtn");
 const drawer = document.getElementById("topicsDrawer");
 const overlay = document.getElementById("drawerOverlay");
 const drawerCloseBtn = document.getElementById("drawerCloseBtn");
 const drawerCategoriesEl = document.getElementById("drawerCategories");
 const drawerQuestionsEl = document.getElementById("drawerQuestions");
-
 const micBtn = document.getElementById("micBtn");
 const voiceBtn = document.getElementById("voiceBtn");
 
@@ -39,6 +40,7 @@ let currentSuggestions = [];
 let CHAT_LOG = [];
 let ticketCtx = null;
 let distanceCtx = null;
+let flowCtx = null; // NEW: topics flow context
 
 // helpers
 const normalize = (s) =>
@@ -58,80 +60,81 @@ function escapeHTML(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");}
+    .replace(/'/g, "&#39;");
+}
 
 function escapeAttrUrl(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
+    .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");}
+    .replace(/>/g, "&gt;");
+}
 
-// decode entities so legacy &lt;b&gt; works too
+// decode entities so legacy <b> works too
 function decodeHTMLEntities(str) {
   const t = document.createElement("textarea");
   t.innerHTML = str ?? "";
-  return t.value;}
-
+  return t.value;
+}
 function htmlToPlainText(html) {
   const t = document.createElement("template");
   t.innerHTML = decodeHTMLEntities(html ?? "");
-  return (t.content.textContent ?? "").trim();}
-
+  return (t.content.textContent ?? "").trim();
+}
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
-
   const allowedTags = new Set(["B","STRONG","I","EM","BR","A","SMALL","IMG"]);
   const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
   const toReplace = [];
-
   while (walker.nextNode()) {
     const el = walker.currentNode;
-    if (!allowedTags.has(el.tagName)) { toReplace.push(el); continue;}
-
+    if (!allowedTags.has(el.tagName)) { toReplace.push(el); continue; }
     [...el.attributes].forEach((attr) => {
       const name = attr.name.toLowerCase();
       if (el.tagName === "A" && (name === "href" || name === "target" || name === "rel")) return;
       if (el.tagName === "IMG" && (name === "src" || name === "alt" || name === "class" || name === "loading")) return;
-      el.removeAttribute(attr.name);});
-
+      el.removeAttribute(attr.name);
+    });
     if (el.tagName === "A") {
       const href = el.getAttribute("href") ?? "";
       const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href);
       if (!safe) el.removeAttribute("href");
       el.setAttribute("rel", "noopener noreferrer");
-      el.setAttribute("target", "_blank");}
-
+      el.setAttribute("target", "_blank");
+    }
     if (el.tagName === "IMG") {
       const src = el.getAttribute("src") ?? "";
       if (!/^https:\/\//i.test(src)) toReplace.push(el);
       else el.setAttribute("loading", "lazy");
-      if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");}}
-
+      if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");
+    }
+  }
   toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
-  return template.innerHTML;}
+  return template.innerHTML;
+}
 
 // UK time
 const UK_TZ = "Europe/London";
 function formatUKTime(date) {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);}
-
+  return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+}
 function getUKDateISO(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, year:"numeric", month:"2-digit", day:"2-digit" });
   const parts = fmt.formatToParts(date);
   const y = parts.find(p=>p.type==="year")?.value ?? "0000";
   const m = parts.find(p=>p.type==="month")?.value ?? "01";
   const d = parts.find(p=>p.type==="day")?.value ?? "01";
-  return `${y}-${m}-${d}`;}
-
+  return `${y}-${m}-${d}`;
+}
 function getUKDayIndex(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, weekday:"short" });
   const wd = fmt.format(date);
   const map = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
-  return map[wd] ?? 0;}
-
+  return map[wd] ?? 0;
+}
 function getUKMinutesNow(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour:"2-digit", minute:"2-digit", hour12:false });
   const parts = fmt.formatToParts(date);
@@ -142,7 +145,6 @@ function getUKMinutesNow(date = new Date()) {
 
 // Business hours Mon-Fri 08:30–17:00
 const BUSINESS = { start: 8*60+30, end: 17*60, openDays: new Set([1,2,3,4,5]) };
-
 // Bank holidays (England & Wales) 2025–2028
 const BANK_HOLIDAYS_EW = new Set([
   "2025-01-01","2025-04-18","2025-04-21","2025-05-05","2025-05-26","2025-08-25","2025-12-25","2025-12-26",
@@ -151,9 +153,7 @@ const BANK_HOLIDAYS_EW = new Set([
   "2028-01-03","2028-04-14","2028-04-17","2028-05-01","2028-05-29","2028-08-28","2028-12-25","2028-12-26"
 ]);
 
-function isBankHolidayToday() {
-  return BANK_HOLIDAYS_EW.has(getUKDateISO(new Date()));
-}
+function isBankHolidayToday() { return BANK_HOLIDAYS_EW.has(getUKDateISO(new Date())); }
 function isOpenNow() {
   const day = getUKDayIndex(new Date());
   const mins = getUKMinutesNow(new Date());
@@ -190,7 +190,6 @@ const PLACES = {
   leicester:{ lat:52.6369, lon:-1.1398 },
   london:{ lat:51.5074, lon:-0.1278 }
 };
-
 function toRad(deg){ return (deg*Math.PI)/180; }
 function distanceMiles(a,b){
   const R=3958.8;
@@ -257,10 +256,8 @@ function speak(text){
   } catch {}
 }
 updateVoiceUI();
-
 window.addEventListener("pointerdown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
 window.addEventListener("keydown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
-
 voiceBtn.addEventListener("click", ()=>{
   voiceState.armed = true;
   voiceState.on = !voiceState.on;
@@ -273,7 +270,6 @@ voiceBtn.addEventListener("click", ()=>{
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
 let micListening = false;
-
 function initSpeech(){
   if (!SpeechRecognition) return null;
   const rec = new SpeechRecognition();
@@ -309,7 +305,6 @@ function initSpeech(){
   return rec;
 }
 recognizer = initSpeech();
-
 micBtn.addEventListener("click", ()=>{
   voiceState.armed=true; saveVoice();
   if (!recognizer){
@@ -354,44 +349,44 @@ function addBubble(text, type, opts = {}) {
 
   const plain = html ? htmlToPlainText(text) : String(text ?? "").trim();
   if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
-
   if (type === "bot" && speakThis) speak(plain);
 }
 
 function addChips(labels, onClick) {
   const qs = labels ?? [];
   if (!qs.length) return;
-
   const wrap = document.createElement("div");
   wrap.className = "chips";
-
   qs.slice(0, SETTINGS.chipLimit).forEach((label) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "chip-btn";
     b.textContent = label;
-
     b.addEventListener("click", async () => {
       voiceState.armed = true; saveVoice();
       const now = Date.now();
       if (isResponding) return;
       if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
       lastChipClickAt = now;
-
       wrap.querySelectorAll(".chip-btn").forEach((btn)=>btn.disabled=true);
 
+      // Special chip: Use my location
       if (label === "Use my location" && distanceCtx?.stage === "needOrigin") {
         await handleUseMyLocation();
+        return;
+      }
+      // Special chip: Open Topics (opens drawer)
+      if (normalize(label) === "open topics" || normalize(label) === "topics") {
+        openDrawer();
+        addBubble("Opening Topics…", "bot", { speak:false });
         return;
       }
 
       if (typeof onClick === "function") onClick(label);
       else handleUserMessage(label);
     });
-
     wrap.appendChild(b);
   });
-
   chatWindow.appendChild(wrap);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
@@ -425,46 +420,268 @@ function scoreMatch(qNorm, candNorm) {
   if (!qNorm || !candNorm) return 0;
   if (qNorm === candNorm) return 1;
   if (candNorm.includes(qNorm) || qNorm.includes(candNorm)) return 0.92;
-
   const qT = new Set(qNorm.split(" ").filter(Boolean));
   const cT = new Set(candNorm.split(" ").filter(Boolean));
   const inter = [...qT].filter(t => cT.has(t)).length;
   const union = new Set([...qT, ...cT]).size;
   return union ? inter / union : 0;
 }
-
 function matchFAQ(text) {
   const q = normalize(text);
   if (!q || !FAQS.length) return null;
-
   let best = null;
-
   for (const item of FAQS) {
     const variants = [item.question, ...(item.synonyms || [])].filter(Boolean);
     let bestLocal = 0;
-
     for (const v of variants) {
       bestLocal = Math.max(bestLocal, scoreMatch(q, normalize(v)));
       if (bestLocal >= 0.98) break;
     }
-
     const kws = (item.canonicalKeywords || []).map(k => normalize(k)).filter(Boolean);
     if (kws.some(k => q.includes(k))) bestLocal = Math.min(1, bestLocal + 0.06);
-
     if (!best || bestLocal > best.score) best = { item, score: bestLocal };
   }
-
   return best && best.score >= SETTINGS.minConfidence ? best.item : null;
 }
 
-// ---------- special cases
+// ---------- NEW: TOPICS FLOWS (inserted at top of special cases) ----------
 function specialCases(text){
   const q = normalize(text);
 
+  // Open Topics drawer by typing
+  if (q === "topics" || q === "open topics" || q === "topic") {
+    openDrawer();
+    return { html: "Choose a topic from the drawer.", chips: [] };
+  }
+
+  // Helpers + standard phrases
+  const SAY = {
+    welfareHold: 'Please contact Welfare directly on <b>02087583060</b> and hold the line.',
+    areaManagerThenWelfare:
+      'Please contact your <b>Area Manager</b>, should there be any further concerns after this step please contact Welfare directly on <b>02087583060</b> and hold the line.',
+  };
+  function isYes(n){ return n === "yes" || n === "y"; }
+  function isNo(n){ return n === "no" || n === "n"; }
+  function choice(labels){ return { chips: labels }; }
+  function endWith(html, extraChips=[]){
+    flowCtx = null;
+    // Provide a chip that opens the Topics drawer directly
+    const base = extraChips.length ? extraChips : ["Open Topics"];
+    return { html, chips: base };
+  }
+
+  // If a flow is in progress, handle it
+  if (flowCtx) {
+    // WORK ALLOCATION
+    if (flowCtx.type === "workAllocation") {
+      if (flowCtx.stage === "askRaised") {
+        if (isYes(q)) return endWith(SAY.welfareHold);
+        if (isNo(q)) {
+          return endWith(
+            'Please raise this to your <b>Field</b> and <b>Area Manager</b>. Should there be any further concerns after this step please contact Welfare directly on <b>02087583060</b> and hold the line.'
+          );
+        }
+        return { html: 'Has this been raised with your <b>Field</b> and <b>Area Manager</b>?', ...choice(["Yes","No"]) };
+      }
+    }
+
+    // MANAGER DISPUTE
+    if (flowCtx.type === "managerDispute") {
+      if (flowCtx.stage === "askFieldMgr") {
+        if (isYes(q)) {
+          flowCtx.stage = "askAreaMgrContacted";
+          return { html: 'Have you contacted your <b>Area Manager</b>?', ...choice(["Yes","No"]) };
+        }
+        if (isNo(q)) return endWith(SAY.welfareHold);
+        return { html: 'Is this regarding your <b>Field Manager</b>?', ...choice(["Yes","No"]) };
+      }
+      if (flowCtx.stage === "askAreaMgrContacted") {
+        if (isYes(q)) return endWith(SAY.welfareHold);
+        if (isNo(q))  return endWith(SAY.areaManagerThenWelfare);
+        return { html: 'Have you contacted your <b>Area Manager</b>?', ...choice(["Yes","No"]) };
+      }
+    }
+
+    // DEPARTMENT CONTACTS (with submenus)
+    if (flowCtx.type === "deptContacts") {
+      const rootChips = [
+        "Street Works","Smart Awards","Support Team",
+        "City Fibre Back Office","BTOR Allocations Team","Fleet",
+        "Accident Line","Parking Line","Recruitment",
+        "BTOR NTF Support","City Fibre NTF Support"
+      ];
+      if (flowCtx.stage === "root") {
+        if (q.includes("street works"))
+          return endWith(`Please contact ${linkTag("mailto:Street.Works@kelly.co.uk","Street.Works@kelly.co.uk")} regarding any Street Work queries.`);
+        if (q.includes("smart awards"))
+          return endWith(`Please contact ${linkTag("mailto:smartawards@kelly.co.uk","smartawards@kelly.co.uk")} regarding any Smart Awards queries.`);
+        if (q.includes("support team"))
+          return endWith(`Please call <b>02080164966</b> for any job support. ${linkTag("tel:02080164966","Call 02080164966")}`);
+        if (q.includes("city fibre back office"))
+          return endWith(`Please call <b>02080164966</b> for any City Fibre back office / job queries. ${linkTag("tel:02080164966","Call 02080164966")}`);
+        if (q.includes("btor allocations") || q.includes("open reach") || q.includes("openreach"))
+          return endWith(`Please call <b>02080164962</b> for any Open Reach controls queries. ${linkTag("tel:02080164962","Call 02080164962")}`);
+        if (q.includes("fleet"))
+          return endWith(`Please call <b>01582841291</b> or <b>07940766377 (Out of Hours)</b> for any vehicle or fleet related queries. ${linkTag("tel:01582841291","Call 01582841291")} · ${linkTag("tel:07940766377","Call 07940766377")}`);
+        if (q.includes("accident"))
+          return endWith(`Please call <b>07940792355</b> for any accident reports, whether this be injuries or damage reports. ${linkTag("tel:07940792355","Call 07940792355")}`);
+        if (q.includes("parking"))
+          return endWith(`Please call <b>07940792355</b> for any parking queries. ${linkTag("tel:07940792355","Call 07940792355")}`);
+        if (q.includes("recruitment"))
+          return endWith(`Please call <b>02037583058</b> for recruitment. ${linkTag("tel:02037583058","Call 02037583058")}`);
+
+        if (q.includes("btor ntf")) {
+          flowCtx.stage = "btorNtfAreas";
+          return { html: "Please select which area you are based", ...choice(["Wales & Midlands","London & SE","Wessex","North England & Scotland"]) };
+        }
+        if (q.includes("city fibre ntf")) {
+          flowCtx.stage = "cfNtfAreas";
+          return { html: "Please select which area you are based", ...choice(["Scotland","Midlands","South","North"]) };
+        }
+        return { html: "Department Contacts — choose one:", ...choice(rootChips) };
+      }
+      if (flowCtx.stage === "btorNtfAreas") {
+        if (q.includes("wales") || q.includes("midlands"))
+          return endWith('For NTF <b>Wales & Midlands</b>, please contact <b>07484034863</b> or <b>07483932673</b>.');
+        if (q.includes("london") || q.includes("se"))
+          return endWith('For NTF <b>London & SE</b>, please contact <b>07814089467</b> or <b>07814470466</b>.');
+        if (q.includes("wessex"))
+          return endWith('For NTF Support <b>Wessex</b>, please contact <b>07977670841</b> or <b>07483555754</b>.');
+        if (q.includes("north england") || q.includes("scotland"))
+          return endWith('For NTF Support <b>North England & Scotland</b>, please contact <b>07814089601</b> or <b>07484082993</b>.');
+        return { html: "Please select which area you are based", ...choice(["Wales & Midlands","London & SE","Wessex","North England & Scotland"]) };
+      }
+      if (flowCtx.stage === "cfNtfAreas") {
+        if (q.includes("scotland"))
+          return endWith('For NTF Support in <b>Scotland</b>, please contact <b>07866950516</b> or <b>07773652734</b>.');
+        if (q.includes("midlands"))
+          return endWith('For NTF Support in <b>Midlands</b>, please contact <b>07773651968</b>.');
+        if (q.includes("south"))
+          return endWith('For NTF Support in <b>South</b>, please contact <b>07773651950</b>.');
+        if (q.includes("north"))
+          return endWith('For NTF Support in <b>North</b>, please contact <b>07773652146</b>, <b>07977330563</b> or <b>07773652702</b>.');
+        return { html: "Please select which area you are based", ...choice(["Scotland","Midlands","South","North"]) };
+      }
+    }
+
+    // CONTRACT CHANGE QUERIES
+    if (flowCtx.type === "contractChange") {
+      return endWith('For any contract change queries, please raise this to your <b>Area Manager</b>.');
+    }
+
+    // EQUIPMENT QUERY
+    if (flowCtx.type === "equipment") {
+      if (flowCtx.stage === "root") {
+        if (q.includes("stock"))   { flowCtx.stage = "stockAsk";   return { html:'Have you submitted a <b>Stock Form</b> with your Field Manager?', ...choice(["Yes","No"]) }; }
+        if (q.includes("tooling")) { flowCtx.stage = "toolingAsk"; return { html:'Has your Field Manager submitted an order through <b>ByBox</b>?', ...choice(["Yes","No"]) }; }
+        if (q === "van" || q.includes("van")) {
+          flowCtx.stage = "vanAsk";
+          return { html:'Have you raised the query of receiving a van to your <b>Field Manager</b> and <b>Area Manager</b>?', ...choice(["Yes","No"]) };
+        }
+        return { html:'Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?', ...choice(["Stock","Tooling","Van"]) };
+      }
+      if (flowCtx.stage === "stockAsk") {
+        if (isNo(q))  return endWith('Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>.');
+        if (isYes(q)) return endWith('Please contact your <b>Field Manager</b> regarding the update of your stock. Any further concerns please contact Welfare directly on <b>02087583060</b> and hold the line.');
+        return { html:'Have you submitted a <b>Stock Form</b> with your Field Manager?', ...choice(["Yes","No"]) };
+      }
+      if (flowCtx.stage === "toolingAsk") {
+        if (isNo(q))  return endWith('Please contact your <b>Field Manager</b> and request them to submit an order to <b>ByBox</b>.');
+        if (isYes(q)) return endWith('Please follow up with your <b>Field Manager</b> regarding your order. Any further concerns please contact Welfare directly on <b>02087583060</b> and hold the line.');
+        return { html:'Has your Field Manager submitted an order through <b>ByBox</b>?', ...choice(["Yes","No"]) };
+      }
+      if (flowCtx.stage === "vanAsk") {
+        if (isNo(q))  return endWith('Please contact your <b>Field Manager</b> and query this through.');
+        if (isYes(q)) return endWith('If you have raised this to your <b>Field</b> and <b>Area Manager</b>, please contact Welfare directly on <b>02087583060</b> and hold the line.');
+        return { html:'Have you raised the query of receiving a van to your <b>Field Manager</b> and <b>Area Manager</b>?', ...choice(["Yes","No"]) };
+      }
+    }
+
+    // PAY / DEDUCTION QUERIES
+    if (flowCtx.type === "pay") {
+      if (flowCtx.stage === "start") {
+        flowCtx.stage = "menu";
+        const lines = [
+          'For any <b>pay or deduction</b> queries please contact <b>02037583060</b> and <b>select option 1</b> — this will take you to the wage / deduction query process.',
+          '<small>As stated in the Friday meeting on <b>13/02</b>, the ticket system will not be used for pay/deduction queries.</small>',
+        ];
+        const chips = ["Call now"];
+        if ((SETTINGS.textSystemNumber ?? "").trim()) chips.push("Send via text");
+        return { html: lines.join("<br>"), chips };
+      }
+      if (flowCtx.stage === "menu") {
+        if (q.includes("call")) {
+          const telHref = "tel:02037583060";
+          return endWith(`Use this link to dial now: ${linkTag(telHref, "Call 02037583060 (option 1)")}`);
+        }
+        if (q.includes("text")) {
+          if ((SETTINGS.textSystemNumber ?? "").trim()) {
+            const smsHref = `sms:${encodeURIComponent(SETTINGS.textSystemNumber)}?body=${encodeURIComponent("Pay/Deduction query: ")}`;
+            return endWith(`Open your messaging app here: ${linkTag(smsHref, "Send via text message")}`);
+          }
+          return endWith('A text message system can be enabled — please ask an administrator to set <code>SETTINGS.textSystemNumber</code>.');
+        }
+        const chips = ["Call now"];
+        if ((SETTINGS.textSystemNumber ?? "").trim()) chips.push("Send via text");
+        return { html: 'Choose an option:', chips };
+      }
+    }
+    // If in a flow but not matched, each stage re-prompts above.
+  }
+
+  // Start-of-flow triggers (by clicking Topics or typing)
+  if (q.includes("work allocation")) {
+    flowCtx = { type: "workAllocation", stage: "askRaised" };
+    return { html: 'Has this been raised with your <b>Field</b> and <b>Area Manager</b>?', ...choice(["Yes","No"]) };
+  }
+  if (q.includes("manager dispute") || q.includes("manager disputes") || q.includes("dispute")) {
+    flowCtx = { type: "managerDispute", stage: "askFieldMgr" };
+    return { html: 'Is this regarding your <b>Field Manager</b>?', ...choice(["Yes","No"]) };
+  }
+  if (q.includes("department contacts") || q.includes("contacts department") || q === "departments") {
+    flowCtx = { type: "deptContacts", stage: "root" };
+    return { html: "Department Contacts — choose one:", chips: [
+      "Street Works","Smart Awards","Support Team","City Fibre Back Office","BTOR Allocations Team","Fleet","Accident Line","Parking Line","Recruitment","BTOR NTF Support","City Fibre NTF Support"
+    ]};
+  }
+  if (q.includes("contract change")) {
+    flowCtx = { type: "contractChange", stage: "start" };
+    return endWith('For any contract change queries, please raise this to your <b>Area Manager</b>.');
+  }
+  if (q.includes("equipment query") || q === "equipment" || q.includes("equipment")) {
+    flowCtx = { type: "equipment", stage: "root" };
+    return { html: 'Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?', ...choice(["Stock","Tooling","Van"]) };
+  }
+  if (q.includes("street works")) {
+    return endWith(`For any Street Work queries please contact ${linkTag("mailto:Street.Works@kelly.co.uk","Street.Works@kelly.co.uk")}.`);
+  }
+  if (q.includes("smart awards")) {
+    return endWith(`For any Smart Award queries please contact ${linkTag("mailto:smartawards@kelly.co.uk","smartawards@kelly.co.uk")}.`);
+  }
+  if (q.includes("id cards") || q.includes("id card") || q.includes("idcards")) {
+    return endWith(`If you have lost, not received or your ID card has expired, please contact ${linkTag("mailto:nuneaton.admin@kelly.co.uk","nuneaton.admin@kelly.co.uk")}.`);
+  }
+  if (q.includes("payroll") || q.includes("pay ") || q === "pay" || q.includes("deduction")) {
+    flowCtx = { type: "pay", stage: "start" };
+    return { html: "Let’s route your pay/deduction query.", chips: ["Continue"] };
+  }
+  if (q === "continue" && flowCtx?.type === "pay" && flowCtx.stage === "start") {
+    flowCtx.stage = "menu";
+    const chips = ["Call now"];
+    if ((SETTINGS.textSystemNumber ?? "").trim()) chips.push("Send via text");
+    return {
+      html: [
+        'For any <b>pay or deduction</b> queries please contact <b>02037583060</b> and <b>select option 1</b> — this will take you to the wage / deduction query process.',
+        '<small>As stated in the Friday meeting on <b>13/02</b>, the ticket system will not be used for pay/deduction queries.</small>',
+      ].join("<br>"),
+      chips
+    };
+  }
+
+  // ---------- existing special cases (kept) ----------
   if (q.includes("bank holiday") || q.includes("bank holidays")){
     return { html:"❌ <b>No we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
   }
-
   if (q.includes("is anyone available") || q.includes("available now") || q.includes("open now")){
     const open = isOpenNow();
     const nowUK = formatUKTime(new Date());
@@ -475,15 +692,18 @@ function specialCases(text){
     return { html:`❌ <b>No we’re closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
   }
 
+  // Ticket start
   const wantsTicket =
-    q.includes("raise a request") || q.includes("create a ticket") || q.includes("open a ticket") ||
-    q.includes("log a ticket") || q.includes("submit a request") || q === "ticket";
-
+    q.includes("raise a request") ||
+    q.includes("create a ticket") ||
+    q.includes("open a ticket") ||
+    q.includes("log a ticket") ||
+    q.includes("submit a request") ||
+    q === "ticket";
   if (!ticketCtx && wantsTicket){
     ticketCtx = { stage:"needType" };
     return { html:"Sure — what do you need help with?", chips:["Access / Login","Pay / Payroll","General query","Something else"] };
   }
-
   if (ticketCtx){
     if (q==="cancel" || q==="stop" || q==="restart"){
       ticketCtx=null;
@@ -493,7 +713,7 @@ function specialCases(text){
     if (ticketCtx.stage==="needName"){ ticketCtx.name=text.trim(); ticketCtx.stage="needEmail"; return { html:"And what email should we reply to?" }; }
     if (ticketCtx.stage==="needEmail"){
       const email=text.trim();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { html:"That doesn’t look like an email, can you retype it?" };
+      if(!/^\S+@\S+\.\S+$/.test(email)) return { html:"That doesn’t look like an email, can you retype it?" };
       ticketCtx.email=email; ticketCtx.stage="needPhone"; return { html:"Thank you, what’s the best contact number for you?" };
     }
     if (ticketCtx.stage==="needPhone"){
@@ -510,7 +730,6 @@ function specialCases(text){
         `Name: ${ticketCtx.name}\nEmail: ${ticketCtx.email}\nContact number: ${ticketCtx.phone}\nUrgency: ${ticketCtx.urgency}\nType: ${ticketCtx.type}\n\nDescription:\n${ticketCtx.description}\n\nChat transcript:\n${transcript}\n\n— Sent from Welfare Support chatbot`
       );
       const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
-
       const html =
         `<b>Request summary</b><br>` +
         `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
@@ -520,17 +739,16 @@ function specialCases(text){
         `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
         `${linkTag(mailtoHref, "Email support with this request (includes transcript)")}` +
         `<br><small>(This opens your email app with the message prefilled, you then press Send.)</small>`;
-
       ticketCtx=null;
       return { html, chips:["Raise a request (create a ticket)"] };
     }
   }
 
+  // Distance/depots special case
   if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")){
     distanceCtx = { stage:"needOrigin" };
     return { html:"What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
   }
-
   if (distanceCtx?.stage==="needOrigin"){
     const cityKey = Object.keys(PLACES).find(k=>q===k || q.includes(k));
     if (cityKey){
@@ -540,7 +758,6 @@ function specialCases(text){
       return { html:`Thanks, your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, chips:["By car","By train","By bus","Walking"] };
     }
   }
-
   if (distanceCtx?.stage==="haveClosest"){
     if (q==="by car" || q==="by train" || q==="by bus" || q==="walking"){
       const mode = q==="walking" ? "walk" : q.replace("by ","");
@@ -570,10 +787,8 @@ function specialCases(text){
 // ---------- main message handling
 function handleUserMessage(text){
   if (!text) return;
-
   addBubble(text, "user", { speak:false });
   input.value="";
-
   isResponding=true;
 
   const s = specialCases(text);
@@ -602,7 +817,6 @@ function sendChat(){
   if (!t) return;
   handleUserMessage(t);
 }
-
 sendBtn.addEventListener("click", sendChat);
 input.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendChat(); } });
 
@@ -610,6 +824,7 @@ clearBtn.addEventListener("click", ()=>{
   chatWindow.innerHTML="";
   ticketCtx=null;
   distanceCtx=null;
+  flowCtx=null;
   CHAT_LOG=[];
   init();
 });
@@ -622,12 +837,11 @@ function buildCategoryIndex(){
     if(!categoryIndex.has(key)) categoryIndex.set(key, []);
     categoryIndex.get(key).push(item);
   });
-  const labelMap={ general:"General", support:"Support", opening:"Opening times", actions:"Actions" };
+  const labelMap={ general:"General", support:"Support", opening:"Opening times", actions:"Actions" /* topics will auto-capitalize */ };
   categories=Array.from(categoryIndex.keys()).sort().map((key)=>({
     key, label: labelMap[key] ?? (key.charAt(0).toUpperCase()+key.slice(1)), count: categoryIndex.get(key).length
   }));
 }
-
 function openDrawer(){
   overlay.hidden=false;
   drawer.hidden=false;
@@ -664,7 +878,6 @@ function renderDrawer(selectedKey){
     drawerQuestionsEl.appendChild(b);
   });
 }
-
 topicsBtn.addEventListener("click", ()=>{ if(faqsLoaded) openDrawer(); });
 overlay.addEventListener("click", closeDrawer);
 drawerCloseBtn.addEventListener("click", closeDrawer);
@@ -685,11 +898,10 @@ fetch("./public/config/faqs.json")
     renderDrawer(null);
   });
 
-//Greeting
+// Greeting
 function init(){
   addBubble(SETTINGS.greeting, "bot", { html:true, speak:false });
 }
-
 if (document.readyState === "loading"){
   window.addEventListener("DOMContentLoaded", init);
 } else {
