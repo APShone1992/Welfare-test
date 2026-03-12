@@ -1,817 +1,300 @@
-const SETTINGS = {
-  minConfidence: 0.20,
-  suggestionLimit: 5,
-  chipLimit: 6,
-  chipClickCooldownMs: 900,
-  supportEmail: "support@Kelly.co.uk",
-  supportPhone: "01234 567890",
-  ticketTranscriptMessages: 12,
-  greeting: "Hi, I'm <b>Welfare Support</b>. How can I help you today? Use the <b>Topics</b> button to browse common queries, or type your question below."
-    "Hi! I'm <b>Welfare Support</b>. Please let me know what your query is regarding — use the <b>Topics</b> button or type your question below."
-};
-
-let FAQS = [];
-let faqsLoaded = false;
-let categories = [];
-let categoryIndex = new Map();
-
-const chatWindow = document.getElementById("chatWindow");
-const input = document.getElementById("chatInput");
-const sendBtn = document.getElementById("sendBtn");
-const clearBtn = document.getElementById("clearBtn");
-const suggestionsEl = document.getElementById("suggestions");
-const topicsBtn = document.getElementById("topicsBtn");
-const drawer = document.getElementById("topicsDrawer");
-const overlay = document.getElementById("drawerOverlay");
-const drawerCloseBtn = document.getElementById("drawerCloseBtn");
-const drawerCategoriesEl = document.getElementById("drawerCategories");
-const drawerQuestionsEl = document.getElementById("drawerQuestions");
-const micBtn = document.getElementById("micBtn");
-const voiceBtn = document.getElementById("voiceBtn");
-
-// state
-let isResponding = false;
-let lastChipClickAt = 0;
-let activeSuggestionIndex = -1;
-let currentSuggestions = [];
-let CHAT_LOG = [];
-let ticketCtx = null;
-let distanceCtx = null;
-let flowCtx = null; // for multi-step guided flows
-
-// helpers
-const normalize = (s) =>
-  (s ?? "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[""'']/g, '"')
-    .replace(/[‐‑‒–—―]/g, "-")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-function escapeHTML(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function escapeAttrUrl(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function decodeHTMLEntities(str) {
-  const t = document.createElement("textarea");
-  t.innerHTML = str ?? "";
-  return t.value;
-}
-
-function htmlToPlainText(html) {
-  const t = document.createElement("template");
-  t.innerHTML = decodeHTMLEntities(html ?? "");
-  return (t.content.textContent ?? "").trim();
-}
-
-function sanitizeHTML(html) {
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  const allowedTags = new Set(["B","STRONG","I","EM","BR","A","SMALL","IMG"]);
-  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
-  const toReplace = [];
-  while (walker.nextNode()) {
-    const el = walker.currentNode;
-    if (!allowedTags.has(el.tagName)) { toReplace.push(el); continue; }
-    [...el.attributes].forEach((attr) => {
-      const name = attr.name.toLowerCase();
-      if (el.tagName === "A" && (name === "href" || name === "target" || name === "rel")) return;
-      if (el.tagName === "IMG" && (name === "src" || name === "alt" || name === "class" || name === "loading")) return;
-      el.removeAttribute(attr.name);
-    });
-    if (el.tagName === "A") {
-      const href = el.getAttribute("href") ?? "";
-      const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href);
-      if (!safe) el.removeAttribute("href");
-      el.setAttribute("rel", "noopener noreferrer");
-      el.setAttribute("target", "_blank");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welfare Support</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --brand:        #1a3a6b;
+      --brand-mid:    #1e4d9b;
+      --brand-light:  #2563d4;
+      --accent:       #e8f0fe;
+      --surface:      #ffffff;
+      --surface-2:    #f7f9ff;
+      --surface-3:    #eef2fb;
+      --border:       rgba(26,58,107,0.10);
+      --border-mid:   rgba(26,58,107,0.18);
+      --text-primary: #0d1f3c;
+      --text-secondary:#4a5878;
+      --text-muted:   #8a94a8;
+      --shadow-sm:    0 1px 3px rgba(13,31,60,0.08),0 1px 2px rgba(13,31,60,0.04);
+      --shadow-lg:    0 12px 40px rgba(13,31,60,0.14),0 4px 12px rgba(13,31,60,0.08);
+      --radius-sm:    8px;
+      --radius-md:    12px;
+      --radius-lg:    18px;
+      --font:         system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+      --tr:           0.16s ease;
     }
-    if (el.tagName === "IMG") {
-      const src = el.getAttribute("src") ?? "";
-      if (!/^https:\/\//i.test(src)) toReplace.push(el);
-      else el.setAttribute("loading", "lazy");
-      if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");
+    [hidden]{display:none!important}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family:var(--font);
+      background:linear-gradient(145deg,#d6e4ff 0%,#e8f0ff 50%,#f0f5ff 100%);
+      color:var(--text-primary);
+      -webkit-font-smoothing:antialiased;
     }
-  }
-  toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
-  return template.innerHTML;
-}
-
-// UK time
-const UK_TZ = "Europe/London";
-function formatUKTime(date) {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
-}
-
-function getUKDateISO(date = new Date()) {
-  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, year:"numeric", month:"2-digit", day:"2-digit" });
-  const parts = fmt.formatToParts(date);
-  const y = parts.find(p=>p.type==="year")?.value ?? "0000";
-  const m = parts.find(p=>p.type==="month")?.value ?? "01";
-  const d = parts.find(p=>p.type==="day")?.value ?? "01";
-  return `${y}-${m}-${d}`;
-}
-
-function getUKDayIndex(date = new Date()) {
-  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, weekday:"short" });
-  const wd = fmt.format(date);
-  const map = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
-  return map[wd] ?? 0;
-}
-
-function getUKMinutesNow(date = new Date()) {
-  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour:"2-digit", minute:"2-digit", hour12:false });
-  const parts = fmt.formatToParts(date);
-  const h = parseInt(parts.find(p=>p.type==="hour")?.value ?? "0", 10);
-  const m = parseInt(parts.find(p=>p.type==="minute")?.value ?? "0", 10);
-  return h*60+m;
-}
-
-// Business hours Mon-Fri 08:30-17:00
-const BUSINESS = { start: 8*60+30, end: 17*60, openDays: new Set([1,2,3,4,5]) };
-
-// Bank holidays (England & Wales) 2025-2028
-const BANK_HOLIDAYS_EW = new Set([
-  "2025-01-01","2025-04-18","2025-04-21","2025-05-05","2025-05-26","2025-08-25","2025-12-25","2025-12-26",
-  "2026-01-01","2026-04-03","2026-04-06","2026-05-04","2026-05-25","2026-08-31","2026-12-25","2026-12-28",
-  "2027-01-01","2027-03-26","2027-03-29","2027-05-03","2027-05-31","2027-08-30","2027-12-27","2027-12-28",
-  "2028-01-03","2028-04-14","2028-04-17","2028-05-01","2028-05-29","2028-08-28","2028-12-25","2028-12-26"
-]);
-
-function isBankHolidayToday() {
-  return BANK_HOLIDAYS_EW.has(getUKDateISO(new Date()));
-}
-
-function isOpenNow() {
-  const day = getUKDayIndex(new Date());
-  const mins = getUKMinutesNow(new Date());
-  if (!BUSINESS.openDays.has(day)) return false;
-  if (mins < BUSINESS.start || mins >= BUSINESS.end) return false;
-  if (isBankHolidayToday()) return false;
-  return true;
-}
-
-// Map helpers
-function lonLatToTileXY(lon, lat, z) {
-  const latRad = lat * Math.PI / 180;
-  const n = Math.pow(2, z);
-  const x = Math.floor((lon + 180) / 360 * n);
-  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
-  return { x, y };
-}
-
-function osmTileURL(lat, lon, zoom = 13) {
-  const t = lonLatToTileXY(lon, lat, zoom);
-  return `https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`;
-}
-
-function imgTag(src, alt="Map preview") {
-  return `<img class="map-preview" src="${escapeAttrUrl(src)}" alt="${escapeHTML(alt)}" loading="lazy" />`;
-}
-
-function linkTag(href, label) {
-  return `<a href="${escapeAttrUrl(href)}">${escapeHTML(label)}</a>`;
-}
-
-// Depots/places
-const DEPOTS = { nuneaton: { label:"Nuneaton Depot", lat:52.515770, lon:-1.4507820 } };
-const PLACES = {
-  coventry:{ lat:52.4068, lon:-1.5197 },
-  birmingham:{ lat:52.4895, lon:-1.8980 },
-  leicester:{ lat:52.6369, lon:-1.1398 },
-  london:{ lat:51.5074, lon:-0.1278 }
-};
-
-function toRad(deg){ return (deg*Math.PI)/180; }
-function distanceMiles(a,b){
-  const R=3958.8;
-  const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
-  const lat1=toRad(a.lat), lat2=toRad(b.lat);
-  const h=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-  return R*(2*Math.asin(Math.sqrt(h)));
-}
-
-function findClosestDepot(origin){
-  let bestKey=null, best=Infinity;
-  for (const k in DEPOTS){
-    const miles=distanceMiles(origin, DEPOTS[k]);
-    if (miles<best){ best=miles; bestKey=k; }
-  }
-  return bestKey ? { depotKey: bestKey, miles: best } : null;
-}
-
-function googleDirectionsURL(originText, depot, mode){
-  const origin=encodeURIComponent(originText);
-  const dest=encodeURIComponent(`${depot.lat},${depot.lon}`);
-  const travelmode = mode === "walk" ? "walking" : (mode === "train" || mode === "bus") ? "transit" : "driving";
-  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${travelmode}`;
-}
-
-// GPS helper
-function requestBrowserLocation() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      (err) => reject(err),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 }
-    );
-  });
-}
-
-// Ticket helpers
-function isValidPhone(raw) {
-  const digits = String(raw ?? "").replace(/[^\d]/g, "");
-  return digits.length >= 8 && digits.length <= 16;
-}
-
-function buildTranscript(limit = 12) {
-  const slice = CHAT_LOG.slice(-Math.max(1, limit));
-  return slice.map((m) => `[${formatUKTime(new Date(m.ts))}] ${m.role}: ${m.text}`).join("\n");
-}
-
-// speaker
-const VOICE_KEY = "ws_voice_v1";
-const voiceState = { on:false, armed:false };
-try { Object.assign(voiceState, JSON.parse(localStorage.getItem(VOICE_KEY) || "{}")); } catch {}
-
-function saveVoice(){ try{ localStorage.setItem(VOICE_KEY, JSON.stringify(voiceState)); } catch{} }
-function updateVoiceUI(){
-  voiceBtn.classList.toggle("on", voiceState.on);
-  // icon handled by SVG in index.html
-  voiceBtn.setAttribute("aria-pressed", voiceState.on ? "true" : "false");
-}
-
-function speak(text){
-  if (!voiceState.on || !voiceState.armed) return;
-  if (!("speechSynthesis" in window)) return;
-  try{
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(String(text ?? ""));
-    u.lang = "en-GB";
-    window.speechSynthesis.speak(u);
-  } catch {}
-}
-
-updateVoiceUI();
-window.addEventListener("pointerdown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
-window.addEventListener("keydown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
-
-voiceBtn.addEventListener("click", ()=>{
-  voiceState.armed = true;
-  voiceState.on = !voiceState.on;
-  saveVoice();
-  updateVoiceUI();
-  addBubble(voiceState.on ? "Voice output is now <b>on</b>." : "Voice output is now <b>off</b>.", "bot", { html:true, speak:false });
-});
-
-// mic
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognizer = null;
-let micListening = false;
-
-function initSpeech(){
-  if (!SpeechRecognition) return null;
-  const rec = new SpeechRecognition();
-  rec.lang = "en-GB";
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
-  rec.onstart = ()=>{
-    micListening=true;
-    micBtn.classList.add("on");
-    // mic active state
-    micBtn.setAttribute("aria-pressed","true");
-  };
-  rec.onend = ()=>{
-    micListening=false;
-    micBtn.classList.remove("on");
-    // mic idle state
-    micBtn.setAttribute("aria-pressed","false");
-  };
-  rec.onerror = ()=>{
-    micListening=false;
-    micBtn.classList.remove("on");
-    // mic idle state
-    micBtn.setAttribute("aria-pressed","false");
-    addBubble("Voice input isn't supported here — please type your question.", "bot", { speak:false });
-  };
-  rec.onresult = (event)=>{
-    const t = event.results?.[0]?.[0]?.transcript ?? "";
-    if (t.trim()){
-      input.value = t.trim();
-      sendChat();
+    .chat-container{
+      width:100%;max-width:540px;margin:28px auto;
+      background:var(--surface);border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-lg),0 0 0 1px var(--border);
+      display:flex;flex-direction:column;min-height:580px;overflow:hidden;
+      animation:containerIn .3s cubic-bezier(.22,1,.36,1) both;
     }
-  };
-  return rec;
-}
-
-recognizer = initSpeech();
-micBtn.addEventListener("click", ()=>{
-  voiceState.armed=true; saveVoice();
-  if (!recognizer){
-    addBubble("Voice input isn't supported in this browser. Try Chrome/Edge, or type your question.", "bot", { speak:false });
-    return;
-  }
-  try{
-    if (micListening) recognizer.stop();
-    else recognizer.start();
-  } catch {
-    addBubble("Couldn't start voice input — please try again.", "bot", { speak:false });
-  }
-});
-
-// UI helpers
-function addBubble(text, type, opts = {}) {
-  const html = !!opts.html;
-  const ts = opts.ts ?? new Date();
-  const speakThis = opts.speak !== false;
-  const row = document.createElement("div");
-  row.className = "msg " + type;
-  const bubble = document.createElement("div");
-  bubble.className = "bubble " + type;
-  if (html) {
-    const decoded = decodeHTMLEntities(text);
-    bubble.innerHTML = sanitizeHTML(decoded);
-  } else {
-    bubble.textContent = text;
-  }
-  const time = document.createElement("div");
-  time.className = "timestamp";
-  time.textContent = formatUKTime(ts);
-  row.appendChild(bubble);
-  row.appendChild(time);
-  chatWindow.appendChild(row);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-  const plain = html ? htmlToPlainText(text) : String(text ?? "").trim();
-  if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
-  if (type === "bot" && speakThis) speak(plain);
-}
-
-function addChips(labels, onClick) {
-  const qs = labels ?? [];
-  if (!qs.length) return;
-  const wrap = document.createElement("div");
-  wrap.className = "chips";
-  qs.slice(0, SETTINGS.chipLimit).forEach((label) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "chip-btn";
-    b.textContent = label;
-    b.addEventListener("click", async () => {
-      voiceState.armed = true; saveVoice();
-      const now = Date.now();
-      if (isResponding) return;
-      if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
-      lastChipClickAt = now;
-      wrap.querySelectorAll(".chip-btn").forEach((btn)=>btn.disabled=true);
-      if (label === "Use my location" && distanceCtx?.stage === "needOrigin") {
-        await handleUseMyLocation();
-        return;
-      }
-      if (typeof onClick === "function") onClick(label);
-      else handleUserMessage(label);
-    });
-    wrap.appendChild(b);
-  });
-  chatWindow.appendChild(wrap);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-}
-
-// GPS handler
-async function handleUseMyLocation(){
-  addBubble("Use my location", "user", { speak:false });
-  isResponding=true;
-  try{
-    const loc = await requestBrowserLocation();
-    const closest = findClosestDepot({ lat: loc.lat, lon: loc.lon });
-    if (!closest){
-      addBubble("I couldn't determine a nearby depot from your location. Please type a town/city.", "bot");
-      addChips(["Coventry","Birmingham","Leicester","London"]);
-    } else {
-      const depot = DEPOTS[closest.depotKey];
-      distanceCtx = { stage:"haveClosest", originKey:"your location", depotKey: closest.depotKey, miles: closest.miles };
-      addBubble(`Thanks — your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, "bot", { html:true });
-      addChips(["By car","By train","By bus","Walking"]);
+    @keyframes containerIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .chat-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 16px;
+      background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);
+      color:#fff;position:relative;overflow:hidden;
     }
-  } catch {
-    addBubble("I couldn't access your location. Please allow permission, or choose a town/city.", "bot");
-    addChips(["Coventry","Birmingham","Leicester","London"]);
-  } finally {
-    isResponding=false;
-  }
-}
-
-// --------- Guided Flows (Work Allocation, Manager Dispute, Equipment) ---------
-
-function handleFlow(text) {
-  const q = normalize(text);
-  if (!flowCtx) return null;
-
-  // Cancel at any point
-  if (q === "cancel" || q === "stop" || q === "restart") {
-    flowCtx = null;
-    return { html: "No problem, I've cancelled that. Feel free to ask anything else or use the <b>Topics</b> button." };
-  }
-
-  // ---- Work Allocation Flow ----
-  if (flowCtx.type === "workAllocation") {
-    if (flowCtx.stage === "askRaised") {
-      if (q === "yes") {
-        flowCtx = null;
-        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      } else {
-        flowCtx = null;
-        return { html: "Please raise this to your <b>Field and Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      }
+    .chat-header::after{
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse at 80% -20%,rgba(255,255,255,0.10) 0%,transparent 60%);
+      pointer-events:none;
     }
-  }
-
-  // ---- Manager Dispute Flow ----
-  if (flowCtx.type === "managerDispute") {
-    if (flowCtx.stage === "askFieldManager") {
-      if (q === "yes") {
-        flowCtx = { type: "managerDispute", stage: "askAreaManager" };
-        return { html: "Have you contacted your <b>Area Manager</b>?", chips: ["Yes", "No"] };
-      } else {
-        flowCtx = null;
-        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      }
+    .header-brand{display:flex;align-items:center;gap:10px;z-index:1}
+    .bot-avatar-wrap{
+      width:38px;height:38px;border-radius:50%;
+      background:rgba(255,255,255,0.15);
+      border:1.5px solid rgba(255,255,255,0.28);
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
     }
-    if (flowCtx.stage === "askAreaManager") {
-      if (q === "yes") {
-        flowCtx = null;
-        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      } else {
-        flowCtx = null;
-        return { html: "Please contact your <b>Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      }
+    .bot-avatar{width:24px;height:24px;object-fit:contain}
+    .header-text h1{font-size:16px;font-weight:700;letter-spacing:.01em;line-height:1.2}
+    .header-sub{font-size:11px;opacity:.70;letter-spacing:.02em;display:block;margin-top:1px}
+    .header-actions{display:flex;gap:7px;align-items:center;z-index:1}
+    .header-btn,.clear-btn{
+      display:inline-flex;align-items:center;gap:5px;
+      background:rgba(255,255,255,0.13);color:#fff;
+      border:1px solid rgba(255,255,255,0.22);border-radius:var(--radius-sm);
+      padding:6px 11px;font-size:12.5px;font-family:var(--font);font-weight:600;
+      cursor:pointer;transition:background var(--tr),border-color var(--tr);letter-spacing:.01em;
     }
-  }
-
-  // ---- Equipment Flow ----
-  if (flowCtx.type === "equipment") {
-    if (flowCtx.stage === "askType") {
-      if (q === "stock") {
-        flowCtx = { type: "equipment", stage: "stockFormSubmitted" };
-        return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes", "No"] };
-      } else if (q === "tooling") {
-        flowCtx = { type: "equipment", stage: "byboxSubmitted" };
-        return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes", "No"] };
-      } else if (q === "van") {
-        flowCtx = { type: "equipment", stage: "vanRaised" };
-        return { html: "Have you raised the query of receiving a van to your <b>Field Manager and Area Manager</b>?", chips: ["Yes", "No"] };
-      }
+    .header-btn:hover,.header-btn:focus,.clear-btn:hover,.clear-btn:focus{
+      background:rgba(255,255,255,0.24);border-color:rgba(255,255,255,0.36);outline:none;
     }
-    if (flowCtx.stage === "stockFormSubmitted") {
-      if (q === "yes") {
-        flowCtx = null;
-        return { html: "Please contact your <b>Field Manager</b> regarding the update of your stock. Any further concerns, please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      } else {
-        flowCtx = null;
-        return { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>." };
-      }
+    .chat-window{
+      flex:1;padding:18px 16px 10px;overflow-y:auto;
+      background:var(--surface-2);scroll-behavior:smooth;
     }
-    if (flowCtx.stage === "byboxSubmitted") {
-      if (q === "yes") {
-        flowCtx = null;
-        return { html: "Please follow up with your <b>Field Manager</b> regarding your order. Any further concerns, please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      } else {
-        flowCtx = null;
-        return { html: "Please contact your <b>Field Manager</b> and request them to submit an order to <b>ByBox</b>." };
-      }
+    .chat-window::-webkit-scrollbar{width:4px}
+    .chat-window::-webkit-scrollbar-track{background:transparent}
+    .chat-window::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:4px}
+    .msg{
+      display:flex;flex-direction:column;gap:3px;margin:8px 0;
+      animation:msgIn .2s cubic-bezier(.22,1,.36,1) both;
     }
-    if (flowCtx.stage === "vanRaised") {
-      if (q === "yes") {
-        flowCtx = null;
-        return { html: "As you have raised this to your Field and Area Manager, please contact Welfare directly on <b>02087583060</b> and hold the line." };
-      } else {
-        flowCtx = null;
-        return { html: "Please contact your <b>Field Manager</b> and query this through." };
-      }
+    @keyframes msgIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+    .msg.bot{align-items:flex-start}
+    .msg.user{align-items:flex-end}
+    .timestamp{font-size:10.5px;color:var(--text-muted);padding:0 4px;letter-spacing:.02em;user-select:none}
+    .bubble{
+      max-width:min(82%,400px);padding:10px 14px;border-radius:var(--radius-lg);
+      line-height:1.55;font-size:14.5px;white-space:pre-wrap;
     }
-  }
-
-  return null;
-}
-
-// --------- Special Cases ---------
-
-function specialCases(text){
-  const q = normalize(text);
-
-  // Active flow check first
-  if (flowCtx) {
-    const flowResult = handleFlow(text);
-    if (flowResult) return flowResult;
-  }
-
-  if (q.includes("bank holiday") || q.includes("bank holidays")){
-    return { html:"❌ <b>No we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
-  }
-
-  if (q.includes("is anyone available") || q.includes("available now") || q.includes("open now")){
-    const open = isOpenNow();
-    const nowUK = formatUKTime(new Date());
-    if (open){
-      return { html:`✅ <b>Yes we're open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips:["How can I contact support?"] };
+    .bubble.bot{
+      background:var(--surface);color:var(--text-primary);
+      border:1px solid var(--border);box-shadow:var(--shadow-sm);
+      border-bottom-left-radius:4px;
     }
-    const bh = isBankHolidayToday();
-    return { html:`❌ <b>No we're closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
-  }
-
-  // Work Allocation
-  if (q.includes("work allocation") || q.includes("work query") || q.includes("no work") || q.includes("job allocation")){
-    flowCtx = { type: "workAllocation", stage: "askRaised" };
-    return { html: "Has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes", "No"] };
-  }
-
-  // Manager Dispute
-  if (q.includes("manager dispute") || q.includes("dispute with manager") || q.includes("manager issue") || q.includes("manager complaint")){
-    flowCtx = { type: "managerDispute", stage: "askFieldManager" };
-    return { html: "Is this regarding your <b>Field Manager</b>?", chips: ["Yes", "No"] };
-  }
-
-  // Equipment Query
-  if (q.includes("equipment") || q.includes("equipment query") || q.includes("stock query") || q.includes("tooling") || q.includes("van query")){
-    flowCtx = { type: "equipment", stage: "askType" };
-    return { html: "Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock", "Tooling", "Van"] };
-  }
-
-  // Ticket flow
-  const wantsTicket =
-    q.includes("raise a request") || q.includes("create a ticket") || q.includes("open a ticket") ||
-    q.includes("log a ticket") || q.includes("submit a request") || q === "ticket";
-
-  if (!ticketCtx && wantsTicket){
-    ticketCtx = { stage:"needType" };
-    return { html:"Sure — what do you need help with?", chips:["Access / Login","Pay / Payroll","General query","Something else"] };
-  }
-
-  if (ticketCtx){
-    if (q==="cancel" || q==="stop" || q==="restart"){
-      ticketCtx=null;
-      return { html:"No problem, I've cancelled that request. If you want to start again, type <b>raise a request</b>." };
+    .bubble.user{
+      background:linear-gradient(135deg,#1e4d9b 0%,#1a3a6b 100%);
+      color:#fff;box-shadow:var(--shadow-sm);border-bottom-right-radius:4px;
     }
-    if (ticketCtx.stage==="needType"){ ticketCtx.type=text.trim(); ticketCtx.stage="needName"; return { html:"Thanks — what's your name?" }; }
-    if (ticketCtx.stage==="needName"){ ticketCtx.name=text.trim(); ticketCtx.stage="needEmail"; return { html:"And what email should we reply to?" }; }
-    if (ticketCtx.stage==="needEmail"){
-      const email=text.trim();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { html:"That doesn't look like an email, can you retype it?" };
-      ticketCtx.email=email; ticketCtx.stage="needPhone"; return { html:"Thank you, what's the best contact number for you?" };
+    .bubble.bot a{color:var(--brand-light);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+    .bubble b,.bubble strong{font-weight:700}
+    .map-preview{
+      display:block;width:100%;max-width:300px;
+      border-radius:var(--radius-md);margin-top:8px;
+      border:1px solid var(--border);box-shadow:var(--shadow-sm);
     }
-    if (ticketCtx.stage==="needPhone"){
-      const phone=text.trim();
-      if(!isValidPhone(phone)) return { html:"That number doesn't look right, please enter a valid contact number (digits only is fine, or include +)." };
-      ticketCtx.phone=phone; ticketCtx.stage="needDescription"; return { html:"Briefly describe the issue (1–3 sentences is perfect)." };
+    .input-area{
+      display:flex;gap:7px;border-top:1px solid var(--border);
+      padding:10px 12px;
+      padding-bottom:calc(10px + env(safe-area-inset-bottom));
+      align-items:center;background:var(--surface);
     }
-    if (ticketCtx.stage==="needDescription"){ ticketCtx.description=text.trim(); ticketCtx.stage="needUrgency"; return { html:"How urgent is this?", chips:["Low","Normal","High"] }; }
-    if (ticketCtx.stage==="needUrgency"){
-      ticketCtx.urgency=text.trim();
-      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
-      const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
-      const body = encodeURIComponent(
-        `Name: ${ticketCtx.name}\nEmail: ${ticketCtx.email}\nContact number: ${ticketCtx.phone}\nUrgency: ${ticketCtx.urgency}\nType: ${ticketCtx.type}\n\nDescription:\n${ticketCtx.description}\n\nChat transcript:\n${transcript}\n\n--- Sent from Welfare Support chatbot`
-      );
-      const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
-      const html =
-        `<b>Request summary</b><br>` +
-        `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
-        `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
-        `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
-        `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
-        `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
-        `${linkTag(mailtoHref, "Email support with this request (includes transcript)")}` +
-        `<br><small>(This opens your email app with the message prefilled, you then press Send.)</small>`;
-      ticketCtx=null;
-      return { html, chips:["Raise a request (create a ticket)"] };
+    .input-wrap{position:relative;flex:1}
+    .input-area input{
+      width:100%;padding:10px 13px;border-radius:var(--radius-md);
+      border:1.5px solid var(--border-mid);background:var(--surface-3);
+      font-size:14px;font-family:var(--font);color:var(--text-primary);outline:none;
+      transition:border-color var(--tr),background var(--tr),box-shadow var(--tr);
     }
-  }
-
-  if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")){
-    distanceCtx = { stage:"needOrigin" };
-    return { html:"What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
-  }
-
-  if (distanceCtx?.stage==="needOrigin"){
-    const cityKey = Object.keys(PLACES).find(k=>q===k || q.includes(k));
-    if (cityKey){
-      const closest = findClosestDepot(PLACES[cityKey]);
-      const depot = DEPOTS[closest.depotKey];
-      distanceCtx = { stage:"haveClosest", originKey: cityKey, depotKey: closest.depotKey, miles: closest.miles };
-      return { html:`Thanks, your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, chips:["By car","By train","By bus","Walking"] };
+    .input-area input::placeholder{color:var(--text-muted)}
+    .input-area input:focus{
+      border-color:var(--brand-light);background:var(--surface);
+      box-shadow:0 0 0 3px rgba(37,99,212,0.12);
     }
-  }
-
-  if (distanceCtx?.stage==="haveClosest"){
-    if (q==="by car" || q==="by train" || q==="by bus" || q==="walking"){
-      const mode = q==="walking" ? "walk" : q.replace("by ","");
-      const depot = DEPOTS[distanceCtx.depotKey];
-      const originLabel = distanceCtx.originKey==="your location" ? "your location" : distanceCtx.originKey;
-      const url = googleDirectionsURL(originLabel, depot, mode);
-      const tile = osmTileURL(depot.lat, depot.lon, 13);
-      return {
-        html:
-          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
-          `${linkTag(url, "Get directions in Google Maps")}<br>` +
-          `${imgTag(tile, "OpenStreetMap preview")}`
-      };
+    .input-area button{
+      padding:9px 15px;font-size:13.5px;font-family:var(--font);font-weight:600;
+      background:var(--brand);color:#fff;border:none;border-radius:var(--radius-md);
+      cursor:pointer;
+      transition:background var(--tr),box-shadow var(--tr),transform var(--tr);
+      display:inline-flex;align-items:center;gap:6px;white-space:nowrap;letter-spacing:.01em;
     }
-  }
-
-  if (q.includes("where are you") || q.includes("location") || q.includes("address")){
-    const d = DEPOTS.nuneaton;
-    const tile = osmTileURL(d.lat, d.lon, 13);
-    const gmaps = `https://www.google.com/maps?q=${encodeURIComponent(d.lat + "," + d.lon)}`;
-    return { html:`We're based in <b>Nuneaton, UK</b>.<br>${linkTag(gmaps,"Open in Google Maps")}<br>${imgTag(tile)}` };
-  }
-
-  return null;
-}
-
-// --------- Main message handling ---------
-
-function handleUserMessage(text){
-  if (!text) return;
-  addBubble(text, "user", { speak:false });
-  input.value="";
-  isResponding=true;
-
-  const s = specialCases(text);
-  if (s){
-    addBubble(s.html, "bot", { html:true });
-    if (s.chips) addChips(s.chips);
-    isResponding=false;
-    return;
-  }
-
-  const faq = matchFAQ(text);
-  if (faq){
-    addBubble(faq.answer, "bot", { html:true });
-    if (faq.followUps?.length) addChips(faq.followUps);
-    isResponding=false;
-    return;
-  }
-
-  addBubble("Try the <b>Topics</b> button, or ask about: <b>pay</b>, <b>work allocation</b>, <b>manager dispute</b>, <b>equipment</b>, <b>department contacts</b>, <b>opening times</b>, or <b>raise a request</b>.", "bot", { html:true });
-  isResponding=false;
-}
-
-function sendChat(){
-  if (isResponding) return;
-  const t = input.value.trim();
-  if (!t) return;
-  handleUserMessage(t);
-}
-
-sendBtn.addEventListener("click", sendChat);
-input.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendChat(); } });
-
-clearBtn.addEventListener("click", ()=>{
-  chatWindow.innerHTML="";
-  ticketCtx=null;
-  distanceCtx=null;
-  flowCtx=null;
-  CHAT_LOG=[];
-  init();
-});
-
-// --------- FAQ Matching ---------
-
-function scoreMatch(qNorm, candNorm) {
-  if (!qNorm || !candNorm) return 0;
-  if (qNorm === candNorm) return 1;
-  if (candNorm.includes(qNorm) || qNorm.includes(candNorm)) return 0.92;
-  const qT = new Set(qNorm.split(" ").filter(Boolean));
-  const cT = new Set(candNorm.split(" ").filter(Boolean));
-  const inter = [...qT].filter(t => cT.has(t)).length;
-  const union = new Set([...qT, ...cT]).size;
-  return union ? inter / union : 0;
-}
-
-function matchFAQ(text) {
-  const q = normalize(text);
-  if (!q || !FAQS.length) return null;
-  let best = null;
-  for (const item of FAQS) {
-    const variants = [item.question, ...(item.synonyms || [])].filter(Boolean);
-    let bestLocal = 0;
-    for (const v of variants) {
-      bestLocal = Math.max(bestLocal, scoreMatch(q, normalize(v)));
-      if (bestLocal >= 0.98) break;
+    .input-area button:hover{background:var(--brand-mid);box-shadow:0 4px 12px rgba(26,58,107,0.28)}
+    .input-area button:active{transform:scale(0.97)}
+    .input-area button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+    .icon-btn{
+      width:37px;min-width:37px;height:37px;padding:0;
+      border-radius:var(--radius-sm);background:var(--surface-3);
+      color:var(--brand);border:1.5px solid var(--border-mid);
+      display:inline-flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:background var(--tr),border-color var(--tr),color var(--tr);
     }
-    const kws = (item.canonicalKeywords || []).map(k => normalize(k)).filter(Boolean);
-    if (kws.some(k => q.includes(k))) bestLocal = Math.min(1, bestLocal + 0.06);
-    if (!best || bestLocal > best.score) best = { item, score: bestLocal };
-  }
-  return best && best.score >= SETTINGS.minConfidence ? best.item : null;
-}
-
-// --------- Drawer ---------
-
-function buildCategoryIndex(){
-  categoryIndex=new Map();
-  FAQS.forEach((item)=>{
-    const key=(item.category ?? "general").toLowerCase();
-    if(!categoryIndex.has(key)) categoryIndex.set(key, []);
-    categoryIndex.get(key).push(item);
-  });
-  const labelMap={
-    general:"General",
-    support:"Support",
-    opening:"Opening times",
-    actions:"Actions",
-    pay:"Pay & Deductions",
-    work:"Work Allocation",
-    contract:"Contract",
-    departments:"Departments",
-    equipment:"Equipment"
-  };
-  categories=Array.from(categoryIndex.keys()).sort().map((key)=>({
-    key, label: labelMap[key] ?? (key.charAt(0).toUpperCase()+key.slice(1)), count: categoryIndex.get(key).length
-  }));
-}
-
-function openDrawer(){
-  overlay.hidden=false;
-  drawer.hidden=false;
-}
-
-function closeDrawer(){
-  overlay.hidden=true;
-  drawer.hidden=true;
-}
-
-function renderDrawer(selectedKey){
-  const selected = selectedKey ?? null;
-  drawerCategoriesEl.innerHTML="";
-  drawerQuestionsEl.innerHTML="";
-  categories.forEach((c)=>{
-    const pill=document.createElement("button");
-    pill.type="button";
-    pill.className="cat-pill";
-    pill.textContent=`${c.label} (${c.count})`;
-    pill.setAttribute("aria-selected", String(c.key===selected));
-    pill.addEventListener("click", ()=>renderDrawer(c.key));
-    drawerCategoriesEl.appendChild(pill);
-  });
-  const list = selected && categoryIndex.has(selected) ? categoryIndex.get(selected) : FAQS;
-  list.forEach((item)=>{
-    const b=document.createElement("button");
-    b.type="button";
-    b.className="drawer-q";
-    b.textContent=item.question;
-    b.addEventListener("click", ()=>{
-      closeDrawer();
-      handleUserMessage(item.question);
-    });
-    drawerQuestionsEl.appendChild(b);
-  });
-}
-
-topicsBtn.addEventListener("click", ()=>{ if(faqsLoaded) openDrawer(); });
-overlay.addEventListener("click", closeDrawer);
-drawerCloseBtn.addEventListener("click", closeDrawer);
-
-// load faqs
-fetch("./public/config/faqs.json")
-  .then((res)=>res.json())
-  .then((data)=>{
-    FAQS = Array.isArray(data) ? data : [];
-    faqsLoaded=true;
-    buildCategoryIndex();
-    renderDrawer(null);
-  })
-  .catch(()=>{
-    FAQS=[];
-    faqsLoaded=true;
-    buildCategoryIndex();
-    renderDrawer(null);
-  });
-
-// Greeting
-function init(){
-  addBubble(SETTINGS.greeting, "bot", { html:true, speak:false });
-}
-
-if (document.readyState === "loading"){
-  window.addEventListener("DOMContentLoaded", init);
-} else {
-  init();
-}
+    .icon-btn:hover{background:var(--accent);border-color:var(--brand-light)}
+    .icon-btn.on{background:rgba(37,99,212,0.10);border-color:rgba(37,99,212,0.35);color:var(--brand-light)}
+    .suggestions{
+      position:absolute;left:0;right:0;bottom:calc(100% + 6px);
+      background:var(--surface);border:1px solid var(--border-mid);
+      border-radius:var(--radius-md);overflow:hidden;z-index:50;
+      box-shadow:var(--shadow-lg);
+    }
+    .suggestion-item{
+      padding:10px 13px;cursor:pointer;font-size:13.5px;color:var(--text-primary);
+      border-bottom:1px solid var(--border);transition:background var(--tr);
+    }
+    .suggestion-item:last-child{border-bottom:none}
+    .suggestion-item:hover{background:var(--accent)}
+    .chips{
+      display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 4px;max-width:92%;
+      animation:msgIn .2s cubic-bezier(.22,1,.36,1) both;
+    }
+    .chip-btn{
+      border:1.5px solid var(--border-mid);background:var(--surface);color:var(--brand);
+      padding:7px 13px;border-radius:999px;cursor:pointer;
+      font-size:13px;font-family:var(--font);font-weight:500;
+      transition:background var(--tr),border-color var(--tr),color var(--tr),transform var(--tr);
+    }
+    .chip-btn:hover{background:var(--accent);border-color:var(--brand-light);color:var(--brand-light);transform:translateY(-1px)}
+    .chip-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
+    .drawer-overlay{
+      position:fixed;inset:0;background:rgba(13,31,60,0.42);
+      backdrop-filter:blur(2px);z-index:99998;
+      animation:fadeIn .18s ease both;
+    }
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .drawer{
+      position:fixed;top:0;right:0;height:100vh;
+      width:min(420px,92vw);background:var(--surface);z-index:99999;
+      box-shadow:-16px 0 50px rgba(13,31,60,0.16);
+      border-left:1px solid var(--border);
+      display:flex;flex-direction:column;
+      animation:drawerIn .24s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes drawerIn{from{transform:translateX(100%);opacity:.5}to{transform:translateX(0);opacity:1}}
+    .drawer-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px;border-bottom:1px solid var(--border);
+    }
+    .drawer-title-wrap{display:flex;align-items:center;gap:8px;color:var(--brand)}
+    .drawer-title-wrap h2{font-size:17px;font-weight:700;color:var(--text-primary)}
+    .drawer-close{
+      width:32px;height:32px;border-radius:var(--radius-sm);
+      border:1px solid var(--border-mid);background:var(--surface-3);
+      color:var(--text-secondary);cursor:pointer;
+      display:inline-flex;align-items:center;justify-content:center;
+      transition:background var(--tr),color var(--tr),border-color var(--tr);
+    }
+    .drawer-close:hover{background:#fde8e8;color:#b91c1c;border-color:#fca5a5}
+    .drawer-body{padding:14px;overflow-y:auto;flex:1}
+    .drawer-body::-webkit-scrollbar{width:4px}
+    .drawer-body::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:4px}
+    .drawer-hint{font-size:13px;color:var(--text-muted);margin-bottom:12px}
+    .drawer-categories{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+    .cat-pill{
+      border:1.5px solid var(--border-mid);background:var(--surface-3);color:var(--text-secondary);
+      padding:6px 12px;border-radius:999px;cursor:pointer;
+      font-size:12.5px;font-family:var(--font);font-weight:500;
+      transition:background var(--tr),border-color var(--tr),color var(--tr);
+    }
+    .cat-pill:hover,.cat-pill[aria-selected="true"]{
+      background:var(--accent);border-color:var(--brand-light);color:var(--brand-light);
+    }
+    .drawer-questions{display:flex;flex-direction:column;gap:6px}
+    .drawer-q{
+      text-align:left;border:1px solid var(--border);background:var(--surface);
+      border-radius:var(--radius-md);padding:10px 13px;cursor:pointer;
+      font-size:13.5px;font-family:var(--font);color:var(--text-primary);
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      transition:background var(--tr),border-color var(--tr),transform var(--tr);line-height:1.4;
+    }
+    .drawer-q::after{content:'→';font-size:13px;color:var(--text-muted);flex-shrink:0;transition:transform var(--tr),color var(--tr)}
+    .drawer-q:hover{background:var(--accent);border-color:rgba(37,99,212,0.22);transform:translateX(2px)}
+    .drawer-q:hover::after{transform:translateX(3px);color:var(--brand-light)}
+    @media(max-width:580px){
+      .chat-container{max-width:100%;margin:0;min-height:100vh;min-height:100dvh;border-radius:0;animation:none}
+      body{background:var(--surface)}
+      .header-sub{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <header class="chat-header">
+      <div class="header-brand">
+        <div class="bot-avatar-wrap">
+          <img src="./public/assets/Bot-icon.png" class="bot-avatar" alt="Welfare Support bot" />
+        </div>
+        <div class="header-text">
+          <h1>Welfare Support</h1>
+          <span class="header-sub">Kelly — here to help</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="topicsBtn" class="header-btn" type="button" aria-haspopup="dialog" aria-controls="topicsDrawer">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Topics
+        </button>
+        <button id="clearBtn" class="clear-btn" type="button" aria-label="Clear chat">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+          Clear
+        </button>
+      </div>
+    </header>
+ 
+    <div id="chatWindow" class="chat-window" role="log" aria-live="polite" aria-relevant="additions" aria-atomic="false"></div>
+ 
+    <div class="input-area">
+      <div class="input-wrap">
+        <input id="chatInput" type="text" placeholder="Type your question…" autocomplete="off" aria-label="Ask a question" />
+        <div id="suggestions" class="suggestions" role="listbox" aria-label="Suggestions" hidden></div>
+      </div>
+      <button id="micBtn" class="icon-btn" type="button" aria-label="Voice input" title="Voice input" aria-pressed="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <button id="voiceBtn" class="icon-btn" type="button" aria-label="Toggle voice output" title="Toggle voice output" aria-pressed="false">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </button>
+      <button id="sendBtn" type="button" aria-label="Send message">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Send
+      </button>
+    </div>
+  </div>
+ 
+  <!-- Topics Drawer -->
+  <div id="drawerOverlay" class="drawer-overlay" hidden></div>
+  <aside id="topicsDrawer" class="drawer" role="dialog" aria-modal="true" aria-label="Topics" hidden>
+    <div class="drawer-header">
+      <div class="drawer-title-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <h2>Browse Topics</h2>
+      </div>
+      <button id="drawerCloseBtn" class="drawer-close" type="button" aria-label="Close topics">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <p class="drawer-hint">Select a category or pick a question below:</p>
+      <div id="drawerCategories" class="drawer-categories"></div>
+      <div id="drawerQuestions" class="drawer-questions"></div>
+    </div>
+  </aside>
+ 
+  <script src="./public/chat.js"></script>
+</body>
+</html>
