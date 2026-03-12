@@ -4,44 +4,44 @@
   <meta charset="UTF-8" />
   <title>Welfare Support Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <link rel="stylesheet" href="./public/chat.css" />
   <script defer src="./public/chat.js"></script>
 </head>
+
 <body>
   <div class="chat-container">
     <header class="chat-header">
       <img src="./public/assets/Bot-icon.png" class="bot-avatar" alt="Welfare Support bot" />
       <h1>Welfare Support</h1>
       <div class="header-actions">
-        <button id="topicsBtn" class="header-btn" type="button" aria-haspopup="dialog" aria-controls="topicsDrawer">
-          Topics
-        </button>
-        <button id="clearBtn" class="clear-btn" type="button" aria-label="Clear chat">
-          Clear
-        </button>
+        <button id="topicsBtn" class="header-btn" type="button">Topics</button>
+        <button id="clearBtn" class="clear-btn" type="button">Clear</button>
       </div>
     </header>
 
-    <div id="chatWindow" class="chat-window" role="log" aria-live="polite" aria-relevant="additions" aria-atomic="false"></div>
+    <div id="chatWindow" class="chat-window"></div>
 
     <div class="input-area">
       <div class="input-wrap">
-        <input id="chatInput" type="text" placeholder="Ask a question..." autocomplete="off" aria-label="Ask a question" />
-        <div id="suggestions" class="suggestions" role="listbox" aria-label="Suggestions" hidden></div>
+        <input id="chatInput" type="text" placeholder="Ask a question..." autocomplete="off" />
+        <div id="suggestions" class="suggestions" hidden></div>
       </div>
-      <button id="micBtn" class="icon-btn" type="button" aria-label="Voice input" title="Voice input" aria-pressed="false">🎤</button>
-      <button id="voiceBtn" class="icon-btn" type="button" aria-label="Toggle voice output" title="Toggle voice output" aria-pressed="false">🔈</button>
+
+      <button id="micBtn" class="icon-btn" type="button">🎤</button>
+      <button id="voiceBtn" class="icon-btn" type="button">🔈</button>
       <button id="sendBtn" type="button">Send</button>
     </div>
   </div>
 
   <!-- Topics Drawer -->
   <div id="drawerOverlay" class="drawer-overlay" hidden></div>
-  <aside id="topicsDrawer" class="drawer" role="dialog" aria-modal="true" aria-label="Topics" hidden>
+  <aside id="topicsDrawer" class="drawer" hidden>
     <div class="drawer-header">
       <h2>Topics</h2>
-      <button id="drawerCloseBtn" class="drawer-close" type="button" aria-label="Close topics">✕</button>
+      <button id="drawerCloseBtn" class="drawer-close" type="button">✕</button>
     </div>
+
     <div class="drawer-body">
       <p class="drawer-hint">Browse common topics or pick a question:</p>
       <div id="drawerCategories" class="drawer-categories"></div>
