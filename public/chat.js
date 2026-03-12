@@ -3,17 +3,15 @@ const SETTINGS = {
   suggestionLimit: 5,
   chipLimit: 6,
   chipClickCooldownMs: 900,
-  supportEmail: "support@Kelly.co.uk",
-  supportPhone: "01234 567890",
-  ticketTranscriptMessages: 12,
+  smsNumber: "07773652107",
   greeting: "Hi! I'm <b>Welfare Support</b>. Please let me know what your query is regarding — use the <b>Topics</b> button or type your question below."
 };
- 
+
 let FAQS = [];
 let faqsLoaded = false;
 let categories = [];
 let categoryIndex = new Map();
- 
+
 const chatWindow = document.getElementById("chatWindow");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
@@ -27,17 +25,17 @@ const drawerCategoriesEl = document.getElementById("drawerCategories");
 const drawerQuestionsEl = document.getElementById("drawerQuestions");
 const micBtn = document.getElementById("micBtn");
 const voiceBtn = document.getElementById("voiceBtn");
- 
+
 // state
 let isResponding = false;
 let lastChipClickAt = 0;
 let activeSuggestionIndex = -1;
 let currentSuggestions = [];
 let CHAT_LOG = [];
-let ticketCtx = null;
+let smsCtx = null;
 let distanceCtx = null;
 let flowCtx = null; // for multi-step guided flows
- 
+
 // helpers
 const normalize = (s) =>
   (s ?? "")
@@ -49,7 +47,7 @@ const normalize = (s) =>
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
- 
+
 function escapeHTML(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -58,7 +56,7 @@ function escapeHTML(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
- 
+
 function escapeAttrUrl(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -67,19 +65,19 @@ function escapeAttrUrl(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
- 
+
 function decodeHTMLEntities(str) {
   const t = document.createElement("textarea");
   t.innerHTML = str ?? "";
   return t.value;
 }
- 
+
 function htmlToPlainText(html) {
   const t = document.createElement("template");
   t.innerHTML = decodeHTMLEntities(html ?? "");
   return (t.content.textContent ?? "").trim();
 }
- 
+
 function sanitizeHTML(html) {
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -112,13 +110,13 @@ function sanitizeHTML(html) {
   toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
   return template.innerHTML;
 }
- 
+
 // UK time
 const UK_TZ = "Europe/London";
 function formatUKTime(date) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
 }
- 
+
 function getUKDateISO(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, year:"numeric", month:"2-digit", day:"2-digit" });
   const parts = fmt.formatToParts(date);
@@ -127,14 +125,14 @@ function getUKDateISO(date = new Date()) {
   const d = parts.find(p=>p.type==="day")?.value ?? "01";
   return `${y}-${m}-${d}`;
 }
- 
+
 function getUKDayIndex(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, weekday:"short" });
   const wd = fmt.format(date);
   const map = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
   return map[wd] ?? 0;
 }
- 
+
 function getUKMinutesNow(date = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour:"2-digit", minute:"2-digit", hour12:false });
   const parts = fmt.formatToParts(date);
@@ -142,10 +140,10 @@ function getUKMinutesNow(date = new Date()) {
   const m = parseInt(parts.find(p=>p.type==="minute")?.value ?? "0", 10);
   return h*60+m;
 }
- 
+
 // Business hours Mon-Fri 08:30-17:00
 const BUSINESS = { start: 8*60+30, end: 17*60, openDays: new Set([1,2,3,4,5]) };
- 
+
 // Bank holidays (England & Wales) 2025-2028
 const BANK_HOLIDAYS_EW = new Set([
   "2025-01-01","2025-04-18","2025-04-21","2025-05-05","2025-05-26","2025-08-25","2025-12-25","2025-12-26",
@@ -153,11 +151,11 @@ const BANK_HOLIDAYS_EW = new Set([
   "2027-01-01","2027-03-26","2027-03-29","2027-05-03","2027-05-31","2027-08-30","2027-12-27","2027-12-28",
   "2028-01-03","2028-04-14","2028-04-17","2028-05-01","2028-05-29","2028-08-28","2028-12-25","2028-12-26"
 ]);
- 
+
 function isBankHolidayToday() {
   return BANK_HOLIDAYS_EW.has(getUKDateISO(new Date()));
 }
- 
+
 function isOpenNow() {
   const day = getUKDayIndex(new Date());
   const mins = getUKMinutesNow(new Date());
@@ -166,7 +164,7 @@ function isOpenNow() {
   if (isBankHolidayToday()) return false;
   return true;
 }
- 
+
 // Map helpers
 function lonLatToTileXY(lon, lat, z) {
   const latRad = lat * Math.PI / 180;
@@ -175,20 +173,20 @@ function lonLatToTileXY(lon, lat, z) {
   const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
   return { x, y };
 }
- 
+
 function osmTileURL(lat, lon, zoom = 13) {
   const t = lonLatToTileXY(lon, lat, zoom);
   return `https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`;
 }
- 
+
 function imgTag(src, alt="Map preview") {
   return `<img class="map-preview" src="${escapeAttrUrl(src)}" alt="${escapeHTML(alt)}" loading="lazy" />`;
 }
- 
+
 function linkTag(href, label) {
   return `<a href="${escapeAttrUrl(href)}">${escapeHTML(label)}</a>`;
 }
- 
+
 // Depots/places
 const DEPOTS = { nuneaton: { label:"Nuneaton Depot", lat:52.515770, lon:-1.4507820 } };
 const PLACES = {
@@ -197,7 +195,7 @@ const PLACES = {
   leicester:{ lat:52.6369, lon:-1.1398 },
   london:{ lat:51.5074, lon:-0.1278 }
 };
- 
+
 function toRad(deg){ return (deg*Math.PI)/180; }
 function distanceMiles(a,b){
   const R=3958.8;
@@ -206,7 +204,7 @@ function distanceMiles(a,b){
   const h=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
   return R*(2*Math.asin(Math.sqrt(h)));
 }
- 
+
 function findClosestDepot(origin){
   let bestKey=null, best=Infinity;
   for (const k in DEPOTS){
@@ -215,14 +213,14 @@ function findClosestDepot(origin){
   }
   return bestKey ? { depotKey: bestKey, miles: best } : null;
 }
- 
+
 function googleDirectionsURL(originText, depot, mode){
   const origin=encodeURIComponent(originText);
   const dest=encodeURIComponent(`${depot.lat},${depot.lon}`);
   const travelmode = mode === "walk" ? "walking" : (mode === "train" || mode === "bus") ? "transit" : "driving";
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${travelmode}`;
 }
- 
+
 // GPS helper
 function requestBrowserLocation() {
   return new Promise((resolve, reject) => {
@@ -234,30 +232,27 @@ function requestBrowserLocation() {
     );
   });
 }
- 
+
 // Ticket helpers
 function isValidPhone(raw) {
   const digits = String(raw ?? "").replace(/[^\d]/g, "");
   return digits.length >= 8 && digits.length <= 16;
 }
- 
-function buildTranscript(limit = 12) {
-  const slice = CHAT_LOG.slice(-Math.max(1, limit));
-  return slice.map((m) => `[${formatUKTime(new Date(m.ts))}] ${m.role}: ${m.text}`).join("\n");
-}
- 
+
+// ---- SMS helpers ----
+
 // speaker
 const VOICE_KEY = "ws_voice_v1";
 const voiceState = { on:false, armed:false };
 try { Object.assign(voiceState, JSON.parse(localStorage.getItem(VOICE_KEY) || "{}")); } catch {}
- 
+
 function saveVoice(){ try{ localStorage.setItem(VOICE_KEY, JSON.stringify(voiceState)); } catch{} }
 function updateVoiceUI(){
   voiceBtn.classList.toggle("on", voiceState.on);
   // icon handled by SVG in index.html
   voiceBtn.setAttribute("aria-pressed", voiceState.on ? "true" : "false");
 }
- 
+
 function speak(text){
   if (!voiceState.on || !voiceState.armed) return;
   if (!("speechSynthesis" in window)) return;
@@ -268,11 +263,11 @@ function speak(text){
     window.speechSynthesis.speak(u);
   } catch {}
 }
- 
+
 updateVoiceUI();
 window.addEventListener("pointerdown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
 window.addEventListener("keydown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
- 
+
 voiceBtn.addEventListener("click", ()=>{
   voiceState.armed = true;
   voiceState.on = !voiceState.on;
@@ -280,12 +275,12 @@ voiceBtn.addEventListener("click", ()=>{
   updateVoiceUI();
   addBubble(voiceState.on ? "Voice output is now <b>on</b>." : "Voice output is now <b>off</b>.", "bot", { html:true, speak:false });
 });
- 
+
 // mic
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
 let micListening = false;
- 
+
 function initSpeech(){
   if (!SpeechRecognition) return null;
   const rec = new SpeechRecognition();
@@ -320,7 +315,7 @@ function initSpeech(){
   };
   return rec;
 }
- 
+
 recognizer = initSpeech();
 micBtn.addEventListener("click", ()=>{
   voiceState.armed=true; saveVoice();
@@ -335,7 +330,7 @@ micBtn.addEventListener("click", ()=>{
     addBubble("Couldn't start voice input — please try again.", "bot", { speak:false });
   }
 });
- 
+
 // UI helpers
 function addBubble(text, type, opts = {}) {
   const html = !!opts.html;
@@ -364,7 +359,7 @@ function addBubble(text, type, opts = {}) {
   if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
   if (type === "bot" && speakThis) speak(plain);
 }
- 
+
 function addChips(labels, onClick) {
   const qs = labels ?? [];
   if (!qs.length) return;
@@ -396,7 +391,7 @@ function addChips(labels, onClick) {
     chatWindow.scrollTop = chatWindow.scrollHeight;
   });
 }
- 
+
 // GPS handler
 async function handleUseMyLocation(){
   addBubble("Use my location", "user", { speak:false });
@@ -420,19 +415,19 @@ async function handleUseMyLocation(){
     isResponding=false;
   }
 }
- 
+
 // --------- Guided Flows (Work Allocation, Manager Dispute, Equipment) ---------
- 
+
 function handleFlow(text) {
   const q = normalize(text);
   if (!flowCtx) return null;
- 
+
   // Cancel at any point
   if (q === "cancel" || q === "stop" || q === "restart") {
     flowCtx = null;
     return { html: "No problem, I've cancelled that. Feel free to ask anything else or use the <b>Topics</b> button." };
   }
- 
+
   // ---- Work Allocation Flow ----
   if (flowCtx.type === "workAllocation") {
     if (flowCtx.stage === "askRaised") {
@@ -445,7 +440,7 @@ function handleFlow(text) {
       }
     }
   }
- 
+
   // ---- Manager Dispute Flow ----
   if (flowCtx.type === "managerDispute") {
     if (flowCtx.stage === "askFieldManager") {
@@ -467,7 +462,7 @@ function handleFlow(text) {
       }
     }
   }
- 
+
   // ---- Equipment Flow ----
   if (flowCtx.type === "equipment") {
     if (flowCtx.stage === "askType") {
@@ -510,25 +505,25 @@ function handleFlow(text) {
       }
     }
   }
- 
+
   return null;
 }
- 
+
 // --------- Special Cases ---------
- 
+
 function specialCases(text){
   const q = normalize(text);
- 
+
   // Active flow check first
   if (flowCtx) {
     const flowResult = handleFlow(text);
     if (flowResult) return flowResult;
   }
- 
+
   if (q.includes("bank holiday") || q.includes("bank holidays")){
     return { html:"❌ <b>No we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
   }
- 
+
   if (q.includes("is anyone available") || q.includes("available now") || q.includes("open now")){
     const open = isOpenNow();
     const nowUK = formatUKTime(new Date());
@@ -538,80 +533,75 @@ function specialCases(text){
     const bh = isBankHolidayToday();
     return { html:`❌ <b>No we're closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
   }
- 
+
   // Work Allocation
   if (q.includes("work allocation") || q.includes("work query") || q.includes("no work") || q.includes("job allocation")){
     flowCtx = { type: "workAllocation", stage: "askRaised" };
     return { html: "Has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes", "No"] };
   }
- 
+
   // Manager Dispute
   if (q.includes("manager dispute") || q.includes("dispute with manager") || q.includes("manager issue") || q.includes("manager complaint")){
     flowCtx = { type: "managerDispute", stage: "askFieldManager" };
     return { html: "Is this regarding your <b>Field Manager</b>?", chips: ["Yes", "No"] };
   }
- 
+
   // Equipment Query
   if (q.includes("equipment") || q.includes("equipment query") || q.includes("stock query") || q.includes("tooling") || q.includes("van query")){
     flowCtx = { type: "equipment", stage: "askType" };
     return { html: "Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock", "Tooling", "Van"] };
   }
- 
-  // Ticket flow
-  const wantsTicket =
-    q.includes("raise a request") || q.includes("create a ticket") || q.includes("open a ticket") ||
-    q.includes("log a ticket") || q.includes("submit a request") || q === "ticket";
- 
-  if (!ticketCtx && wantsTicket){
-    ticketCtx = { stage:"needType" };
-    return { html:"Sure — what do you need help with?", chips:["Access / Login","Pay / Payroll","General query","Something else"] };
+
+  // SMS flow — triggered by pay/deduction queries or "send a text"
+  const wantsSMS =
+    q.includes("pay query") || q.includes("payroll query") || q.includes("deduction query") ||
+    q.includes("i have a pay") || q.includes("i have a deduction") || q.includes("send a text") ||
+    q.includes("text support") || q.includes("send text") || q === "pay" || q === "deductions";
+
+  if (!smsCtx && wantsSMS) {
+    smsCtx = { stage: "needName" };
+    return { html: "I'll help you send a text to our pay & deductions team.<br><br>First, what's your <b>full name</b>?" };
   }
- 
-  if (ticketCtx){
-    if (q==="cancel" || q==="stop" || q==="restart"){
-      ticketCtx=null;
-      return { html:"No problem, I've cancelled that request. If you want to start again, type <b>raise a request</b>." };
+
+  if (smsCtx) {
+    if (q === "cancel" || q === "stop" || q === "restart") {
+      smsCtx = null;
+      return { html: "No problem, I've cancelled that. Feel free to ask anything else." };
     }
-    if (ticketCtx.stage==="needType"){ ticketCtx.type=text.trim(); ticketCtx.stage="needName"; return { html:"Thanks — what's your name?" }; }
-    if (ticketCtx.stage==="needName"){ ticketCtx.name=text.trim(); ticketCtx.stage="needEmail"; return { html:"And what email should we reply to?" }; }
-    if (ticketCtx.stage==="needEmail"){
-      const email=text.trim();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { html:"That doesn't look like an email, can you retype it?" };
-      ticketCtx.email=email; ticketCtx.stage="needPhone"; return { html:"Thank you, what's the best contact number for you?" };
+    if (smsCtx.stage === "needName") {
+      smsCtx.name = text.trim();
+      smsCtx.stage = "needType";
+      return { html: `Thanks <b>${escapeHTML(smsCtx.name)}</b> — is this a <b>Pay</b> or <b>Deduction</b> query?`, chips: ["Pay query", "Deduction query"] };
     }
-    if (ticketCtx.stage==="needPhone"){
-      const phone=text.trim();
-      if(!isValidPhone(phone)) return { html:"That number doesn't look right, please enter a valid contact number (digits only is fine, or include +)." };
-      ticketCtx.phone=phone; ticketCtx.stage="needDescription"; return { html:"Briefly describe the issue (1–3 sentences is perfect)." };
+    if (smsCtx.stage === "needType") {
+      smsCtx.type = text.trim();
+      smsCtx.stage = "needDescription";
+      return { html: "Please briefly describe your query (1–3 sentences):" };
     }
-    if (ticketCtx.stage==="needDescription"){ ticketCtx.description=text.trim(); ticketCtx.stage="needUrgency"; return { html:"How urgent is this?", chips:["Low","Normal","High"] }; }
-    if (ticketCtx.stage==="needUrgency"){
-      ticketCtx.urgency=text.trim();
-      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
-      const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
-      const body = encodeURIComponent(
-        `Name: ${ticketCtx.name}\nEmail: ${ticketCtx.email}\nContact number: ${ticketCtx.phone}\nUrgency: ${ticketCtx.urgency}\nType: ${ticketCtx.type}\n\nDescription:\n${ticketCtx.description}\n\nChat transcript:\n${transcript}\n\n--- Sent from Welfare Support chatbot`
+    if (smsCtx.stage === "needDescription") {
+      smsCtx.description = text.trim();
+      // Build SMS body
+      const smsBody = encodeURIComponent(
+        `Welfare Support Query\nName: ${smsCtx.name}\nType: ${smsCtx.type}\nQuery: ${smsCtx.description}`
       );
-      const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
+      const smsHref = `sms:${SETTINGS.smsNumber}?body=${smsBody}`;
       const html =
-        `<b>Request summary</b><br>` +
-        `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
-        `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
-        `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
-        `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
-        `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
-        `${linkTag(mailtoHref, "Email support with this request (includes transcript)")}` +
-        `<br><small>(This opens your email app with the message prefilled, you then press Send.)</small>`;
-      ticketCtx=null;
-      return { html, chips:["Raise a request (create a ticket)"] };
+        `<b>Ready to send</b><br>` +
+        `Name: <b>${escapeHTML(smsCtx.name)}</b><br>` +
+        `Type: <b>${escapeHTML(smsCtx.type)}</b><br>` +
+        `Query: <b>${escapeHTML(smsCtx.description)}</b><br><br>` +
+        `<a href="${escapeAttrUrl(smsHref)}">📱 Tap here to send your text to ${escapeHTML(SETTINGS.smsNumber)}</a>` +
+        `<br><small>(Opens your messaging app with the message ready to send.)</small>`;
+      smsCtx = null;
+      return { html, chips: ["Pay / Payroll query", "Deductions query"] };
     }
   }
- 
+
   if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")){
     distanceCtx = { stage:"needOrigin" };
     return { html:"What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
   }
- 
+
   if (distanceCtx?.stage==="needOrigin"){
     const cityKey = Object.keys(PLACES).find(k=>q===k || q.includes(k));
     if (cityKey){
@@ -621,7 +611,7 @@ function specialCases(text){
       return { html:`Thanks, your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, chips:["By car","By train","By bus","Walking"] };
     }
   }
- 
+
   if (distanceCtx?.stage==="haveClosest"){
     if (q==="by car" || q==="by train" || q==="by bus" || q==="walking"){
       const mode = q==="walking" ? "walk" : q.replace("by ","");
@@ -637,25 +627,25 @@ function specialCases(text){
       };
     }
   }
- 
+
   if (q.includes("where are you") || q.includes("location") || q.includes("address")){
     const d = DEPOTS.nuneaton;
     const tile = osmTileURL(d.lat, d.lon, 13);
     const gmaps = `https://www.google.com/maps?q=${encodeURIComponent(d.lat + "," + d.lon)}`;
     return { html:`We're based in <b>Nuneaton, UK</b>.<br>${linkTag(gmaps,"Open in Google Maps")}<br>${imgTag(tile)}` };
   }
- 
+
   return null;
 }
- 
+
 // --------- Main message handling ---------
- 
+
 function handleUserMessage(text){
   if (!text) return;
   addBubble(text, "user", { speak:false });
   input.value="";
   isResponding=true;
- 
+
   const s = specialCases(text);
   if (s){
     addBubble(s.html, "bot", { html:true });
@@ -663,7 +653,7 @@ function handleUserMessage(text){
     isResponding=false;
     return;
   }
- 
+
   const faq = matchFAQ(text);
   if (faq){
     addBubble(faq.answer, "bot", { html:true });
@@ -671,32 +661,32 @@ function handleUserMessage(text){
     isResponding=false;
     return;
   }
- 
+
   addBubble("Try the <b>Topics</b> button, or ask about: <b>pay</b>, <b>work allocation</b>, <b>manager dispute</b>, <b>equipment</b>, <b>department contacts</b>, <b>opening times</b>, or <b>raise a request</b>.", "bot", { html:true });
   isResponding=false;
 }
- 
+
 function sendChat(){
   if (isResponding) return;
   const t = input.value.trim();
   if (!t) return;
   handleUserMessage(t);
 }
- 
+
 sendBtn.addEventListener("click", sendChat);
 input.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendChat(); } });
- 
+
 clearBtn.addEventListener("click", ()=>{
   chatWindow.innerHTML="";
-  ticketCtx=null;
+  smsCtx=null;
   distanceCtx=null;
   flowCtx=null;
   CHAT_LOG=[];
   init();
 });
- 
+
 // --------- FAQ Matching ---------
- 
+
 function scoreMatch(qNorm, candNorm) {
   if (!qNorm || !candNorm) return 0;
   if (qNorm === candNorm) return 1;
@@ -707,7 +697,7 @@ function scoreMatch(qNorm, candNorm) {
   const union = new Set([...qT, ...cT]).size;
   return union ? inter / union : 0;
 }
- 
+
 function matchFAQ(text) {
   const q = normalize(text);
   if (!q || !FAQS.length) return null;
@@ -725,9 +715,9 @@ function matchFAQ(text) {
   }
   return best && best.score >= SETTINGS.minConfidence ? best.item : null;
 }
- 
+
 // --------- Drawer ---------
- 
+
 function buildCategoryIndex(){
   categoryIndex=new Map();
   FAQS.forEach((item)=>{
@@ -750,17 +740,17 @@ function buildCategoryIndex(){
     key, label: labelMap[key] ?? (key.charAt(0).toUpperCase()+key.slice(1)), count: categoryIndex.get(key).length
   }));
 }
- 
+
 function openDrawer(){
   overlay.hidden=false;
   drawer.hidden=false;
 }
- 
+
 function closeDrawer(){
   overlay.hidden=true;
   drawer.hidden=true;
 }
- 
+
 function renderDrawer(selectedKey){
   const selected = selectedKey ?? null;
   drawerCategoriesEl.innerHTML="";
@@ -787,11 +777,11 @@ function renderDrawer(selectedKey){
     drawerQuestionsEl.appendChild(b);
   });
 }
- 
+
 topicsBtn.addEventListener("click", ()=>{ if(faqsLoaded) openDrawer(); });
 overlay.addEventListener("click", closeDrawer);
 drawerCloseBtn.addEventListener("click", closeDrawer);
- 
+
 // load faqs
 fetch("./public/config/faqs.json")
   .then((res)=>res.json())
@@ -807,12 +797,12 @@ fetch("./public/config/faqs.json")
     buildCategoryIndex();
     renderDrawer(null);
   });
- 
+
 // Greeting
 function init(){
   addBubble(SETTINGS.greeting, "bot", { html:true, speak:false });
 }
- 
+
 if (document.readyState === "loading"){
   window.addEventListener("DOMContentLoaded", init);
 } else {
