@@ -1,319 +1,817 @@
-*** a/public/chat.js
---- b/public/chat.js
-@@
--const SETTINGS = {
--  minConfidence: 0.20,
--  suggestionLimit: 5,
--  chipLimit: 6,
--  chipClickCooldownMs: 900,
--  supportEmail: "support@Kelly.co.uk",
--  supportPhone: "01234 567890",
--  ticketTranscriptMessages: 12,
--  greeting:
--    "Hi! I’m <b>Welfare Support</b>. Ask me about opening times, support contact details, where we’re located, or how far you are from your closest depot."};
-+const SETTINGS = {
-+  minConfidence: 0.20,
-+  suggestionLimit: 5,
-+  chipLimit: 12, // allow larger topic lists (Department Contacts, etc.)
-+  chipClickCooldownMs: 900,
-+  supportEmail: "support@Kelly.co.uk",
-+  supportPhone: "01234 567890",
-+  ticketTranscriptMessages: 12,
-+  // Optional: if you have an SMS inbound number for Pay/Deductions, set it here (e.g. "+4420XXXXXXX")
-+  paySmsNumber: "",
-+  greeting:
-+    "Hi! I’m <b>Welfare Support</b> — please use the <b>Topics</b> button to choose what your query is about."};
-@@
- let ticketCtx = null;
- let distanceCtx = null;
-+let flowCtx = null; // NEW: guided Topics state (manager disputes, equipment, etc.)
-@@
- function linkTag(href, label) {
-   return `<a href="${escapeAttrUrl(href)}">${escapeHTML(label)}</a>`;
- }
-+
-+// NEW: contact helpers
-+function telHref(num){ return `tel:${String(num ?? "").replace(/[^+\d]/g,"")}`; }
-+function telLink(num, label){
-+  const lab = label || String(num);
-+  return linkTag(telHref(num), lab);
-+}
-+function smsHref(num, body){
-+  const n = String(num ?? "").replace(/[^+\d]/g,"");
-+  const b = encodeURIComponent(body ?? "");
-+  return `sms:${n}?&body=${b}`;
-+}
-@@
- function specialCases(text){
-   const q = normalize(text);
- 
-+  // ---------- Guided Topics flows (stateful)
-+  if (flowCtx) {
-+    // Generic yes/no helper
-+    const isYes = (q === "yes" || q === "y");
-+    const isNo  = (q === "no"  || q === "n");
-+
-+    // WORK ALLOCATION
-+    if (flowCtx.type === "workAllocation") {
-+      if (flowCtx.stage === "askRaised" && (isYes || isNo)) {
-+        flowCtx = null;
-+        if (isYes) {
-+          return { html: `Please contact Welfare directly on ${telLink("02087583060","02087583060")} and <b>hold the line</b>.`, chips: ["Department Contacts","Equipment Query","Pay / Payroll"] };
-+        } else {
-+          return { html: `Please raise this to your <b>Field</b> and <b>Area Manager</b> first.<br>If there are further concerns after this step please contact Welfare directly on ${telLink("02087583060","02087583060")} and <b>hold the line</b>.`, chips: ["Department Contacts","Equipment Query","Pay / Payroll"] };
-+        }
-+      }
-+    }
-+
-+    // MANAGER DISPUTE
-+    if (flowCtx.type === "managerDispute") {
-+      if (flowCtx.stage === "askFieldManager" && (isYes || isNo)) {
-+        if (isNo) {
-+          flowCtx = null;
-+          return { html: `Please contact Welfare directly on ${telLink("02087583060","02087583060")} and <b>hold the line</b>.`, chips: ["Department Contacts","Work Allocation"] };
-+        } else {
-+          flowCtx.stage = "askContactedAreaManager";
-+          return { html: "Have you contacted your <b>Area Manager</b>?", chips: ["Yes","No"] };
-+        }
-+      }
-+      if (flowCtx.stage === "askContactedAreaManager" && (isYes || isNo)) {
-+        flowCtx = null;
-+        if (isNo) {
-+          return { html: `Please contact your <b>Area Manager</b>.<br>If there are any further concerns after this step please contact Welfare directly on ${telLink("02087583060","02087583060")} and <b>hold the line</b>.`, chips: ["Department Contacts","Work Allocation"] };
-+        } else {
-+          return { html: `Please contact Welfare directly on ${telLink("02087583060","02087583060")} and <b>hold the line</b>.`, chips: ["Department Contacts","Work Allocation"] };
-+        }
-+      }
-+    }
-+
-+    // EQUIPMENT QUERY
-+    if (flowCtx.type === "equipment") {
-+      // stage: start -> expect Stock/Tooling/Van
-+      if (flowCtx.stage === "start") {
-+        const sel = q;
-+        if (sel === "stock" || sel === "tooling" || sel === "van") {
-+          flowCtx.sel = sel;
-+          if (sel === "stock") {
-+            flowCtx.stage = "stockAskForm";
-+            return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No"] };
-+          }
-+          if (sel === "tooling") {
-+            flowCtx.stage = "toolingAskByBox";
-+            return { html: "Has your Field Manager submitted an order through <b>ByBox</b>?", chips: ["Yes","No"] };
-+          }
-+          if (sel === "van") {
-+            flowCtx.stage = "vanAskRaised";
-+            return { html: "Have you raised the query of receiving a van to your <b>Field Manager</b> and <b>Area Manager</b>?", chips: ["Yes","No"] };
-+          }
-+        }
-+      }
-+      if (flowCtx.stage === "stockAskForm" && (isYes || isNo)) {
-+        flowCtx = null;
-+        if (isNo) {
-+          return { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>.", chips: ["Work Allocation","Department Contacts"] };
-+        } else {
-+          return { html: "Please contact your <b>Field Manager</b> regarding the update of your stock.<br>For any further concerns please contact Welfare directly on " + telLink("02087583060","02087583060") + " and <b>hold the line</b>.", chips: ["Department Contacts","Work Allocation"] };
-+        }
-+      }
-+      if (flowCtx.stage === "toolingAskByBox" && (isYes || isNo)) {
-+        flowCtx = null;
-+        if (isNo) {
-+          return { html: "Please contact your <b>Field Manager</b> and request them to submit an order to <b>ByBox</b>.", chips: ["Department Contacts","Work Allocation"] };
-+        } else {
-+          return { html: "Please follow up with your <b>Field Manager</b> regarding your order.<br>For any further concerns please contact Welfare directly on " + telLink("02087583060","02087583060") + " and <b>hold the line</b>.", chips: ["Department Contacts","Work Allocation"] };
-+        }
-+      }
-+      if (flowCtx.stage === "vanAskRaised" && (isYes || isNo)) {
-+        flowCtx = null;
-+        if (isNo) {
-+          return { html: "Please contact your <b>Field Manager</b> and query this through.", chips: ["Department Contacts","Work Allocation"] };
-+        } else {
-+          return { html: "As you have already raised this to your <b>Field</b> and <b>Area Manager</b>, please contact Welfare directly on " + telLink("02087583060","02087583060") + " and <b>hold the line</b>.", chips: ["Department Contacts","Work Allocation"] };
-+        }
-+      }
-+    }
-+
-+    // DEPARTMENT CONTACTS (and its NTF subflows)
-+    if (flowCtx.type === "deptContacts") {
-+      if (flowCtx.stage === "chooseDept") {
-+        // match department by normalized token
-+        const d = q;
-+        // direct contact items
-+        if (d === "street works") {
-+          flowCtx = null;
-+          return { html: `Please contact ${linkTag("mailto:Street.Works@kelly.co.uk","Street.Works@kelly.co.uk")} regarding any Street Works queries.` };
-+        }
-+        if (d === "smart awards") {
-+          flowCtx = null;
-+          return { html: `Please contact ${linkTag("mailto:smartawards@kelly.co.uk","smartawards@kelly.co.uk")} regarding any Smart Awards queries.` };
-+        }
-+        if (d === "support team") {
-+          flowCtx = null;
-+          return { html: `Please call ${telLink("02080164966","02080164966")} for any job support.` };
-+        }
-+        if (d === "city fibre back office") {
-+          flowCtx = null;
-+          return { html: `Please call ${telLink("02080164966","02080164966")} for any City Fibre back office / job queries.` };
-+        }
-+        if (d === "btor allocations team") {
-+          flowCtx = null;
-+          return { html: `Please call ${telLink("02080164962","02080164962")} for any Open Reach controls queries.` };
-+        }
-+        if (d === "fleet") {
-+          flowCtx = null;
-+          return { html: `Please call ${telLink("01582841291","01582841291")} or ${telLink("07940766377","07940766377")} (Out of Hours) for any vehicle or fleet related queries.` };
-+        }
-+        if (d === "accident line") {
-+          flowCtx = null;
-+          return { html: `Please call ${telLink("07940792355","07940792355")} for any accident reports (injuries or damage).` };
-+        }
-+        if (d === "parking line") {
-+          flowCtx = null;
-+          return { html: `Please call ${telLink("07940792355","07940792355")} for any parking queries.` };
-+        }
-+        if (d === "recruitment") {
-+          flowCtx = null;
-+          return { html: `Please call ${telLink("02037583058","02037583058")} for recruitment.` };
-+        }
-+        if (d === "btor ntf support") {
-+          flowCtx = { type:"btorNTF", stage:"chooseArea" };
-+          return { html: "Please select which area you are based (BTOR NTF):", chips: ["Wales & Midlands","London & SE","Wessex","North England & Scotland"] };
-+        }
-+        if (d === "city fibre ntf support") {
-+          flowCtx = { type:"cfNTF", stage:"chooseArea" };
-+          return { html: "Please select which area you are based (City Fibre NTF):", chips: ["Scotland","Midlands","South","North"] };
-+        }
-+      }
-+    }
-+
-+    if (flowCtx.type === "btorNTF" && flowCtx.stage === "chooseArea") {
-+      flowCtx = null;
-+      if (q === "wales midlands" || q === "wales & midlands") {
-+        return { html: `For NTF Wales & Midlands, please contact ${telLink("07484034863","07484034863")} or ${telLink("07483932673","07483932673")}.` };
-+      }
-+      if (q === "london se" || q === "london & se") {
-+        return { html: `For NTF London & SE, please contact ${telLink("07814089467","07814089467")} or ${telLink("07814470466","07814470466")}.` };
-+      }
-+      if (q === "wessex") {
-+        return { html: `For NTF Support Wessex, please contact ${telLink("07977670841","07977670841")} or ${telLink("07483555754","07483555754")}.` };
-+      }
-+      if (q === "north england scotland" || q === "north england & scotland") {
-+        return { html: `For NTF Support North England & Scotland, please contact ${telLink("07814089601","07814089601")} or ${telLink("07484082993","07484082993")}.` };
-+      }
-+    }
-+
-+    if (flowCtx.type === "cfNTF" && flowCtx.stage === "chooseArea") {
-+      flowCtx = null;
-+      if (q === "scotland") {
-+        return { html: `For NTF Support in Scotland, please contact ${telLink("07866950516","07866950516")} or ${telLink("07773652734","07773652734")}.` };
-+      }
-+      if (q === "midlands") {
-+        return { html: `For NTF Support in Midlands, please contact ${telLink("07773651968","07773651968")}.` };
-+      }
-+      if (q === "south") {
-+        return { html: `For NTF Support in South, please contact ${telLink("07773651950","07773651950")}.` };
-+      }
-+      if (q === "north") {
-+        return { html: `For NTF Support in North, please contact ${telLink("07773652146","07773652146")}, ${telLink("07977330563","07977330563")} or ${telLink("07773652702","07773652702")}.` };
-+      }
-+    }
-+  }
-+
-   if (q.includes("bank holiday") || q.includes("bank holidays")){
-     return { html:"❌ <b>No we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
-   }
-@@
-   if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")){
-     distanceCtx = { stage:"needOrigin" };
-     return { html:"What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
-   }
-@@
-   if (q.includes("where are you") || q.includes("location") || q.includes("address")){
-     const d = DEPOTS.nuneaton;
-     const tile = osmTileURL(d.lat, d.lon, 13);
-     const gmaps = `https://www.google.com/maps?q=${encodeURIComponent(d.lat + "," + d.lon)}`;
-     return { html:`We’re based in <b>Nuneaton, UK</b>.<br>${linkTag(gmaps,"Open in Google Maps")}<br>${imgTag(tile)}` };
-   }
- 
-+  // ---------- New: Topics triggers
-+  // WORK ALLOCATION
-+  if (q === "work allocation") {
-+    flowCtx = { type:"workAllocation", stage:"askRaised" };
-+    return { html: "Has this been raised with your <b>Field</b> and <b>Area Manager</b>?", chips: ["Yes","No"] };
-+  }
-+
-+  // MANAGER DISPUTE
-+  if (q === "manager dispute" || q === "manager disputes") {
-+    flowCtx = { type:"managerDispute", stage:"askFieldManager" };
-+    return { html: "Is this regarding your <b>Field Manager</b>?", chips: ["Yes","No"] };
-+  }
-+
-+  // DEPARTMENT CONTACTS
-+  if (q === "department contacts") {
-+    flowCtx = { type:"deptContacts", stage:"chooseDept" };
-+    return {
-+      html: "Pick a department:",
-+      chips: ["Street Works","Smart Awards","Support Team","City Fibre Back Office","BTOR Allocations Team","Fleet","Accident Line","Parking Line","Recruitment","BTOR NTF Support","City Fibre NTF Support"]
-+    };
-+  }
-+
-+  // CONTRACT CHANGE QUERIES
-+  if (q === "contract change queries" || q === "contract change" || q === "contract changes") {
-+    return { html: "For any <b>contract change</b> queries, please raise this to your <b>Area Manager</b>." };
-+  }
-+
-+  // EQUIPMENT QUERY
-+  if (q === "equipment query" || q === "equipment") {
-+    flowCtx = { type:"equipment", stage:"start" };
-+    return { html: "Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock","Tooling","Van"] };
-+  }
-+
-+  // STREET WORKS (standalone)
-+  if (q === "street works" || q === "streetworks") {
-+    return { html: `For any Street Works queries please contact ${linkTag("mailto:Street.Works@kelly.co.uk","Street.Works@kelly.co.uk")}.` };
-+  }
-+
-+  // SMART AWARDS (standalone)
-+  if (q === "smart awards" || q === "smart award") {
-+    return { html: `For any Smart Awards queries please contact ${linkTag("mailto:smartawards@kelly.co.uk","smartawards@kelly.co.uk")}.` };
-+  }
-+
-+  // ID CARDS
-+  if (q === "id cards" || q === "id card" || q === "id") {
-+    return { html: `If you have <b>lost</b>, <b>not received</b>, or your ID card has <b>expired</b>, please contact ${linkTag("mailto:nuneaton.admin@kelly.co.uk","nuneaton.admin@kelly.co.uk")}.` };
-+  }
-+
-+  // PAY / PAYROLL
-+  if (q === "pay" || q === "pay payroll" || q === "payroll") {
-+    const smsNum = SETTINGS.paySmsNumber?.trim();
-+    const intro = `For any <b>pay</b> queries please call ${telLink("02037583060","02037583060")} and select <b>option 1</b>.`;
-+    const smsNote = smsNum
-+      ? `<br>Or send a text using your messaging app: ${linkTag(smsHref(smsNum, "Pay query from Welfare Support chatbot"), "Send a text")}.`
-+      : "";
-+    const tip = `<br><small>(Per Friday meeting 13/02, the ticket system is <b>not</b> used for pay queries.)</small>`;
-+    return { html: intro + smsNote + tip, chips: ["Deductions","Department Contacts"] };
-+  }
-+
-+  // DEDUCTIONS
-+  if (q === "deductions" || q === "deduction") {
-+    const smsNum = SETTINGS.paySmsNumber?.trim();
-+    const intro = `For any <b>deduction</b> queries please call ${telLink("02037583060","02037583060")} and select <b>option 1</b>.`;
-+    const smsNote = smsNum
-+      ? `<br>Or send a text using your messaging app: ${linkTag(smsHref(smsNum, "Deduction query from Welfare Support chatbot"), "Send a text")}.`
-+      : "";
-+    const tip = `<br><small>(Per Friday meeting 13/02, the ticket system is <b>not</b> used for deduction queries.)</small>`;
-+    return { html: intro + smsNote + tip, chips: ["Pay / Payroll","Department Contacts"] };
-+  }
-+
-   return null;
- }
-@@
- clearBtn.addEventListener("click", () =>{
-   chatWindow.innerHTML="";
-   ticketCtx=null;
-   distanceCtx=null;
-+  flowCtx=null;
-   CHAT_LOG=[];
-   init();
- });
-``
+const SETTINGS = {
+  minConfidence: 0.20,
+  suggestionLimit: 5,
+  chipLimit: 6,
+  chipClickCooldownMs: 900,
+  supportEmail: "support@Kelly.co.uk",
+  supportPhone: "01234 567890",
+  ticketTranscriptMessages: 12,
+  greeting:
+    "Hi! I'm <b>Welfare Support</b>. Please let me know what your query is regarding — use the <b>Topics</b> button or type your question below."
+};
+
+let FAQS = [];
+let faqsLoaded = false;
+let categories = [];
+let categoryIndex = new Map();
+
+const chatWindow = document.getElementById("chatWindow");
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const clearBtn = document.getElementById("clearBtn");
+const suggestionsEl = document.getElementById("suggestions");
+const topicsBtn = document.getElementById("topicsBtn");
+const drawer = document.getElementById("topicsDrawer");
+const overlay = document.getElementById("drawerOverlay");
+const drawerCloseBtn = document.getElementById("drawerCloseBtn");
+const drawerCategoriesEl = document.getElementById("drawerCategories");
+const drawerQuestionsEl = document.getElementById("drawerQuestions");
+const micBtn = document.getElementById("micBtn");
+const voiceBtn = document.getElementById("voiceBtn");
+
+// state
+let isResponding = false;
+let lastChipClickAt = 0;
+let activeSuggestionIndex = -1;
+let currentSuggestions = [];
+let CHAT_LOG = [];
+let ticketCtx = null;
+let distanceCtx = null;
+let flowCtx = null; // for multi-step guided flows
+
+// helpers
+const normalize = (s) =>
+  (s ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[""'']/g, '"')
+    .replace(/[‐‑‒–—―]/g, "-")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+function escapeHTML(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function escapeAttrUrl(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function decodeHTMLEntities(str) {
+  const t = document.createElement("textarea");
+  t.innerHTML = str ?? "";
+  return t.value;
+}
+
+function htmlToPlainText(html) {
+  const t = document.createElement("template");
+  t.innerHTML = decodeHTMLEntities(html ?? "");
+  return (t.content.textContent ?? "").trim();
+}
+
+function sanitizeHTML(html) {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const allowedTags = new Set(["B","STRONG","I","EM","BR","A","SMALL","IMG"]);
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
+  const toReplace = [];
+  while (walker.nextNode()) {
+    const el = walker.currentNode;
+    if (!allowedTags.has(el.tagName)) { toReplace.push(el); continue; }
+    [...el.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (el.tagName === "A" && (name === "href" || name === "target" || name === "rel")) return;
+      if (el.tagName === "IMG" && (name === "src" || name === "alt" || name === "class" || name === "loading")) return;
+      el.removeAttribute(attr.name);
+    });
+    if (el.tagName === "A") {
+      const href = el.getAttribute("href") ?? "";
+      const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href);
+      if (!safe) el.removeAttribute("href");
+      el.setAttribute("rel", "noopener noreferrer");
+      el.setAttribute("target", "_blank");
+    }
+    if (el.tagName === "IMG") {
+      const src = el.getAttribute("src") ?? "";
+      if (!/^https:\/\//i.test(src)) toReplace.push(el);
+      else el.setAttribute("loading", "lazy");
+      if (!el.getAttribute("alt")) el.setAttribute("alt", "Map preview");
+    }
+  }
+  toReplace.forEach((node) => node.replaceWith(document.createTextNode(node.textContent ?? "")));
+  return template.innerHTML;
+}
+
+// UK time
+const UK_TZ = "Europe/London";
+function formatUKTime(date) {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour: "2-digit", minute: "2-digit", hour12: false }).format(date);
+}
+
+function getUKDateISO(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, year:"numeric", month:"2-digit", day:"2-digit" });
+  const parts = fmt.formatToParts(date);
+  const y = parts.find(p=>p.type==="year")?.value ?? "0000";
+  const m = parts.find(p=>p.type==="month")?.value ?? "01";
+  const d = parts.find(p=>p.type==="day")?.value ?? "01";
+  return `${y}-${m}-${d}`;
+}
+
+function getUKDayIndex(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, weekday:"short" });
+  const wd = fmt.format(date);
+  const map = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:7 };
+  return map[wd] ?? 0;
+}
+
+function getUKMinutesNow(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: UK_TZ, hour:"2-digit", minute:"2-digit", hour12:false });
+  const parts = fmt.formatToParts(date);
+  const h = parseInt(parts.find(p=>p.type==="hour")?.value ?? "0", 10);
+  const m = parseInt(parts.find(p=>p.type==="minute")?.value ?? "0", 10);
+  return h*60+m;
+}
+
+// Business hours Mon-Fri 08:30-17:00
+const BUSINESS = { start: 8*60+30, end: 17*60, openDays: new Set([1,2,3,4,5]) };
+
+// Bank holidays (England & Wales) 2025-2028
+const BANK_HOLIDAYS_EW = new Set([
+  "2025-01-01","2025-04-18","2025-04-21","2025-05-05","2025-05-26","2025-08-25","2025-12-25","2025-12-26",
+  "2026-01-01","2026-04-03","2026-04-06","2026-05-04","2026-05-25","2026-08-31","2026-12-25","2026-12-28",
+  "2027-01-01","2027-03-26","2027-03-29","2027-05-03","2027-05-31","2027-08-30","2027-12-27","2027-12-28",
+  "2028-01-03","2028-04-14","2028-04-17","2028-05-01","2028-05-29","2028-08-28","2028-12-25","2028-12-26"
+]);
+
+function isBankHolidayToday() {
+  return BANK_HOLIDAYS_EW.has(getUKDateISO(new Date()));
+}
+
+function isOpenNow() {
+  const day = getUKDayIndex(new Date());
+  const mins = getUKMinutesNow(new Date());
+  if (!BUSINESS.openDays.has(day)) return false;
+  if (mins < BUSINESS.start || mins >= BUSINESS.end) return false;
+  if (isBankHolidayToday()) return false;
+  return true;
+}
+
+// Map helpers
+function lonLatToTileXY(lon, lat, z) {
+  const latRad = lat * Math.PI / 180;
+  const n = Math.pow(2, z);
+  const x = Math.floor((lon + 180) / 360 * n);
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  return { x, y };
+}
+
+function osmTileURL(lat, lon, zoom = 13) {
+  const t = lonLatToTileXY(lon, lat, zoom);
+  return `https://tile.openstreetmap.org/${zoom}/${t.x}/${t.y}.png`;
+}
+
+function imgTag(src, alt="Map preview") {
+  return `<img class="map-preview" src="${escapeAttrUrl(src)}" alt="${escapeHTML(alt)}" loading="lazy" />`;
+}
+
+function linkTag(href, label) {
+  return `<a href="${escapeAttrUrl(href)}">${escapeHTML(label)}</a>`;
+}
+
+// Depots/places
+const DEPOTS = { nuneaton: { label:"Nuneaton Depot", lat:52.515770, lon:-1.4507820 } };
+const PLACES = {
+  coventry:{ lat:52.4068, lon:-1.5197 },
+  birmingham:{ lat:52.4895, lon:-1.8980 },
+  leicester:{ lat:52.6369, lon:-1.1398 },
+  london:{ lat:51.5074, lon:-0.1278 }
+};
+
+function toRad(deg){ return (deg*Math.PI)/180; }
+function distanceMiles(a,b){
+  const R=3958.8;
+  const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
+  const lat1=toRad(a.lat), lat2=toRad(b.lat);
+  const h=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return R*(2*Math.asin(Math.sqrt(h)));
+}
+
+function findClosestDepot(origin){
+  let bestKey=null, best=Infinity;
+  for (const k in DEPOTS){
+    const miles=distanceMiles(origin, DEPOTS[k]);
+    if (miles<best){ best=miles; bestKey=k; }
+  }
+  return bestKey ? { depotKey: bestKey, miles: best } : null;
+}
+
+function googleDirectionsURL(originText, depot, mode){
+  const origin=encodeURIComponent(originText);
+  const dest=encodeURIComponent(`${depot.lat},${depot.lon}`);
+  const travelmode = mode === "walk" ? "walking" : (mode === "train" || mode === "bus") ? "transit" : "driving";
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=${travelmode}`;
+}
+
+// GPS helper
+function requestBrowserLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (err) => reject(err),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 }
+    );
+  });
+}
+
+// Ticket helpers
+function isValidPhone(raw) {
+  const digits = String(raw ?? "").replace(/[^\d]/g, "");
+  return digits.length >= 8 && digits.length <= 16;
+}
+
+function buildTranscript(limit = 12) {
+  const slice = CHAT_LOG.slice(-Math.max(1, limit));
+  return slice.map((m) => `[${formatUKTime(new Date(m.ts))}] ${m.role}: ${m.text}`).join("\n");
+}
+
+// speaker
+const VOICE_KEY = "ws_voice_v1";
+const voiceState = { on:false, armed:false };
+try { Object.assign(voiceState, JSON.parse(localStorage.getItem(VOICE_KEY) || "{}")); } catch {}
+
+function saveVoice(){ try{ localStorage.setItem(VOICE_KEY, JSON.stringify(voiceState)); } catch{} }
+function updateVoiceUI(){
+  voiceBtn.classList.toggle("on", voiceState.on);
+  voiceBtn.textContent = voiceState.on ? "🔊" : "🔈";
+  voiceBtn.setAttribute("aria-pressed", voiceState.on ? "true" : "false");
+}
+
+function speak(text){
+  if (!voiceState.on || !voiceState.armed) return;
+  if (!("speechSynthesis" in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(text ?? ""));
+    u.lang = "en-GB";
+    window.speechSynthesis.speak(u);
+  } catch {}
+}
+
+updateVoiceUI();
+window.addEventListener("pointerdown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
+window.addEventListener("keydown", ()=>{ voiceState.armed=true; saveVoice(); }, { passive:true });
+
+voiceBtn.addEventListener("click", ()=>{
+  voiceState.armed = true;
+  voiceState.on = !voiceState.on;
+  saveVoice();
+  updateVoiceUI();
+  addBubble(voiceState.on ? "Voice output is now <b>on</b>." : "Voice output is now <b>off</b>.", "bot", { html:true, speak:false });
+});
+
+// mic
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let micListening = false;
+
+function initSpeech(){
+  if (!SpeechRecognition) return null;
+  const rec = new SpeechRecognition();
+  rec.lang = "en-GB";
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  rec.onstart = ()=>{
+    micListening=true;
+    micBtn.classList.add("on");
+    micBtn.textContent="🎙️";
+    micBtn.setAttribute("aria-pressed","true");
+  };
+  rec.onend = ()=>{
+    micListening=false;
+    micBtn.classList.remove("on");
+    micBtn.textContent="🎤";
+    micBtn.setAttribute("aria-pressed","false");
+  };
+  rec.onerror = ()=>{
+    micListening=false;
+    micBtn.classList.remove("on");
+    micBtn.textContent="🎤";
+    micBtn.setAttribute("aria-pressed","false");
+    addBubble("Voice input isn't supported here — please type your question.", "bot", { speak:false });
+  };
+  rec.onresult = (event)=>{
+    const t = event.results?.[0]?.[0]?.transcript ?? "";
+    if (t.trim()){
+      input.value = t.trim();
+      sendChat();
+    }
+  };
+  return rec;
+}
+
+recognizer = initSpeech();
+micBtn.addEventListener("click", ()=>{
+  voiceState.armed=true; saveVoice();
+  if (!recognizer){
+    addBubble("Voice input isn't supported in this browser. Try Chrome/Edge, or type your question.", "bot", { speak:false });
+    return;
+  }
+  try{
+    if (micListening) recognizer.stop();
+    else recognizer.start();
+  } catch {
+    addBubble("Couldn't start voice input — please try again.", "bot", { speak:false });
+  }
+});
+
+// UI helpers
+function addBubble(text, type, opts = {}) {
+  const html = !!opts.html;
+  const ts = opts.ts ?? new Date();
+  const speakThis = opts.speak !== false;
+  const row = document.createElement("div");
+  row.className = "msg " + type;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble " + type;
+  if (html) {
+    const decoded = decodeHTMLEntities(text);
+    bubble.innerHTML = sanitizeHTML(decoded);
+  } else {
+    bubble.textContent = text;
+  }
+  const time = document.createElement("div");
+  time.className = "timestamp";
+  time.textContent = formatUKTime(ts);
+  row.appendChild(bubble);
+  row.appendChild(time);
+  chatWindow.appendChild(row);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+  const plain = html ? htmlToPlainText(text) : String(text ?? "").trim();
+  if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
+  if (type === "bot" && speakThis) speak(plain);
+}
+
+function addChips(labels, onClick) {
+  const qs = labels ?? [];
+  if (!qs.length) return;
+  const wrap = document.createElement("div");
+  wrap.className = "chips";
+  qs.slice(0, SETTINGS.chipLimit).forEach((label) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip-btn";
+    b.textContent = label;
+    b.addEventListener("click", async () => {
+      voiceState.armed = true; saveVoice();
+      const now = Date.now();
+      if (isResponding) return;
+      if (now - lastChipClickAt < SETTINGS.chipClickCooldownMs) return;
+      lastChipClickAt = now;
+      wrap.querySelectorAll(".chip-btn").forEach((btn)=>btn.disabled=true);
+      if (label === "Use my location" && distanceCtx?.stage === "needOrigin") {
+        await handleUseMyLocation();
+        return;
+      }
+      if (typeof onClick === "function") onClick(label);
+      else handleUserMessage(label);
+    });
+    wrap.appendChild(b);
+  });
+  chatWindow.appendChild(wrap);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+// GPS handler
+async function handleUseMyLocation(){
+  addBubble("Use my location", "user", { speak:false });
+  isResponding=true;
+  try{
+    const loc = await requestBrowserLocation();
+    const closest = findClosestDepot({ lat: loc.lat, lon: loc.lon });
+    if (!closest){
+      addBubble("I couldn't determine a nearby depot from your location. Please type a town/city.", "bot");
+      addChips(["Coventry","Birmingham","Leicester","London"]);
+    } else {
+      const depot = DEPOTS[closest.depotKey];
+      distanceCtx = { stage:"haveClosest", originKey:"your location", depotKey: closest.depotKey, miles: closest.miles };
+      addBubble(`Thanks — your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, "bot", { html:true });
+      addChips(["By car","By train","By bus","Walking"]);
+    }
+  } catch {
+    addBubble("I couldn't access your location. Please allow permission, or choose a town/city.", "bot");
+    addChips(["Coventry","Birmingham","Leicester","London"]);
+  } finally {
+    isResponding=false;
+  }
+}
+
+// --------- Guided Flows (Work Allocation, Manager Dispute, Equipment) ---------
+
+function handleFlow(text) {
+  const q = normalize(text);
+  if (!flowCtx) return null;
+
+  // Cancel at any point
+  if (q === "cancel" || q === "stop" || q === "restart") {
+    flowCtx = null;
+    return { html: "No problem, I've cancelled that. Feel free to ask anything else or use the <b>Topics</b> button." };
+  }
+
+  // ---- Work Allocation Flow ----
+  if (flowCtx.type === "workAllocation") {
+    if (flowCtx.stage === "askRaised") {
+      if (q === "yes") {
+        flowCtx = null;
+        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      } else {
+        flowCtx = null;
+        return { html: "Please raise this to your <b>Field and Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      }
+    }
+  }
+
+  // ---- Manager Dispute Flow ----
+  if (flowCtx.type === "managerDispute") {
+    if (flowCtx.stage === "askFieldManager") {
+      if (q === "yes") {
+        flowCtx = { type: "managerDispute", stage: "askAreaManager" };
+        return { html: "Have you contacted your <b>Area Manager</b>?", chips: ["Yes", "No"] };
+      } else {
+        flowCtx = null;
+        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      }
+    }
+    if (flowCtx.stage === "askAreaManager") {
+      if (q === "yes") {
+        flowCtx = null;
+        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      } else {
+        flowCtx = null;
+        return { html: "Please contact your <b>Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      }
+    }
+  }
+
+  // ---- Equipment Flow ----
+  if (flowCtx.type === "equipment") {
+    if (flowCtx.stage === "askType") {
+      if (q === "stock") {
+        flowCtx = { type: "equipment", stage: "stockFormSubmitted" };
+        return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes", "No"] };
+      } else if (q === "tooling") {
+        flowCtx = { type: "equipment", stage: "byboxSubmitted" };
+        return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes", "No"] };
+      } else if (q === "van") {
+        flowCtx = { type: "equipment", stage: "vanRaised" };
+        return { html: "Have you raised the query of receiving a van to your <b>Field Manager and Area Manager</b>?", chips: ["Yes", "No"] };
+      }
+    }
+    if (flowCtx.stage === "stockFormSubmitted") {
+      if (q === "yes") {
+        flowCtx = null;
+        return { html: "Please contact your <b>Field Manager</b> regarding the update of your stock. Any further concerns, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      } else {
+        flowCtx = null;
+        return { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>." };
+      }
+    }
+    if (flowCtx.stage === "byboxSubmitted") {
+      if (q === "yes") {
+        flowCtx = null;
+        return { html: "Please follow up with your <b>Field Manager</b> regarding your order. Any further concerns, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      } else {
+        flowCtx = null;
+        return { html: "Please contact your <b>Field Manager</b> and request them to submit an order to <b>ByBox</b>." };
+      }
+    }
+    if (flowCtx.stage === "vanRaised") {
+      if (q === "yes") {
+        flowCtx = null;
+        return { html: "As you have raised this to your Field and Area Manager, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+      } else {
+        flowCtx = null;
+        return { html: "Please contact your <b>Field Manager</b> and query this through." };
+      }
+    }
+  }
+
+  return null;
+}
+
+// --------- Special Cases ---------
+
+function specialCases(text){
+  const q = normalize(text);
+
+  // Active flow check first
+  if (flowCtx) {
+    const flowResult = handleFlow(text);
+    if (flowResult) return flowResult;
+  }
+
+  if (q.includes("bank holiday") || q.includes("bank holidays")){
+    return { html:"❌ <b>No we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
+  }
+
+  if (q.includes("is anyone available") || q.includes("available now") || q.includes("open now")){
+    const open = isOpenNow();
+    const nowUK = formatUKTime(new Date());
+    if (open){
+      return { html:`✅ <b>Yes we're open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips:["How can I contact support?"] };
+    }
+    const bh = isBankHolidayToday();
+    return { html:`❌ <b>No we're closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
+  }
+
+  // Work Allocation
+  if (q.includes("work allocation") || q.includes("work query") || q.includes("no work") || q.includes("job allocation")){
+    flowCtx = { type: "workAllocation", stage: "askRaised" };
+    return { html: "Has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes", "No"] };
+  }
+
+  // Manager Dispute
+  if (q.includes("manager dispute") || q.includes("dispute with manager") || q.includes("manager issue") || q.includes("manager complaint")){
+    flowCtx = { type: "managerDispute", stage: "askFieldManager" };
+    return { html: "Is this regarding your <b>Field Manager</b>?", chips: ["Yes", "No"] };
+  }
+
+  // Equipment Query
+  if (q.includes("equipment") || q.includes("equipment query") || q.includes("stock query") || q.includes("tooling") || q.includes("van query")){
+    flowCtx = { type: "equipment", stage: "askType" };
+    return { html: "Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock", "Tooling", "Van"] };
+  }
+
+  // Ticket flow
+  const wantsTicket =
+    q.includes("raise a request") || q.includes("create a ticket") || q.includes("open a ticket") ||
+    q.includes("log a ticket") || q.includes("submit a request") || q === "ticket";
+
+  if (!ticketCtx && wantsTicket){
+    ticketCtx = { stage:"needType" };
+    return { html:"Sure — what do you need help with?", chips:["Access / Login","Pay / Payroll","General query","Something else"] };
+  }
+
+  if (ticketCtx){
+    if (q==="cancel" || q==="stop" || q==="restart"){
+      ticketCtx=null;
+      return { html:"No problem, I've cancelled that request. If you want to start again, type <b>raise a request</b>." };
+    }
+    if (ticketCtx.stage==="needType"){ ticketCtx.type=text.trim(); ticketCtx.stage="needName"; return { html:"Thanks — what's your name?" }; }
+    if (ticketCtx.stage==="needName"){ ticketCtx.name=text.trim(); ticketCtx.stage="needEmail"; return { html:"And what email should we reply to?" }; }
+    if (ticketCtx.stage==="needEmail"){
+      const email=text.trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { html:"That doesn't look like an email, can you retype it?" };
+      ticketCtx.email=email; ticketCtx.stage="needPhone"; return { html:"Thank you, what's the best contact number for you?" };
+    }
+    if (ticketCtx.stage==="needPhone"){
+      const phone=text.trim();
+      if(!isValidPhone(phone)) return { html:"That number doesn't look right, please enter a valid contact number (digits only is fine, or include +)." };
+      ticketCtx.phone=phone; ticketCtx.stage="needDescription"; return { html:"Briefly describe the issue (1–3 sentences is perfect)." };
+    }
+    if (ticketCtx.stage==="needDescription"){ ticketCtx.description=text.trim(); ticketCtx.stage="needUrgency"; return { html:"How urgent is this?", chips:["Low","Normal","High"] }; }
+    if (ticketCtx.stage==="needUrgency"){
+      ticketCtx.urgency=text.trim();
+      const transcript = buildTranscript(SETTINGS.ticketTranscriptMessages ?? 40);
+      const subject = encodeURIComponent(`[Welfare Support] ${ticketCtx.type} (${ticketCtx.urgency})`);
+      const body = encodeURIComponent(
+        `Name: ${ticketCtx.name}\nEmail: ${ticketCtx.email}\nContact number: ${ticketCtx.phone}\nUrgency: ${ticketCtx.urgency}\nType: ${ticketCtx.type}\n\nDescription:\n${ticketCtx.description}\n\nChat transcript:\n${transcript}\n\n--- Sent from Welfare Support chatbot`
+      );
+      const mailtoHref = `mailto:${SETTINGS.supportEmail}?subject=${subject}&body=${body}`;
+      const html =
+        `<b>Request summary</b><br>` +
+        `Type: <b>${escapeHTML(ticketCtx.type)}</b><br>` +
+        `Urgency: <b>${escapeHTML(ticketCtx.urgency)}</b><br>` +
+        `Name: <b>${escapeHTML(ticketCtx.name)}</b><br>` +
+        `Email: <b>${escapeHTML(ticketCtx.email)}</b><br>` +
+        `Contact number: <b>${escapeHTML(ticketCtx.phone)}</b><br><br>` +
+        `${linkTag(mailtoHref, "Email support with this request (includes transcript)")}` +
+        `<br><small>(This opens your email app with the message prefilled, you then press Send.)</small>`;
+      ticketCtx=null;
+      return { html, chips:["Raise a request (create a ticket)"] };
+    }
+  }
+
+  if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")){
+    distanceCtx = { stage:"needOrigin" };
+    return { html:"What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
+  }
+
+  if (distanceCtx?.stage==="needOrigin"){
+    const cityKey = Object.keys(PLACES).find(k=>q===k || q.includes(k));
+    if (cityKey){
+      const closest = findClosestDepot(PLACES[cityKey]);
+      const depot = DEPOTS[closest.depotKey];
+      distanceCtx = { stage:"haveClosest", originKey: cityKey, depotKey: closest.depotKey, miles: closest.miles };
+      return { html:`Thanks, your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`, chips:["By car","By train","By bus","Walking"] };
+    }
+  }
+
+  if (distanceCtx?.stage==="haveClosest"){
+    if (q==="by car" || q==="by train" || q==="by bus" || q==="walking"){
+      const mode = q==="walking" ? "walk" : q.replace("by ","");
+      const depot = DEPOTS[distanceCtx.depotKey];
+      const originLabel = distanceCtx.originKey==="your location" ? "your location" : distanceCtx.originKey;
+      const url = googleDirectionsURL(originLabel, depot, mode);
+      const tile = osmTileURL(depot.lat, depot.lon, 13);
+      return {
+        html:
+          `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
+          `${linkTag(url, "Get directions in Google Maps")}<br>` +
+          `${imgTag(tile, "OpenStreetMap preview")}`
+      };
+    }
+  }
+
+  if (q.includes("where are you") || q.includes("location") || q.includes("address")){
+    const d = DEPOTS.nuneaton;
+    const tile = osmTileURL(d.lat, d.lon, 13);
+    const gmaps = `https://www.google.com/maps?q=${encodeURIComponent(d.lat + "," + d.lon)}`;
+    return { html:`We're based in <b>Nuneaton, UK</b>.<br>${linkTag(gmaps,"Open in Google Maps")}<br>${imgTag(tile)}` };
+  }
+
+  return null;
+}
+
+// --------- Main message handling ---------
+
+function handleUserMessage(text){
+  if (!text) return;
+  addBubble(text, "user", { speak:false });
+  input.value="";
+  isResponding=true;
+
+  const s = specialCases(text);
+  if (s){
+    addBubble(s.html, "bot", { html:true });
+    if (s.chips) addChips(s.chips);
+    isResponding=false;
+    return;
+  }
+
+  const faq = matchFAQ(text);
+  if (faq){
+    addBubble(faq.answer, "bot", { html:true });
+    if (faq.followUps?.length) addChips(faq.followUps);
+    isResponding=false;
+    return;
+  }
+
+  addBubble("Try the <b>Topics</b> button, or ask about: <b>pay</b>, <b>work allocation</b>, <b>manager dispute</b>, <b>equipment</b>, <b>department contacts</b>, <b>opening times</b>, or <b>raise a request</b>.", "bot", { html:true });
+  isResponding=false;
+}
+
+function sendChat(){
+  if (isResponding) return;
+  const t = input.value.trim();
+  if (!t) return;
+  handleUserMessage(t);
+}
+
+sendBtn.addEventListener("click", sendChat);
+input.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendChat(); } });
+
+clearBtn.addEventListener("click", ()=>{
+  chatWindow.innerHTML="";
+  ticketCtx=null;
+  distanceCtx=null;
+  flowCtx=null;
+  CHAT_LOG=[];
+  init();
+});
+
+// --------- FAQ Matching ---------
+
+function scoreMatch(qNorm, candNorm) {
+  if (!qNorm || !candNorm) return 0;
+  if (qNorm === candNorm) return 1;
+  if (candNorm.includes(qNorm) || qNorm.includes(candNorm)) return 0.92;
+  const qT = new Set(qNorm.split(" ").filter(Boolean));
+  const cT = new Set(candNorm.split(" ").filter(Boolean));
+  const inter = [...qT].filter(t => cT.has(t)).length;
+  const union = new Set([...qT, ...cT]).size;
+  return union ? inter / union : 0;
+}
+
+function matchFAQ(text) {
+  const q = normalize(text);
+  if (!q || !FAQS.length) return null;
+  let best = null;
+  for (const item of FAQS) {
+    const variants = [item.question, ...(item.synonyms || [])].filter(Boolean);
+    let bestLocal = 0;
+    for (const v of variants) {
+      bestLocal = Math.max(bestLocal, scoreMatch(q, normalize(v)));
+      if (bestLocal >= 0.98) break;
+    }
+    const kws = (item.canonicalKeywords || []).map(k => normalize(k)).filter(Boolean);
+    if (kws.some(k => q.includes(k))) bestLocal = Math.min(1, bestLocal + 0.06);
+    if (!best || bestLocal > best.score) best = { item, score: bestLocal };
+  }
+  return best && best.score >= SETTINGS.minConfidence ? best.item : null;
+}
+
+// --------- Drawer ---------
+
+function buildCategoryIndex(){
+  categoryIndex=new Map();
+  FAQS.forEach((item)=>{
+    const key=(item.category ?? "general").toLowerCase();
+    if(!categoryIndex.has(key)) categoryIndex.set(key, []);
+    categoryIndex.get(key).push(item);
+  });
+  const labelMap={
+    general:"General",
+    support:"Support",
+    opening:"Opening times",
+    actions:"Actions",
+    pay:"Pay & Deductions",
+    work:"Work Allocation",
+    contract:"Contract",
+    departments:"Departments",
+    equipment:"Equipment"
+  };
+  categories=Array.from(categoryIndex.keys()).sort().map((key)=>({
+    key, label: labelMap[key] ?? (key.charAt(0).toUpperCase()+key.slice(1)), count: categoryIndex.get(key).length
+  }));
+}
+
+function openDrawer(){
+  overlay.hidden=false;
+  drawer.hidden=false;
+}
+
+function closeDrawer(){
+  overlay.hidden=true;
+  drawer.hidden=true;
+}
+
+function renderDrawer(selectedKey){
+  const selected = selectedKey ?? null;
+  drawerCategoriesEl.innerHTML="";
+  drawerQuestionsEl.innerHTML="";
+  categories.forEach((c)=>{
+    const pill=document.createElement("button");
+    pill.type="button";
+    pill.className="cat-pill";
+    pill.textContent=`${c.label} (${c.count})`;
+    pill.setAttribute("aria-selected", String(c.key===selected));
+    pill.addEventListener("click", ()=>renderDrawer(c.key));
+    drawerCategoriesEl.appendChild(pill);
+  });
+  const list = selected && categoryIndex.has(selected) ? categoryIndex.get(selected) : FAQS;
+  list.forEach((item)=>{
+    const b=document.createElement("button");
+    b.type="button";
+    b.className="drawer-q";
+    b.textContent=item.question;
+    b.addEventListener("click", ()=>{
+      closeDrawer();
+      handleUserMessage(item.question);
+    });
+    drawerQuestionsEl.appendChild(b);
+  });
+}
+
+topicsBtn.addEventListener("click", ()=>{ if(faqsLoaded) openDrawer(); });
+overlay.addEventListener("click", closeDrawer);
+drawerCloseBtn.addEventListener("click", closeDrawer);
+
+// load faqs
+fetch("./public/config/faqs.json")
+  .then((res)=>res.json())
+  .then((data)=>{
+    FAQS = Array.isArray(data) ? data : [];
+    faqsLoaded=true;
+    buildCategoryIndex();
+    renderDrawer(null);
+  })
+  .catch(()=>{
+    FAQS=[];
+    faqsLoaded=true;
+    buildCategoryIndex();
+    renderDrawer(null);
+  });
+
+// Greeting
+function init(){
+  addBubble(SETTINGS.greeting, "bot", { html:true, speak:false });
+}
+
+if (document.readyState === "loading"){
+  window.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
