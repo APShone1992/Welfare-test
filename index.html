@@ -76,17 +76,22 @@
       background:rgba(255,255,255,0.24);border-color:rgba(255,255,255,0.36);outline:none;
     }
     .chat-window{
-      flex:1;padding:18px 16px 10px;overflow-y:auto;
-      background:var(--surface-2);scroll-behavior:smooth;
+      flex:1;overflow-y:auto;
+      background:var(--surface-2);
+      display:flex;flex-direction:column-reverse;
     }
     .chat-window::-webkit-scrollbar{width:4px}
     .chat-window::-webkit-scrollbar-track{background:transparent}
     .chat-window::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:4px}
+    .chat-inner{
+      display:flex;flex-direction:column;
+      padding:10px 16px 6px;
+    }
     .msg{
-      display:flex;flex-direction:column;gap:3px;margin:8px 0;
+      display:flex;flex-direction:column;gap:3px;margin:6px 0;
       animation:msgIn .2s cubic-bezier(.22,1,.36,1) both;
     }
-    @keyframes msgIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     .msg.bot{align-items:flex-start}
     .msg.user{align-items:flex-end}
     .timestamp{font-size:10.5px;color:var(--text-muted);padding:0 4px;letter-spacing:.02em;user-select:none}
@@ -255,9 +260,11 @@
         </button>
       </div>
     </header>
- 
-    <div id="chatWindow" class="chat-window" role="log" aria-live="polite" aria-relevant="additions" aria-atomic="false"></div>
- 
+
+    <div id="chatWindow" class="chat-window" role="log" aria-live="polite" aria-relevant="additions" aria-atomic="false">
+      <div id="chatInner" class="chat-inner"></div>
+    </div>
+
     <div class="input-area">
       <div class="input-wrap">
         <input id="chatInput" type="text" placeholder="Type your question…" autocomplete="off" aria-label="Ask a question" />
@@ -275,7 +282,7 @@
       </button>
     </div>
   </div>
- 
+
   <!-- Topics Drawer -->
   <div id="drawerOverlay" class="drawer-overlay" hidden></div>
   <aside id="topicsDrawer" class="drawer" role="dialog" aria-modal="true" aria-label="Topics" hidden>
@@ -294,7 +301,7 @@
       <div id="drawerQuestions" class="drawer-questions"></div>
     </div>
   </aside>
- 
+
   <script src="./public/chat.js"></script>
 </body>
 </html>
