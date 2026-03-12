@@ -4,8 +4,23 @@ const SETTINGS = {
   chipLimit: 6,
   chipClickCooldownMs: 900,
   smsNumber: "07773652107",
-  greeting: "Hi! I'm <b>Welfare Support</b>. Please let me know what your query is regarding — use the <b>Topics</b> button or type your question below."
+  smsMaxChars: 500,
 };
+
+// --------- Time-aware greeting (Fix 6 + 7) ---------
+function getGreeting() {
+  const h = getUKMinutesNow() / 60;
+  const open = isOpenNow();
+  let timeGreet = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  if (!open) {
+    const bh = isBankHolidayToday();
+    const ooh = `<br><br>⚠️ We're currently <b>closed</b>${bh ? " (bank holiday)" : ""}. Office hours are <b>Mon–Fri 8:30am–5pm</b>. For urgent queries outside these hours:<br>` +
+      `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
+      `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`;
+    return `${timeGreet}! I'm <b>Welfare Support</b>.${ooh}<br><br>I can still help answer questions — use the <b>Topics</b> button or type below.`;
+  }
+  return `${timeGreet}! I'm <b>Welfare Support</b> — here to help. Use the <b>Topics</b> button or type your question below.`;
+}
 
 let FAQS = [];
 let faqsLoaded = false;
@@ -34,7 +49,39 @@ let currentSuggestions = [];
 let CHAT_LOG = [];
 let smsCtx = null;
 let distanceCtx = null;
-let flowCtx = null; // for multi-step guided flows
+let flowCtx = null;
+let lastBotIntent = null;   // context memory — last intent bot responded to
+let lastPhoneNumber = null; // context memory — last phone number mentioned
+
+// --------- Unresolved query log (Fix 9) ---------
+const UNRESOLVED_KEY = "ws_unresolved_v1";
+function logUnresolved(text) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(UNRESOLVED_KEY) || "[]");
+    existing.push({ text, ts: Date.now() });
+    // Keep last 200
+    if (existing.length > 200) existing.splice(0, existing.length - 200);
+    localStorage.setItem(UNRESOLVED_KEY, JSON.stringify(existing));
+  } catch {}
+}
+function getUnresolvedLog() {
+  try { return JSON.parse(localStorage.getItem(UNRESOLVED_KEY) || "[]"); } catch { return []; }
+}
+
+// --------- Relative timestamps (Fix 3) ---------
+function relativeTime(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 10) return "Just now";
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  return formatUKTime(new Date(ts));
+}
+// Update all timestamps every 30 seconds
+setInterval(() => {
+  document.querySelectorAll(".timestamp[data-ts]").forEach(el => {
+    el.textContent = relativeTime(parseInt(el.dataset.ts));
+  });
+}, 30000);
 
 // helpers
 const normalize = (s) =>
@@ -346,11 +393,74 @@ function addBubble(text, type, opts = {}) {
   } else {
     bubble.textContent = text;
   }
-  const time = document.createElement("div");
+
+  // Extract phone numbers for context memory
+  if (type === "bot") {
+    const phoneMatch = (html ? htmlToPlainText(text) : text).match(/0\d[\d\s]{8,12}/);
+    if (phoneMatch) lastPhoneNumber = phoneMatch[0].replace(/\s/g, "");
+  }
+
+  // Copy-number buttons on all tel: links (Fix 2)
+  if (type === "bot" && html) {
+    bubble.querySelectorAll("a[href^='tel:']").forEach(a => {
+      const num = a.getAttribute("href").replace("tel:","");
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "copy-num-btn";
+      copyBtn.title = "Copy number";
+      copyBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+      copyBtn.addEventListener("click", e => {
+        e.preventDefault();
+        navigator.clipboard?.writeText(num).then(() => {
+          copyBtn.innerHTML = `✓`;
+          copyBtn.style.background = "#16a34a";
+          setTimeout(() => {
+            copyBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+            copyBtn.style.background = "";
+          }, 2000);
+        });
+      });
+      a.insertAdjacentElement("afterend", copyBtn);
+    });
+  }
+
+  const meta = document.createElement("div");
+  meta.className = "msg-meta";
+
+  const time = document.createElement("span");
   time.className = "timestamp";
-  time.textContent = formatUKTime(ts);
+  time.dataset.ts = ts.getTime();
+  time.textContent = relativeTime(ts.getTime());
+  meta.appendChild(time);
+
+  // Feedback thumbs (Fix 5) — only on bot messages, not typing indicator
+  if (type === "bot" && !opts.noFeedback) {
+    const fbWrap = document.createElement("div");
+    fbWrap.className = "feedback-btns";
+    ["👍","👎"].forEach((emoji, i) => {
+      const fb = document.createElement("button");
+      fb.className = "feedback-btn";
+      fb.title = i === 0 ? "Helpful" : "Not helpful";
+      fb.textContent = emoji;
+      fb.addEventListener("click", () => {
+        fbWrap.querySelectorAll(".feedback-btn").forEach(b => b.disabled = true);
+        fb.classList.add("selected");
+        if (i === 1) {
+          // Log the previous user message as unresolved/unhelpful
+          const lastUser = CHAT_LOG.filter(l => l.role === "User").slice(-1)[0];
+          if (lastUser) logUnresolved(lastUser.text + " [marked unhelpful]");
+        }
+        const thanks = document.createElement("span");
+        thanks.className = "feedback-thanks";
+        thanks.textContent = i === 0 ? "Thanks!" : "Sorry about that!";
+        fbWrap.appendChild(thanks);
+      });
+      fbWrap.appendChild(fb);
+    });
+    meta.appendChild(fbWrap);
+  }
+
   row.appendChild(bubble);
-  row.appendChild(time);
+  row.appendChild(meta);
   chatWindow.prepend(row);
   const plain = html ? htmlToPlainText(text) : String(text ?? "").trim();
   if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
@@ -951,7 +1061,35 @@ function matchFAQFuzzy(text) {
   return best && best.score >= 0.55 ? best.item : null;
 }
 
-// --------- Main message handling ---------
+// --------- Context memory (Fix 4) ---------
+function handleContextQuery(text) {
+  const q = normalize(text);
+  // "that number", "the number", "what was the number", "can I have that number"
+  if ((q.includes("that number") || q.includes("the number") || q.includes("what number") || q.includes("number again") || q.includes("repeat") || q.includes("say again") || q.includes("what was that")) && lastPhoneNumber) {
+    return { html: `The last number I mentioned was <a href="tel:${escapeHTML(lastPhoneNumber)}"><b>${escapeHTML(lastPhoneNumber)}</b></a>.` };
+  }
+  // "say it again", "repeat that", "what did you say"
+  if (q.includes("say it again") || q.includes("repeat that") || q.includes("what did you say") || q.includes("come again")) {
+    const lastBot = CHAT_LOG.filter(l => l.role === "Bot").slice(-1)[0];
+    if (lastBot) return { html: lastBot.text };
+  }
+  return null;
+}
+
+// --------- SMS character counter helper ---------
+function addSmsCharCounter(inputEl) {
+  const counter = document.createElement("div");
+  counter.className = "sms-char-counter";
+  counter.textContent = `0 / ${SETTINGS.smsMaxChars}`;
+  inputEl.parentNode?.insertBefore(counter, inputEl.nextSibling);
+  inputEl.addEventListener("input", () => {
+    const len = inputEl.value.length;
+    counter.textContent = `${len} / ${SETTINGS.smsMaxChars}`;
+    counter.classList.toggle("over", len > SETTINGS.smsMaxChars);
+    if (len > SETTINGS.smsMaxChars) inputEl.value = inputEl.value.slice(0, SETTINGS.smsMaxChars);
+  });
+  return counter;
+}
 
 async function handleUserMessage(text){
   if (!text) return;
@@ -963,6 +1101,16 @@ async function handleUserMessage(text){
   showTyping();
   await new Promise(r => setTimeout(r, typingDelay()));
   hideTyping();
+
+  // Context memory first
+  const ctx = handleContextQuery(text);
+  if (ctx) {
+    addBubble(ctx.html, "bot", { html:true });
+    if (ctx.chips) addChips(ctx.chips);
+    isResponding=false;
+    sendBtn.disabled=false;
+    return;
+  }
 
   const s = specialCases(text);
   if (s){
@@ -982,6 +1130,8 @@ async function handleUserMessage(text){
     return;
   }
 
+  // Nothing matched — log it
+  logUnresolved(text);
   addBubble("I'm not sure about that one — try the <b>Topics</b> button or pick a common query below:", "bot", { html:true });
   addChips(["Pay / Payroll query","Work Allocation query","Department Contacts","Is anyone available now?"]);
   isResponding=false;
@@ -1122,7 +1272,7 @@ fetch("./public/config/faqs.json")
 
 // Greeting
 function init(){
-  addBubble(SETTINGS.greeting, "bot", { html:true, speak:false });
+  addBubble(getGreeting(), "bot", { html:true, speak:false, noFeedback:true });
 }
 
 if (document.readyState === "loading"){
