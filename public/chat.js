@@ -379,7 +379,7 @@ function addChips(labels, onClick) {
         return;
       }
       if (typeof onClick === "function") onClick(label);
-      else handleUserMessage(label);
+      else await handleUserMessage(label);
     });
     wrap.appendChild(b);
   });
@@ -632,32 +632,119 @@ function specialCases(text){
   return null;
 }
 
+// --------- Typing indicator ---------
+
+function showTyping() {
+  const row = document.createElement("div");
+  row.className = "msg bot";
+  row.id = "typingIndicator";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble bot typing-bubble";
+  bubble.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+  row.appendChild(bubble);
+  chatWindow.prepend(row);
+}
+
+function hideTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+function typingDelay() {
+  return Math.floor(Math.random() * 1000) + 1000; // 1000–2000ms
+}
+
+// --------- Fuzzy spell matching (Levenshtein) ---------
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function fuzzyMatch(q, candidate) {
+  // Check each word in the query against each word in the candidate
+  const qWords = q.split(" ").filter(w => w.length > 3);
+  const cWords = candidate.split(" ").filter(w => w.length > 3);
+  let matched = 0;
+  for (const qw of qWords) {
+    for (const cw of cWords) {
+      const maxLen = Math.max(qw.length, cw.length);
+      const dist = levenshtein(qw, cw);
+      // Allow 1 typo for words 5+ chars, exact for shorter
+      if (dist === 0) { matched += 1; break; }
+      if (maxLen >= 5 && dist === 1) { matched += 0.8; break; }
+      if (maxLen >= 7 && dist === 2) { matched += 0.6; break; }
+    }
+  }
+  return qWords.length ? matched / qWords.length : 0;
+}
+
+function matchFAQFuzzy(text) {
+  const q = normalize(text);
+  if (!q || !FAQS.length) return null;
+  let best = null;
+  for (const item of FAQS) {
+    const variants = [item.question, ...(item.synonyms || [])].filter(Boolean);
+    let bestLocal = 0;
+    for (const v of variants) {
+      const vn = normalize(v);
+      const fuzzy = fuzzyMatch(q, vn);
+      bestLocal = Math.max(bestLocal, fuzzy);
+      if (bestLocal >= 0.98) break;
+    }
+    const kws = (item.canonicalKeywords || []).map(k => normalize(k)).filter(Boolean);
+    if (kws.some(k => {
+      const dist = levenshtein(q, k);
+      return q.includes(k) || (k.length >= 5 && dist <= 1);
+    })) bestLocal = Math.min(1, bestLocal + 0.10);
+    if (!best || bestLocal > best.score) best = { item, score: bestLocal };
+  }
+  return best && best.score >= 0.55 ? best.item : null;
+}
+
 // --------- Main message handling ---------
 
-function handleUserMessage(text){
+async function handleUserMessage(text){
   if (!text) return;
   addBubble(text, "user", { speak:false });
   input.value="";
   isResponding=true;
+  sendBtn.disabled=true;
+
+  showTyping();
+  await new Promise(r => setTimeout(r, typingDelay()));
+  hideTyping();
 
   const s = specialCases(text);
   if (s){
     addBubble(s.html, "bot", { html:true });
     if (s.chips) addChips(s.chips);
     isResponding=false;
+    sendBtn.disabled=false;
     return;
   }
 
-  const faq = matchFAQ(text);
+  const faq = matchFAQ(text) || matchFAQFuzzy(text);
   if (faq){
     addBubble(faq.answer, "bot", { html:true });
     if (faq.followUps?.length) addChips(faq.followUps);
     isResponding=false;
+    sendBtn.disabled=false;
     return;
   }
 
-  addBubble("Try the <b>Topics</b> button, or ask about: <b>pay</b>, <b>work allocation</b>, <b>manager dispute</b>, <b>equipment</b>, <b>department contacts</b>, <b>opening times</b>, or <b>raise a request</b>.", "bot", { html:true });
+  addBubble("Try the <b>Topics</b> button, or ask about: <b>pay</b>, <b>work allocation</b>, <b>manager dispute</b>, <b>equipment</b>, <b>department contacts</b>, <b>opening times</b>.", "bot", { html:true });
   isResponding=false;
+  sendBtn.disabled=false;
 }
 
 function sendChat(){
