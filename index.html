@@ -78,15 +78,13 @@
     .chat-window{
       flex:1;overflow-y:auto;
       background:var(--surface-2);
-      display:flex;flex-direction:column-reverse;
+      display:flex;
+      flex-direction:column-reverse;
+      padding:10px 16px;
     }
     .chat-window::-webkit-scrollbar{width:4px}
     .chat-window::-webkit-scrollbar-track{background:transparent}
     .chat-window::-webkit-scrollbar-thumb{background:var(--border-mid);border-radius:4px}
-    .chat-inner{
-      display:flex;flex-direction:column;
-      padding:10px 16px 6px;
-    }
     .msg{
       display:flex;flex-direction:column;gap:3px;margin:6px 0;
       animation:msgIn .2s cubic-bezier(.22,1,.36,1) both;
@@ -261,9 +259,7 @@
       </div>
     </header>
 
-    <div id="chatWindow" class="chat-window" role="log" aria-live="polite" aria-relevant="additions" aria-atomic="false">
-      <div id="chatInner" class="chat-inner"></div>
-    </div>
+    <div id="chatWindow" class="chat-window" role="log" aria-live="polite" aria-relevant="additions" aria-atomic="false"></div>
 
     <div class="input-area">
       <div class="input-wrap">
