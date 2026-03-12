@@ -410,6 +410,110 @@ async function handleUseMyLocation(){
   }
 }
 
+// --------- Intent Map — natural language phrases people actually type ---------
+// Each intent maps to a handler key. Phrases are checked as substrings after normalisation.
+
+const INTENT_PHRASES = [
+
+  // Greetings / small talk
+  { patterns: ["hello","hi","hey","good morning","good afternoon","good evening","hiya","alright","sup","howdy","morning","afternoon"], intent: "greeting" },
+  { patterns: ["how are you","you ok","you alright","how r u","hows things","how are things"], intent: "smalltalk_how" },
+  { patterns: ["thank","thanks","cheers","ta ","appreciated","helpful"], intent: "thanks" },
+  { patterns: ["bye","goodbye","see you","see ya","cya","later","ttyl"], intent: "bye" },
+
+  // Pay / wages
+  { patterns: ["not been paid","havent been paid","haven't been paid","missing pay","no pay","didnt get paid","didn't get paid","where is my pay","where is my wage","when do i get paid","payday","pay day","wrong pay","incorrect pay","short paid","underpaid","overpaid","pay is wrong","wages wrong","wages are wrong","not received my pay","not received pay"], intent: "pay_query" },
+  { patterns: ["pay query","pay question","pay issue","pay problem","pay help","payroll query","payroll issue","payroll problem","salary query","salary issue","wage query","wage issue","wages query","wages issue","my pay","about my pay","about my wage","check my pay"], intent: "pay_query" },
+  { patterns: ["deduction","deductions","money taken","taken from my pay","taken from pay","taken out","stopped from pay","money missing","why has money been taken","money been taken","missing money","wrong amount"], intent: "deduction_query" },
+
+  // Work allocation
+  { patterns: ["no work","not got work","havent got work","haven't got work","no jobs","no job","not been allocated","not allocated","no allocation","no shifts","not got any work","where is my work","where is my job","need work","need jobs","out of work","run out of work","work dried up","no more work","work allocation","work alloc","allocated wrong","wrong job","wrong work","given wrong job"], intent: "work_allocation" },
+
+  // Manager disputes
+  { patterns: ["manager dispute","dispute with manager","problem with manager","issue with manager","trouble with manager","argument with manager","falling out with manager","conflict with manager","my manager","against my manager","manager being","manager has","manager is","field manager issue","area manager issue","unfair manager","manager treating","manager not","manager wont","manager won't","manager is not"], intent: "manager_dispute" },
+
+  // Contract
+  { patterns: ["contract","my contract","change contract","contract change","contract amendment","amend contract","contract query","contract question","contract issue","contract hours","contract type","permanent","part time","full time","contract update"], intent: "contract" },
+
+  // Equipment — stock
+  { patterns: ["stock","no stock","out of stock","missing stock","stock query","stock issue","stock problem","stock form","need stock","request stock","stock request"], intent: "equipment_stock" },
+  // Equipment — tooling
+  { patterns: ["tools","tooling","no tools","missing tools","need tools","tool query","tool issue","bybox","by box","tool order","order tools"], intent: "equipment_tooling" },
+  // Equipment — van
+  { patterns: ["van","no van","need a van","vehicle","need vehicle","when do i get a van","van query","van issue","van problem","company van","work van"], intent: "equipment_van" },
+  // General equipment
+  { patterns: ["equipment","kit","gear","my kit","my equipment","kit query","kit issue"], intent: "equipment" },
+
+  // Street works
+  { patterns: ["street work","streetwork","street works","streetworks","street job","road work query","sw query","sw issue"], intent: "street_works" },
+
+  // Smart awards
+  { patterns: ["smart award","smartaward","smart awards","smartawards","award query","award issue","my award","claim award"], intent: "smart_awards" },
+
+  // ID cards
+  { patterns: ["id card","id cards","id badge","badge","identification","lost id","id lost","id expired","expired id","id not arrived","id not received","id havent received","need new id","replace id","id renewal"], intent: "id_cards" },
+
+  // Department contacts
+  { patterns: ["contact","contacts","department","departments","who do i call","who do i contact","who should i contact","contact details","contact list","phone number","numbers","what number","which number","contact for","call for"], intent: "dept_contacts" },
+
+  // Fleet / vehicles
+  { patterns: ["fleet","fleet query","fleet issue","fleet contact","vehicle query","vehicle issue","breakdown","van broken","van broken down","car broken","company car"], intent: "fleet" },
+
+  // Accidents / injuries
+  { patterns: ["accident","injury","injured","hurt","accident report","report accident","had an accident","been in accident","crash","vehicle damage","damage report","road accident","near miss"], intent: "accident" },
+
+  // Parking
+  { patterns: ["parking","parking fine","parking ticket","parking query","parking issue","penalty charge","pcn","council fine"], intent: "parking" },
+
+  // Recruitment
+  { patterns: ["recruit","recruitment","hiring","new job","apply","application","job application","job vacancy","vacancy","start date","when do i start","joining","onboard","onboarding"], intent: "recruitment" },
+
+  // BTOR NTF
+  { patterns: ["btor","openreach","open reach","ntf btor","btor ntf","btor support","btor contact"], intent: "btor_ntf" },
+
+  // City Fibre NTF
+  { patterns: ["city fibre","cityfibre","cf ntf","city fibre ntf","city fibre support","cf support"], intent: "cityfibre_ntf" },
+
+  // Opening times
+  { patterns: ["open","opening","hours","open hours","what time","when open","when are you open","office hours","working hours","opening times","what are your hours","are you open","when do you open","when do you close","closing time"], intent: "opening_times" },
+  { patterns: ["bank holiday","bank holidays","public holiday","are you open on bank holiday","open bank holiday"], intent: "bank_holiday" },
+  { patterns: ["available now","anyone available","is someone available","open now","are you open now","anyone there","is anyone there","can i speak","speak to someone","talk to someone"], intent: "available_now" },
+
+  // Location / depot
+  { patterns: ["where are you","your address","office address","where is the office","located","location","find you","nuneaton","depot","depots","closest depot","nearest depot","how far","distance","directions","get there","how to get"], intent: "location" },
+
+  // Support / contact
+  { patterns: ["support","help","contact support","get help","need help","speak to welfare","welfare team","welfare number","welfare contact","welfare support","call welfare"], intent: "contact_support" },
+
+  // SMS / text query
+  { patterns: ["send a text","text you","text support","text query","text message","sms","message support"], intent: "sms_query" },
+];
+
+function detectIntent(text) {
+  const q = normalize(text);
+  for (const { patterns, intent } of INTENT_PHRASES) {
+    for (const p of patterns) {
+      if (q.includes(p)) return intent;
+    }
+  }
+  // Fuzzy fallback — try levenshtein on each pattern word
+  for (const { patterns, intent } of INTENT_PHRASES) {
+    for (const p of patterns) {
+      if (p.length < 5) continue;
+      const pWords = p.split(" ");
+      const qWords = q.split(" ");
+      for (const pw of pWords) {
+        if (pw.length < 5) continue;
+        for (const qw of qWords) {
+          if (qw.length < 4) continue;
+          if (levenshtein(pw, qw) <= 1) return intent;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 // --------- Guided Flows (Work Allocation, Manager Dispute, Equipment) ---------
 
 function handleFlow(text) {
@@ -503,10 +607,11 @@ function handleFlow(text) {
   return null;
 }
 
-// --------- Special Cases ---------
+// --------- Special Cases — intent driven ---------
 
 function specialCases(text){
   const q = normalize(text);
+  const intent = detectIntent(text);
 
   // Active flow check first
   if (flowCtx) {
@@ -514,49 +619,7 @@ function specialCases(text){
     if (flowResult) return flowResult;
   }
 
-  if (q.includes("bank holiday") || q.includes("bank holidays")){
-    return { html:"❌ <b>No we are not open on bank holidays.</b>", chips:["What are your opening times?","Is anyone available now?"] };
-  }
-
-  if (q.includes("is anyone available") || q.includes("available now") || q.includes("open now")){
-    const open = isOpenNow();
-    const nowUK = formatUKTime(new Date());
-    if (open){
-      return { html:`✅ <b>Yes we're open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips:["How can I contact support?"] };
-    }
-    const bh = isBankHolidayToday();
-    return { html:`❌ <b>No we're closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>❌ <b>No — we are not open on bank holidays.</b></small>" : ""}`, chips:["What are your opening times?","How can I contact support?"] };
-  }
-
-  // Work Allocation
-  if (q.includes("work allocation") || q.includes("work query") || q.includes("no work") || q.includes("job allocation")){
-    flowCtx = { type: "workAllocation", stage: "askRaised" };
-    return { html: "Has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes", "No"] };
-  }
-
-  // Manager Dispute
-  if (q.includes("manager dispute") || q.includes("dispute with manager") || q.includes("manager issue") || q.includes("manager complaint")){
-    flowCtx = { type: "managerDispute", stage: "askFieldManager" };
-    return { html: "Is this regarding your <b>Field Manager</b>?", chips: ["Yes", "No"] };
-  }
-
-  // Equipment Query
-  if (q.includes("equipment") || q.includes("equipment query") || q.includes("stock query") || q.includes("tooling") || q.includes("van query")){
-    flowCtx = { type: "equipment", stage: "askType" };
-    return { html: "Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock", "Tooling", "Van"] };
-  }
-
-  // SMS flow — triggered by pay/deduction queries or "send a text"
-  const wantsSMS =
-    q.includes("pay query") || q.includes("payroll query") || q.includes("deduction query") ||
-    q.includes("i have a pay") || q.includes("i have a deduction") || q.includes("send a text") ||
-    q.includes("text support") || q.includes("send text") || q === "pay" || q === "deductions";
-
-  if (!smsCtx && wantsSMS) {
-    smsCtx = { stage: "needName" };
-    return { html: "I'll help you send a text to our pay & deductions team.<br><br>First, what's your <b>full name</b>?" };
-  }
-
+  // Active SMS flow
   if (smsCtx) {
     if (q === "cancel" || q === "stop" || q === "restart") {
       smsCtx = null;
@@ -574,10 +637,7 @@ function specialCases(text){
     }
     if (smsCtx.stage === "needDescription") {
       smsCtx.description = text.trim();
-      // Build SMS body
-      const smsBody = encodeURIComponent(
-        `Welfare Support Query\nName: ${smsCtx.name}\nType: ${smsCtx.type}\nQuery: ${smsCtx.description}`
-      );
+      const smsBody = encodeURIComponent(`Welfare Support Query\nName: ${smsCtx.name}\nType: ${smsCtx.type}\nQuery: ${smsCtx.description}`);
       const smsHref = `sms:${SETTINGS.smsNumber}?body=${smsBody}`;
       const html =
         `<b>Ready to send</b><br>` +
@@ -591,11 +651,184 @@ function specialCases(text){
     }
   }
 
-  if (q.includes("closest depot") || q.includes("how far") || q.includes("distance")){
-    distanceCtx = { stage:"needOrigin" };
-    return { html:"What town/city are you travelling from? (Or choose <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
+  // Greetings / small talk
+  if (intent === "greeting") {
+    const greetings = [
+      "Hey! 👋 How can I help you today?",
+      "Hi there! What can I help you with?",
+      "Hello! What's your query today?",
+      "Hey, good to hear from you! What do you need help with?"
+    ];
+    return { html: greetings[Math.floor(Math.random() * greetings.length)], chips: ["Pay / Payroll query","Work Allocation query","Department Contacts","Equipment Query"] };
   }
 
+  if (intent === "smalltalk_how") {
+    return { html: "I'm doing well thanks! I'm here to help with any welfare queries — what do you need?" };
+  }
+
+  if (intent === "thanks") {
+    const replies = ["Happy to help! 😊 Anything else I can do for you?","No problem at all! Let me know if there's anything else.","You're welcome! Is there anything else you need?"];
+    return { html: replies[Math.floor(Math.random() * replies.length)] };
+  }
+
+  if (intent === "bye") {
+    return { html: "Take care! 👋 Come back any time you need help." };
+  }
+
+  // Pay / deductions
+  if (intent === "pay_query" || intent === "sms_query") {
+    smsCtx = { stage: "needName" };
+    return { html: "I'll help you send a text to our pay & deductions team.<br><br>First, what's your <b>full name</b>?" };
+  }
+
+  if (intent === "deduction_query") {
+    smsCtx = { stage: "needName" };
+    return { html: "I can help with that. I'll get your details and send a text to the team.<br><br>What's your <b>full name</b>?" };
+  }
+
+  // Work allocation
+  if (intent === "work_allocation") {
+    flowCtx = { type: "workAllocation", stage: "askRaised" };
+    return { html: "Sorry to hear that. Has this already been raised with your <b>Field and Area Manager</b>?", chips: ["Yes", "No"] };
+  }
+
+  // Manager dispute
+  if (intent === "manager_dispute") {
+    flowCtx = { type: "managerDispute", stage: "askFieldManager" };
+    return { html: "I understand, let's get this sorted. Is this regarding your <b>Field Manager</b>?", chips: ["Yes", "No"] };
+  }
+
+  // Contract
+  if (intent === "contract") {
+    return { html: "For any contract change queries, please raise this with your <b>Area Manager</b>.", chips: ["Department Contacts","How can I contact support?"] };
+  }
+
+  // Equipment
+  if (intent === "equipment_stock") {
+    flowCtx = { type: "equipment", stage: "stockFormSubmitted" };
+    return { html: "For stock queries — have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes", "No"] };
+  }
+  if (intent === "equipment_tooling") {
+    flowCtx = { type: "equipment", stage: "byboxSubmitted" };
+    return { html: "For tooling queries — has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes", "No"] };
+  }
+  if (intent === "equipment_van") {
+    flowCtx = { type: "equipment", stage: "vanRaised" };
+    return { html: "For van queries — have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes", "No"] };
+  }
+  if (intent === "equipment") {
+    flowCtx = { type: "equipment", stage: "askType" };
+    return { html: "No problem, let's get that sorted. Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock", "Tooling", "Van"] };
+  }
+
+  // Street works
+  if (intent === "street_works") {
+    return { html: `For any Street Work queries please contact <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a>.` };
+  }
+
+  // Smart awards
+  if (intent === "smart_awards") {
+    return { html: `For any Smart Award queries please contact <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a>.` };
+  }
+
+  // ID cards
+  if (intent === "id_cards") {
+    return { html: `For lost, unreceived or expired ID cards, please contact <a href="mailto:nuneaton.admin@kelly.co.uk">nuneaton.admin@kelly.co.uk</a>.` };
+  }
+
+  // Department contacts
+  if (intent === "dept_contacts") {
+    return { html:
+      `Here are the main department contacts:<br>` +
+      `<b>Street Works:</b> <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a><br>` +
+      `<b>Smart Awards:</b> <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a><br>` +
+      `<b>Support Team / City Fibre Back Office:</b> 02080164966<br>` +
+      `<b>BTOR Allocations:</b> 02080164962<br>` +
+      `<b>Fleet:</b> 01582841291 (or 07940766377 out of hours)<br>` +
+      `<b>Accident / Parking:</b> 07940792355<br>` +
+      `<b>Recruitment:</b> 02037583058<br>` +
+      `<b>Welfare:</b> 02087583060`,
+      chips: ["BTOR NTF Support","City Fibre NTF Support","Fleet query","Recruitment"]
+    };
+  }
+
+  // Fleet
+  if (intent === "fleet") {
+    return { html: "For any vehicle or fleet queries please call <b>01582841291</b> or <b>07940766377</b> (out of hours)." };
+  }
+
+  // Accidents
+  if (intent === "accident") {
+    return { html: "For accident or injury reports please call <b>07940792355</b> as soon as possible." };
+  }
+
+  // Parking
+  if (intent === "parking") {
+    return { html: "For any parking queries please call <b>07940792355</b>." };
+  }
+
+  // Recruitment
+  if (intent === "recruitment") {
+    return { html: "For recruitment queries please call <b>02037583058</b>." };
+  }
+
+  // BTOR NTF
+  if (intent === "btor_ntf") {
+    return { html:
+      `<b>BTOR NTF Support numbers by region:</b><br>` +
+      `<b>Wales &amp; Midlands:</b> 07484034863 or 07483932673<br>` +
+      `<b>London &amp; SE:</b> 07814089467 or 07814470466<br>` +
+      `<b>Wessex:</b> 07977670841 or 07483555754<br>` +
+      `<b>North England &amp; Scotland:</b> 07814089601 or 07484082993`
+    };
+  }
+
+  // City Fibre NTF
+  if (intent === "cityfibre_ntf") {
+    return { html:
+      `<b>City Fibre NTF Support numbers by region:</b><br>` +
+      `<b>Scotland:</b> 07866950516 or 07773652734<br>` +
+      `<b>Midlands:</b> 07773651968<br>` +
+      `<b>South:</b> 07773651950<br>` +
+      `<b>North:</b> 07773652146, 07977330563 or 07773652702`
+    };
+  }
+
+  // Opening times
+  if (intent === "opening_times") {
+    return { html: "We're open <b>Monday–Friday, 8:30am–5:00pm</b> (UK time). We're closed on weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"] };
+  }
+
+  if (intent === "bank_holiday") {
+    return { html: "❌ <b>No, we are not open on bank holidays.</b>", chips: ["What are your opening times?"] };
+  }
+
+  if (intent === "available_now") {
+    const open = isOpenNow();
+    const nowUK = formatUKTime(new Date());
+    if (open) return { html: `✅ <b>Yes, we're open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips: ["Department Contacts"] };
+    const bh = isBankHolidayToday();
+    return { html: `❌ <b>We're closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>Today is a bank holiday.</small>" : ""}`, chips: ["What are your opening times?","Department Contacts"] };
+  }
+
+  // Location / depot
+  if (intent === "location") {
+    if (q.includes("closest") || q.includes("nearest") || q.includes("how far") || q.includes("distance") || q.includes("directions") || q.includes("get there")) {
+      distanceCtx = { stage:"needOrigin" };
+      return { html:"What town or city are you travelling from? (Or tap <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
+    }
+    const d = DEPOTS.nuneaton;
+    const tile = osmTileURL(d.lat, d.lon, 13);
+    const gmaps = `https://www.google.com/maps?q=${encodeURIComponent(d.lat + "," + d.lon)}`;
+    return { html:`We're based in <b>Nuneaton, UK</b>.<br>${linkTag(gmaps,"Open in Google Maps")}<br>${imgTag(tile)}` };
+  }
+
+  // Support contact
+  if (intent === "contact_support") {
+    return { html: "You can reach Welfare directly on <b>02087583060</b> — please hold the line when prompted.", chips: ["Department Contacts","What are your opening times?"] };
+  }
+
+  // Distance flow continuations
   if (distanceCtx?.stage==="needOrigin"){
     const cityKey = Object.keys(PLACES).find(k=>q===k || q.includes(k));
     if (cityKey){
@@ -613,6 +846,7 @@ function specialCases(text){
       const originLabel = distanceCtx.originKey==="your location" ? "your location" : distanceCtx.originKey;
       const url = googleDirectionsURL(originLabel, depot, mode);
       const tile = osmTileURL(depot.lat, depot.lon, 13);
+      distanceCtx = null;
       return {
         html:
           `Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>` +
@@ -620,13 +854,6 @@ function specialCases(text){
           `${imgTag(tile, "OpenStreetMap preview")}`
       };
     }
-  }
-
-  if (q.includes("where are you") || q.includes("location") || q.includes("address")){
-    const d = DEPOTS.nuneaton;
-    const tile = osmTileURL(d.lat, d.lon, 13);
-    const gmaps = `https://www.google.com/maps?q=${encodeURIComponent(d.lat + "," + d.lon)}`;
-    return { html:`We're based in <b>Nuneaton, UK</b>.<br>${linkTag(gmaps,"Open in Google Maps")}<br>${imgTag(tile)}` };
   }
 
   return null;
