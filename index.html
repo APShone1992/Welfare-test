@@ -155,15 +155,14 @@
     .input-area button:hover{background:var(--brand-mid);box-shadow:0 4px 12px rgba(26,58,107,0.28)}
     .input-area button:active{transform:scale(0.97)}
     .input-area button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
-    .icon-btn{
-      width:37px;min-width:37px;height:37px;padding:0;
-      border-radius:var(--radius-sm);background:var(--surface-3);
-      color:var(--brand);border:1.5px solid var(--border-mid);
-      display:inline-flex;align-items:center;justify-content:center;
-      cursor:pointer;transition:background var(--tr),border-color var(--tr),color var(--tr);
+    .input-area .icon-btn{
+      width:38px;min-width:38px;height:38px;padding:0;
+      background:var(--brand);color:#fff;
+      border:none;border-radius:var(--radius-sm);box-shadow:none;
+      justify-content:center;
     }
-    .icon-btn:hover{background:var(--accent);border-color:var(--brand-light)}
-    .icon-btn.on{background:rgba(37,99,212,0.10);border-color:rgba(37,99,212,0.35);color:var(--brand-light)}
+    .input-area .icon-btn:hover{background:var(--brand-mid);box-shadow:none}
+    .input-area .icon-btn.on{background:rgba(37,99,212,0.15);border:1.5px solid var(--brand-light);color:var(--brand-light)}
     .suggestions{
       position:absolute;left:0;right:0;bottom:calc(100% + 6px);
       background:var(--surface);border:1px solid var(--border-mid);
@@ -276,16 +275,16 @@
     <div id="chatWindow" class="chat-window" role="log" aria-live="polite" aria-relevant="additions" aria-atomic="false"></div>
 
     <div class="input-area">
-      <div class="input-wrap">
-        <input id="chatInput" type="text" placeholder="Type your question…" autocomplete="off" aria-label="Ask a question" />
-        <div id="suggestions" class="suggestions" role="listbox" aria-label="Suggestions" hidden></div>
-      </div>
       <button id="micBtn" class="icon-btn" type="button" aria-label="Voice input" title="Voice input" aria-pressed="false">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       </button>
       <button id="voiceBtn" class="icon-btn" type="button" aria-label="Toggle voice output" title="Toggle voice output" aria-pressed="false">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       </button>
+      <div class="input-wrap">
+        <input id="chatInput" type="text" placeholder="Type your question…" autocomplete="off" aria-label="Ask a question" />
+        <div id="suggestions" class="suggestions" role="listbox" aria-label="Suggestions" hidden></div>
+      </div>
       <button id="sendBtn" type="button" aria-label="Send message">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         Send
