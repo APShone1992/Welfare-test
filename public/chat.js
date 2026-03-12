@@ -1,3 +1,5 @@
+/* Welfare Support Chat – full working build (Topics + SMS) */
+
 const SETTINGS = {
   minConfidence: 0.20,
   suggestionLimit: 5,
@@ -6,11 +8,10 @@ const SETTINGS = {
   supportEmail: "support@Kelly.co.uk",
   supportPhone: "01234 567890",
   ticketTranscriptMessages: 12,
-  // Updated greeting:
   greeting:
     "Hi! I’m <b>Welfare Support</b>, please let me know what your query is regarding using the <b>Topics</b> button.",
-  // Optional: set this if you want “Send via text” for Pay/Deductions queries
-  textSystemNumber: "" // e.g. "+4420xxxxxxx"
+  // SMS deep link for Pay/Deduction (you can change this any time)
+  textSystemNumber: "07773652107"
 };
 
 let FAQS = [];
@@ -62,7 +63,6 @@ function escapeHTML(s) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
-
 function escapeAttrUrl(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -100,7 +100,7 @@ function sanitizeHTML(html) {
     });
     if (el.tagName === "A") {
       const href = el.getAttribute("href") ?? "";
-      const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href);
+      const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href) || /^sms:/i.test(href);
       if (!safe) el.removeAttribute("href");
       el.setAttribute("rel", "noopener noreferrer");
       el.setAttribute("target", "_blank");
@@ -370,12 +370,12 @@ function addChips(labels, onClick) {
       lastChipClickAt = now;
       wrap.querySelectorAll(".chip-btn").forEach((btn)=>btn.disabled=true);
 
-      // Special chip: Use my location
+      // Special chip: Use my location for depots
       if (label === "Use my location" && distanceCtx?.stage === "needOrigin") {
         await handleUseMyLocation();
         return;
       }
-      // Special chip: Open Topics (opens drawer)
+      // Special chip: Open Topics Drawer
       if (normalize(label) === "open topics" || normalize(label) === "topics") {
         openDrawer();
         addBubble("Opening Topics…", "bot", { speak:false });
@@ -444,7 +444,7 @@ function matchFAQ(text) {
   return best && best.score >= SETTINGS.minConfidence ? best.item : null;
 }
 
-// ---------- NEW: TOPICS FLOWS (inserted at top of special cases) ----------
+// ---------- TOPICS / SPECIAL CASES ----------
 function specialCases(text){
   const q = normalize(text);
 
@@ -460,15 +460,14 @@ function specialCases(text){
     areaManagerThenWelfare:
       'Please contact your <b>Area Manager</b>, should there be any further concerns after this step please contact Welfare directly on <b>02087583060</b> and hold the line.',
   };
-  function isYes(n){ return n === "yes" || n === "y"; }
-  function isNo(n){ return n === "no" || n === "n"; }
-  function choice(labels){ return { chips: labels }; }
-  function endWith(html, extraChips=[]){
+  const isYes = (n) => n === "yes" || n === "y";
+  const isNo  = (n) => n === "no"  || n === "n";
+  const choice = (labels) => ({ chips: labels });
+  const endWith = (html, extraChips=[]) => {
     flowCtx = null;
-    // Provide a chip that opens the Topics drawer directly
     const base = extraChips.length ? extraChips : ["Open Topics"];
     return { html, chips: base };
-  }
+  };
 
   // If a flow is in progress, handle it
   if (flowCtx) {
@@ -837,7 +836,7 @@ function buildCategoryIndex(){
     if(!categoryIndex.has(key)) categoryIndex.set(key, []);
     categoryIndex.get(key).push(item);
   });
-  const labelMap={ general:"General", support:"Support", opening:"Opening times", actions:"Actions" /* topics will auto-capitalize */ };
+  const labelMap={ general:"General", support:"Support", opening:"Opening times", actions:"Actions" /* topics auto-capitalize */ };
   categories=Array.from(categoryIndex.keys()).sort().map((key)=>({
     key, label: labelMap[key] ?? (key.charAt(0).toUpperCase()+key.slice(1)), count: categoryIndex.get(key).length
   }));
