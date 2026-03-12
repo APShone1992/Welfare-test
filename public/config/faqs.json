@@ -41,11 +41,11 @@
   },
   {
     "question": "How can I contact support?",
-    "answer": "You can call Welfare on <b>02087583060</b> and hold the line. For specific departments, open the <b>Department Contacts</b> topic.",
-    "synonyms": ["support email","customer service","help contact","contact details","phone number","welfare"],
-    "canonicalKeywords": ["email","phone","contact","welfare"],
+    "answer": "You can email <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
+    "synonyms": ["support email","customer service","help contact","contact details","phone number"],
+    "canonicalKeywords": ["email","phone","contact"],
     "category": "support",
-    "followUps": ["Department Contacts","Raise a request (create a ticket)"]
+    "followUps": ["Raise a request (create a ticket)"]
   },
   {
     "question": "Where are you located?",
@@ -56,67 +56,82 @@
     "followUps": ["Get directions to my closest depot"]
   },
 
+  /* ---------------- NEW: Topics-first guided options ---------------- */
+
+  {
+    "question": "Pay / Payroll",
+    "answer": "Let’s get you to the right place for pay queries.",
+    "synonyms": ["pay","payroll","wages"],
+    "canonicalKeywords": ["pay","payroll","wages"],
+    "category": "topics",
+    "followUps": ["Deductions","Department Contacts"]
+  },
+  {
+    "question": "Deductions",
+    "answer": "Let’s get you to the right place for deduction queries.",
+    "synonyms": ["deduction","deductions"],
+    "canonicalKeywords": ["deduction","deductions"],
+    "category": "topics",
+    "followUps": ["Pay / Payroll","Department Contacts"]
+  },
   {
     "question": "Work Allocation",
-    "answer": "Start the Work Allocation checker.",
-    "synonyms": ["work allocation","allocation"],
+    "answer": "We’ll go through two quick checks.",
+    "synonyms": ["work allocation"],
     "canonicalKeywords": ["work","allocation"],
-    "category": "topics"
+    "category": "topics",
+    "followUps": ["Department Contacts","Equipment Query"]
   },
   {
     "question": "Manager Disputes",
-    "answer": "Start the Manager Dispute checker.",
-    "synonyms": ["manager dispute","dispute","manager issue","field manager"],
+    "answer": "We’ll ask a couple of short questions.",
+    "synonyms": ["manager dispute","manager disputes","dispute"],
     "canonicalKeywords": ["manager","dispute"],
-    "category": "topics"
+    "category": "topics",
+    "followUps": ["Work Allocation","Department Contacts"]
   },
   {
     "question": "Department Contacts",
-    "answer": "Browse department contacts and NTF support areas.",
-    "synonyms": ["contacts department","departments","numbers"],
-    "canonicalKeywords": ["department","contacts","numbers","ntf"],
-    "category": "topics"
+    "answer": "Pick a department to see contact details.",
+    "synonyms": ["departments","contacts","contact departments"],
+    "canonicalKeywords": ["department","contacts"],
+    "category": "topics",
+    "followUps": ["BTOR NTF Support","City Fibre NTF Support"]
   },
   {
     "question": "Contract Change Queries",
-    "answer": "How to handle contract change queries.",
-    "synonyms": ["contract change","change of contract","contract query"],
+    "answer": "For any contract change queries, please raise this to your Area Manager.",
+    "synonyms": ["contract change","contract changes","contract query","contract queries"],
     "canonicalKeywords": ["contract","change"],
     "category": "topics"
   },
   {
     "question": "Equipment Query",
-    "answer": "Handle Stock, Tooling or Van queries.",
-    "synonyms": ["equipment","stock","tooling","van"],
+    "answer": "Is this regarding Stock, Tooling or a Van?",
+    "synonyms": ["equipment","equipment query","stock","tooling","van"],
     "canonicalKeywords": ["equipment","stock","tooling","van"],
-    "category": "topics"
+    "category": "topics",
+    "followUps": ["Stock","Tooling","Van"]
   },
   {
     "question": "Street Works",
-    "answer": "Street Works contact details.",
-    "synonyms": ["streetworks","street works"],
+    "answer": "Please contact Street.Works@kelly.co.uk regarding any Street Works queries.",
+    "synonyms": ["street works","streetworks"],
     "canonicalKeywords": ["street","works"],
-    "category": "topics"
+    "category": "departments"
   },
   {
     "question": "Smart Awards",
-    "answer": "Smart Awards contact details.",
+    "answer": "Please contact smartawards@kelly.co.uk regarding any Smart Awards queries.",
     "synonyms": ["smart awards","smart award"],
     "canonicalKeywords": ["smart","awards"],
-    "category": "topics"
+    "category": "departments"
   },
   {
     "question": "ID Cards",
-    "answer": "ID card help.",
+    "answer": "If you have lost, not received or your ID card has expired, please contact nuneaton.admin@kelly.co.uk.",
     "synonyms": ["id card","id cards","id"],
     "canonicalKeywords": ["id","card"],
-    "category": "topics"
-  },
-  {
-    "question": "Pay / Deduction Queries",
-    "answer": "Route pay and deduction queries.",
-    "synonyms": ["pay","payroll","deduction","deductions","wages"],
-    "canonicalKeywords": ["pay","payroll","deduction"],
-    "category": "topics"
-  ]
+    "category": "departments"
+  }
 ]
