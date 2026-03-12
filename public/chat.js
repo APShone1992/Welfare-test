@@ -531,10 +531,10 @@ function handleFlow(text) {
     if (flowCtx.stage === "askRaised") {
       if (q === "yes") {
         flowCtx = null;
-        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `Please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       } else {
         flowCtx = null;
-        return { html: "Please raise this to your <b>Field and Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `Please raise this to your <b>Field and Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       }
     }
   }
@@ -547,16 +547,16 @@ function handleFlow(text) {
         return { html: "Have you contacted your <b>Area Manager</b>?", chips: ["Yes", "No"] };
       } else {
         flowCtx = null;
-        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `Please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       }
     }
     if (flowCtx.stage === "askAreaManager") {
       if (q === "yes") {
         flowCtx = null;
-        return { html: "Please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `Please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       } else {
         flowCtx = null;
-        return { html: "Please contact your <b>Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `Please contact your <b>Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       }
     }
   }
@@ -578,7 +578,7 @@ function handleFlow(text) {
     if (flowCtx.stage === "stockFormSubmitted") {
       if (q === "yes") {
         flowCtx = null;
-        return { html: "Please contact your <b>Field Manager</b> regarding the update of your stock. Any further concerns, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `Please contact your <b>Field Manager</b> regarding the update of your stock. Any further concerns, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       } else {
         flowCtx = null;
         return { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>." };
@@ -587,7 +587,7 @@ function handleFlow(text) {
     if (flowCtx.stage === "byboxSubmitted") {
       if (q === "yes") {
         flowCtx = null;
-        return { html: "Please follow up with your <b>Field Manager</b> regarding your order. Any further concerns, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `Please follow up with your <b>Field Manager</b> regarding your order. Any further concerns, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       } else {
         flowCtx = null;
         return { html: "Please contact your <b>Field Manager</b> and request them to submit an order to <b>ByBox</b>." };
@@ -596,7 +596,7 @@ function handleFlow(text) {
     if (flowCtx.stage === "vanRaised") {
       if (q === "yes") {
         flowCtx = null;
-        return { html: "As you have raised this to your Field and Area Manager, please contact Welfare directly on <b>02087583060</b> and hold the line." };
+        return { html: `As you have raised this to your Field and Area Manager, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.` };
       } else {
         flowCtx = null;
         return { html: "Please contact your <b>Field Manager</b> and query this through." };
@@ -627,8 +627,13 @@ function specialCases(text){
     }
     if (smsCtx.stage === "needName") {
       smsCtx.name = text.trim();
+      smsCtx.stage = "needPhone";
+      return { html: `Thanks <b>${escapeHTML(smsCtx.name)}</b> — what's the best <b>phone number</b> to reach you on?` };
+    }
+    if (smsCtx.stage === "needPhone") {
+      smsCtx.phone = text.trim();
       smsCtx.stage = "needType";
-      return { html: `Thanks <b>${escapeHTML(smsCtx.name)}</b> — is this a <b>Pay</b> or <b>Deduction</b> query?`, chips: ["Pay query", "Deduction query"] };
+      return { html: "Is this a <b>Pay</b> or <b>Deduction</b> query?", chips: ["Pay query", "Deduction query"] };
     }
     if (smsCtx.stage === "needType") {
       smsCtx.type = text.trim();
@@ -637,15 +642,16 @@ function specialCases(text){
     }
     if (smsCtx.stage === "needDescription") {
       smsCtx.description = text.trim();
-      const smsBody = encodeURIComponent(`Welfare Support Query\nName: ${smsCtx.name}\nType: ${smsCtx.type}\nQuery: ${smsCtx.description}`);
+      const smsBody = encodeURIComponent(`Welfare Support Query\nName: ${smsCtx.name}\nPhone: ${smsCtx.phone}\nType: ${smsCtx.type}\nQuery: ${smsCtx.description}`);
       const smsHref = `sms:${SETTINGS.smsNumber}?body=${smsBody}`;
       const html =
         `<b>Ready to send</b><br>` +
         `Name: <b>${escapeHTML(smsCtx.name)}</b><br>` +
+        `Phone: <b>${escapeHTML(smsCtx.phone)}</b><br>` +
         `Type: <b>${escapeHTML(smsCtx.type)}</b><br>` +
         `Query: <b>${escapeHTML(smsCtx.description)}</b><br><br>` +
         `<a href="${escapeAttrUrl(smsHref)}">📱 Tap here to send your text to ${escapeHTML(SETTINGS.smsNumber)}</a>` +
-        `<br><small>(Opens your messaging app with the message ready to send.)</small>`;
+        `<br><small>Opens your messaging app with the message ready to send.</small>`;
       smsCtx = null;
       return { html, chips: ["Pay / Payroll query", "Deductions query"] };
     }
@@ -742,44 +748,44 @@ function specialCases(text){
       `Here are the main department contacts:<br>` +
       `<b>Street Works:</b> <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a><br>` +
       `<b>Smart Awards:</b> <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a><br>` +
-      `<b>Support Team / City Fibre Back Office:</b> 02080164966<br>` +
-      `<b>BTOR Allocations:</b> 02080164962<br>` +
-      `<b>Fleet:</b> 01582841291 (or 07940766377 out of hours)<br>` +
-      `<b>Accident / Parking:</b> 07940792355<br>` +
-      `<b>Recruitment:</b> 02037583058<br>` +
-      `<b>Welfare:</b> 02087583060`,
+      `<b>Support / City Fibre Back Office:</b> <a href="tel:02080164966">02080164966</a><br>` +
+      `<b>BTOR Allocations:</b> <a href="tel:02080164962">02080164962</a><br>` +
+      `<b>Fleet:</b> <a href="tel:01582841291">01582841291</a> (OOH: <a href="tel:07940766377">07940766377</a>)<br>` +
+      `<b>Accident / Parking:</b> <a href="tel:07940792355">07940792355</a><br>` +
+      `<b>Recruitment:</b> <a href="tel:02037583058">02037583058</a><br>` +
+      `<b>Welfare:</b> <a href="tel:02087583060">02087583060</a>`,
       chips: ["BTOR NTF Support","City Fibre NTF Support","Fleet query","Recruitment"]
     };
   }
 
   // Fleet
   if (intent === "fleet") {
-    return { html: "For any vehicle or fleet queries please call <b>01582841291</b> or <b>07940766377</b> (out of hours)." };
+    return { html: `For any vehicle or fleet queries please call <a href="tel:01582841291"><b>01582841291</b></a> or <a href="tel:07940766377"><b>07940766377</b></a> (out of hours).` };
   }
 
   // Accidents
   if (intent === "accident") {
-    return { html: "For accident or injury reports please call <b>07940792355</b> as soon as possible." };
+    return { html: `For accident or injury reports please call <a href="tel:07940792355"><b>07940792355</b></a> as soon as possible.` };
   }
 
   // Parking
   if (intent === "parking") {
-    return { html: "For any parking queries please call <b>07940792355</b>." };
+    return { html: `For any parking queries please call <a href="tel:07940792355"><b>07940792355</b></a>.` };
   }
 
   // Recruitment
   if (intent === "recruitment") {
-    return { html: "For recruitment queries please call <b>02037583058</b>." };
+    return { html: `For recruitment queries please call <a href="tel:02037583058"><b>02037583058</b></a>.` };
   }
 
   // BTOR NTF
   if (intent === "btor_ntf") {
     return { html:
       `<b>BTOR NTF Support numbers by region:</b><br>` +
-      `<b>Wales &amp; Midlands:</b> 07484034863 or 07483932673<br>` +
-      `<b>London &amp; SE:</b> 07814089467 or 07814470466<br>` +
-      `<b>Wessex:</b> 07977670841 or 07483555754<br>` +
-      `<b>North England &amp; Scotland:</b> 07814089601 or 07484082993`
+      `<b>Wales &amp; Midlands:</b> <a href="tel:07484034863">07484034863</a> or <a href="tel:07483932673">07483932673</a><br>` +
+      `<b>London &amp; SE:</b> <a href="tel:07814089467">07814089467</a> or <a href="tel:07814470466">07814470466</a><br>` +
+      `<b>Wessex:</b> <a href="tel:07977670841">07977670841</a> or <a href="tel:07483555754">07483555754</a><br>` +
+      `<b>North England &amp; Scotland:</b> <a href="tel:07814089601">07814089601</a> or <a href="tel:07484082993">07484082993</a>`
     };
   }
 
@@ -787,10 +793,10 @@ function specialCases(text){
   if (intent === "cityfibre_ntf") {
     return { html:
       `<b>City Fibre NTF Support numbers by region:</b><br>` +
-      `<b>Scotland:</b> 07866950516 or 07773652734<br>` +
-      `<b>Midlands:</b> 07773651968<br>` +
-      `<b>South:</b> 07773651950<br>` +
-      `<b>North:</b> 07773652146, 07977330563 or 07773652702`
+      `<b>Scotland:</b> <a href="tel:07866950516">07866950516</a> or <a href="tel:07773652734">07773652734</a><br>` +
+      `<b>Midlands:</b> <a href="tel:07773651968">07773651968</a><br>` +
+      `<b>South:</b> <a href="tel:07773651950">07773651950</a><br>` +
+      `<b>North:</b> <a href="tel:07773652146">07773652146</a>, <a href="tel:07977330563">07977330563</a> or <a href="tel:07773652702">07773652702</a>`
     };
   }
 
@@ -806,9 +812,16 @@ function specialCases(text){
   if (intent === "available_now") {
     const open = isOpenNow();
     const nowUK = formatUKTime(new Date());
-    if (open) return { html: `✅ <b>Yes, we're open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips: ["Department Contacts"] };
+    if (open) return { html: `✅ <b>Yes, we're open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips: ["Department Contacts","How can I contact support?"] };
     const bh = isBankHolidayToday();
-    return { html: `❌ <b>We're closed right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? "<br><small>Today is a bank holiday.</small>" : ""}`, chips: ["What are your opening times?","Department Contacts"] };
+    return { html:
+      `❌ <b>We're closed right now.</b> Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? " <small>(Bank holiday)</small>" : ""}<br><br>` +
+      `For urgent out-of-hours queries:<br>` +
+      `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
+      `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a><br>` +
+      `<br>For all other queries please contact us during office hours: <b>Mon–Fri 8:30am–5:00pm</b>.`,
+      chips: ["What are your opening times?","Department Contacts"]
+    };
   }
 
   // Location / depot
@@ -825,7 +838,7 @@ function specialCases(text){
 
   // Support contact
   if (intent === "contact_support") {
-    return { html: "You can reach Welfare directly on <b>02087583060</b> — please hold the line when prompted.", chips: ["Department Contacts","What are your opening times?"] };
+    return { html: `You can reach Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> — please hold the line when prompted.`, chips: ["Department Contacts","What are your opening times?"] };
   }
 
   // Distance flow continuations
@@ -969,7 +982,8 @@ async function handleUserMessage(text){
     return;
   }
 
-  addBubble("Try the <b>Topics</b> button, or ask about: <b>pay</b>, <b>work allocation</b>, <b>manager dispute</b>, <b>equipment</b>, <b>department contacts</b>, <b>opening times</b>.", "bot", { html:true });
+  addBubble("I'm not sure about that one — try the <b>Topics</b> button or pick a common query below:", "bot", { html:true });
+  addChips(["Pay / Payroll query","Work Allocation query","Department Contacts","Is anyone available now?"]);
   isResponding=false;
   sendBtn.disabled=false;
 }
