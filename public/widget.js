@@ -1,4 +1,3 @@
-
 // Welfare Support – Floating Widget (stable permissions)
 (function () {
   const currentScript =
@@ -25,16 +24,11 @@
   frame.src = appBase + "index.html";
   frame.style.cssText =
     "position:fixed;bottom:90px;right:20px;z-index:2147483647;width:380px;height:520px;border:none;border-radius:16px;display:none;background:#fff;box-shadow:0 18px 45px rgba(0,0,0,0.25);opacity:0;transition:opacity .2s ease;overflow:hidden;";
-
-  // allow scripts + allow user navigation/popups (mailto)
   frame.setAttribute(
     "sandbox",
     "allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
   );
-
-  // allow mic + gps inside iframe
   frame.setAttribute("allow", "geolocation; microphone");
-
   document.body.appendChild(frame);
 
   function openFrame() {
