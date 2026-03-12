@@ -17,9 +17,9 @@ function getGreeting() {
     const ooh = `<br><br>⚠️ We're currently <b>closed</b>${bh ? " (bank holiday)" : ""}. Office hours are <b>Mon–Fri 8:30am–5pm</b>. For urgent queries outside these hours:<br>` +
       `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
       `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`;
-    return `${timeGreet}! I'm <b>Welfare Support</b>.${ooh}<br><br>I can still help answer questions — use the <b>Topics</b> button or type below.`;
+    return `${timeGreet}! I'm <b>Welfare Support</b>.${ooh}<br><br>I can still help answer questions, use the <b>Topics</b> button or type below.`;
   }
-  return `${timeGreet}! I'm <b>Welfare Support</b> — here to help. Use the <b>Topics</b> button or type your question below.`;
+  return `${timeGreet}! I'm <b>Welfare Support</b> How can i help? Use the <b>Topics</b> button or type your question below.`;
 }
 
 let FAQS = [];
