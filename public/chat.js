@@ -17,9 +17,9 @@ function getGreeting() {
     const ooh = `<br><br>⚠️ We're currently <b>closed</b>${bh ? " (bank holiday)" : ""}. Office hours are <b>Mon–Fri 8:30am–5pm</b>. For urgent queries outside these hours:<br>` +
       `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
       `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`;
-    return `${timeGreet}! I'm <b>Welfare Support</b>.${ooh}<br><br>I can still help answer questions, use the <b>Topics</b> button or type below.`;
+    return `${timeGreet}! I'm <b>Welfare Support</b>.${ooh}<br><br>I can still help answer questions — use the <b>Topics</b> button or type below.`;
   }
-  return `${timeGreet}! I'm <b>Welfare Support</b> How can i help you today. Use the <b>Topics</b> button or type your question below.`;
+  return `${timeGreet}! I'm <b>Welfare Support</b> — here to help. Use the <b>Topics</b> button or type your question below.`;
 }
 
 let FAQS = [];
@@ -436,15 +436,15 @@ function addBubble(text, type, opts = {}) {
   if (type === "bot" && !opts.noFeedback) {
     const fbWrap = document.createElement("div");
     fbWrap.className = "feedback-btns";
-   ["👍","👎"].forEach((emoji, i) => {
+    ["👍","👎"].forEach((emoji, i) => {
       const fb = document.createElement("button");
       fb.className = "feedback-btn";
-     fb.title = i === 0 ? "Helpful" : "Not helpful";
+      fb.title = i === 0 ? "Helpful" : "Not helpful";
       fb.textContent = emoji;
-       fb.addEventListener("click", () => {
-       fbWrap.querySelectorAll(".feedback-btn").forEach(b => b.disabled = true);
-       fb.classList.add("selected");
-        if (i === 1) { 
+      fb.addEventListener("click", () => {
+        fbWrap.querySelectorAll(".feedback-btn").forEach(b => b.disabled = true);
+        fb.classList.add("selected");
+        if (i === 1) {
           // Log the previous user message as unresolved/unhelpful
           const lastUser = CHAT_LOG.filter(l => l.role === "User").slice(-1)[0];
           if (lastUser) logUnresolved(lastUser.text + " [marked unhelpful]");
