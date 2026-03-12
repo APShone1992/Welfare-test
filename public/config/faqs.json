@@ -41,11 +41,11 @@
   },
   {
     "question": "How can I contact support?",
-    "answer": "You can email <a href=\"mailto:support@Kelly.co.uk\">support@Kelly.co.uk</a> or call <b>01234 567890</b>.",
-    "synonyms": ["support email","customer service","help contact","contact details","phone number"],
-    "canonicalKeywords": ["email","phone","contact"],
+    "answer": "You can reach Welfare directly on <a href=\"tel:02087583060\"><b>02087583060</b></a> — please hold the line when prompted.",
+    "synonyms": ["support email","customer service","help contact","contact details","phone number","welfare number","welfare contact"],
+    "canonicalKeywords": ["contact","welfare","support"],
     "category": "support",
-    "followUps": ["Raise a request (create a ticket)"]
+    "followUps": ["Department Contacts","What are your opening times?"]
   },
   {
     "question": "Where are you located?",
@@ -57,7 +57,7 @@
   },
   {
     "question": "Pay / Payroll query",
-    "answer": "For pay queries you can <b>send a text to our team</b> — just type <b>pay query</b> and I'll guide you through it. Alternatively call <b>02037583060</b> and select option 1.",
+    "answer": "For pay queries you can <b>send a text to our team</b> — just type <b>pay query</b> and I'll guide you through it. Alternatively call <a href=\"tel:02037583060\"><b>02037583060</b></a> and select option 1.",
     "synonyms": ["pay query","payroll query","salary query","wages","i have a pay query","pay issue","payslip"],
     "canonicalKeywords": ["pay","payroll","salary","wage","wages"],
     "category": "pay",
@@ -65,7 +65,7 @@
   },
   {
     "question": "Deductions query",
-    "answer": "For deduction queries you can <b>send a text to our team</b> — just type <b>deduction query</b> and I'll guide you through it. Alternatively call <b>02037583060</b> and select option 1.",
+    "answer": "For deduction queries you can <b>send a text to our team</b> — just type <b>deduction query</b> and I'll guide you through it. Alternatively call <a href=\"tel:02037583060\"><b>02037583060</b></a> and select option 1.",
     "synonyms": ["deduction query","deductions","i have a deduction query","deduction issue","money taken"],
     "canonicalKeywords": ["deduction","deductions"],
     "category": "pay",
