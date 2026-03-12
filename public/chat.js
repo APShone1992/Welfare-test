@@ -13,6 +13,7 @@ let categories = [];
 let categoryIndex = new Map();
 
 const chatWindow = document.getElementById("chatWindow");
+const chatInner = document.getElementById("chatInner");
 const input = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 const clearBtn = document.getElementById("clearBtn");
@@ -351,10 +352,7 @@ function addBubble(text, type, opts = {}) {
   time.textContent = formatUKTime(ts);
   row.appendChild(bubble);
   row.appendChild(time);
-  chatWindow.appendChild(row);
-  requestAnimationFrame(() => {
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-  });
+  chatInner.appendChild(row);
   const plain = html ? htmlToPlainText(text) : String(text ?? "").trim();
   if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
   if (type === "bot" && speakThis) speak(plain);
@@ -386,10 +384,7 @@ function addChips(labels, onClick) {
     });
     wrap.appendChild(b);
   });
-  chatWindow.appendChild(wrap);
-  requestAnimationFrame(() => {
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-  });
+  chatInner.appendChild(wrap);
 }
 
 // GPS handler
@@ -677,7 +672,7 @@ sendBtn.addEventListener("click", sendChat);
 input.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); sendChat(); } });
 
 clearBtn.addEventListener("click", ()=>{
-  chatWindow.innerHTML="";
+  chatInner.innerHTML="";
   smsCtx=null;
   distanceCtx=null;
   flowCtx=null;
