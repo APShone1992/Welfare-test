@@ -433,18 +433,18 @@ function addBubble(text, type, opts = {}) {
   meta.appendChild(time);
 
   // Feedback thumbs (Fix 5) — only on bot messages, not typing indicator
-  // if (type === "bot" && !opts.noFeedback) {
-  //  const fbWrap = document.createElement("div");
-   // fbWrap.className = "feedback-btns";
-  //  ["👍","👎"].forEach((emoji, i) => {
-    //  const fb = document.createElement("button");
-    //  fb.className = "feedback-btn";
-    //  fb.title = i === 0 ? "Helpful" : "Not helpful";
-    //  fb.textContent = emoji;
-     // fb.addEventListener("click", () => {
-      //  fbWrap.querySelectorAll(".feedback-btn").forEach(b => b.disabled = true);
-     //   fb.classList.add("selected");
-      //  if (i === 1) { 
+  if (type === "bot" && !opts.noFeedback) {
+    const fbWrap = document.createElement("div");
+    fbWrap.className = "feedback-btns";
+   ["👍","👎"].forEach((emoji, i) => {
+      const fb = document.createElement("button");
+      fb.className = "feedback-btn";
+     fb.title = i === 0 ? "Helpful" : "Not helpful";
+      fb.textContent = emoji;
+       fb.addEventListener("click", () => {
+       fbWrap.querySelectorAll(".feedback-btn").forEach(b => b.disabled = true);
+       fb.classList.add("selected");
+        if (i === 1) { 
           // Log the previous user message as unresolved/unhelpful
           const lastUser = CHAT_LOG.filter(l => l.role === "User").slice(-1)[0];
           if (lastUser) logUnresolved(lastUser.text + " [marked unhelpful]");
