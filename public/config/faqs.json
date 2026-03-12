@@ -56,7 +56,6 @@
     "followUps": ["Get directions to my closest depot"]
   },
 
-  /* -------------------- NEW: TOPICS -------------------- */
   {
     "question": "Work Allocation",
     "answer": "Start the Work Allocation checker.",
@@ -121,4 +120,3 @@
     "category": "topics"
   ]
 ]
-``
