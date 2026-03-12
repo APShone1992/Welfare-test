@@ -242,7 +242,38 @@
     .drawer-q::after{content:'→';font-size:13px;color:var(--text-muted);flex-shrink:0;transition:transform var(--tr),color var(--tr)}
     .drawer-q:hover{background:var(--accent);border-color:rgba(37,99,212,0.22);transform:translateX(2px)}
     .drawer-q:hover::after{transform:translateX(3px);color:var(--brand-light)}
-    @media(max-width:580px){
+    /* --- Feedback buttons (Fix 5) --- */
+    .msg-meta{display:flex;align-items:center;justify-content:space-between;padding:2px 4px;gap:8px;min-height:18px}
+    .msg.user .msg-meta{flex-direction:row-reverse}
+    .feedback-btns{display:flex;align-items:center;gap:4px;opacity:0;transition:opacity .2s}
+    .msg:hover .feedback-btns{opacity:1}
+    .feedback-btn{
+      background:none;border:1px solid var(--border-mid);border-radius:6px;
+      padding:2px 6px;font-size:12px;cursor:pointer;line-height:1;
+      transition:background var(--tr),border-color var(--tr),transform var(--tr);
+      color:var(--text-muted);
+    }
+    .feedback-btn:hover{background:var(--accent);border-color:var(--brand-light);transform:scale(1.1)}
+    .feedback-btn.selected{background:var(--accent);border-color:var(--brand-light)}
+    .feedback-btn:disabled{cursor:default;opacity:0.6}
+    .feedback-thanks{font-size:11px;color:var(--text-muted);margin-left:2px}
+    /* --- Copy number button (Fix 2) --- */
+    .copy-num-btn{
+      display:inline-flex;align-items:center;justify-content:center;
+      width:20px;height:20px;margin-left:4px;vertical-align:middle;
+      background:var(--surface-3);border:1px solid var(--border-mid);
+      border-radius:5px;cursor:pointer;color:var(--brand);
+      transition:background var(--tr),color var(--tr);font-size:10px;
+    }
+    .copy-num-btn:hover{background:var(--accent);border-color:var(--brand-light)}
+    /* --- SMS char counter (Fix 1) --- */
+    .sms-char-counter{font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px;padding:0 2px}
+    .sms-char-counter.over{color:#dc2626;font-weight:600}
+    /* --- Keyboard focus accessibility (Fix 10) --- */
+    :focus-visible{outline:2px solid var(--brand-light);outline-offset:2px;border-radius:4px}
+    .chip-btn:focus-visible,.drawer-q:focus-visible,.feedback-btn:focus-visible{outline:2px solid var(--brand-light)}
+    /* --- Timestamp update (Fix 3) --- */
+    .timestamp{font-size:10.5px;color:var(--text-muted);letter-spacing:.02em;user-select:none}
       .chat-container{max-width:100%;margin:0;min-height:100vh;min-height:100dvh;border-radius:0;animation:none}
       body{background:var(--surface)}
       .header-sub{display:none}
@@ -315,5 +346,44 @@
   </aside>
 
   <script src="./public/chat.js"></script>
+  <script>
+    // ---- Accessibility: keyboard nav for chips (Fix 10) ----
+    document.addEventListener("keydown", e => {
+      if (e.key === "Tab") {
+        // Allow natural tab order — just ensure focus trap in drawer
+        const drawerEl = document.getElementById("topicsDrawer");
+        if (!drawerEl.hidden) {
+          const focusable = [...drawerEl.querySelectorAll("button, [href], input, [tabindex]:not([tabindex='-1'])")].filter(el => !el.disabled);
+          if (!focusable.length) return;
+          const first = focusable[0], last = focusable[focusable.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault(); last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault(); first.focus();
+          }
+        }
+      }
+      if (e.key === "Escape") {
+        const drawerEl = document.getElementById("topicsDrawer");
+        if (!drawerEl.hidden) { document.getElementById("drawerCloseBtn").click(); }
+      }
+    });
+    // Focus first chip when chips appear for keyboard users
+    const chatWin = document.getElementById("chatWindow");
+    const chipObs = new MutationObserver(muts => {
+      for (const m of muts) {
+        for (const n of m.addedNodes) {
+          if (n.classList?.contains("chips")) {
+            const firstChip = n.querySelector(".chip-btn");
+            // Don't steal focus if user is typing
+            if (document.activeElement !== document.getElementById("chatInput")) {
+              firstChip?.focus();
+            }
+          }
+        }
+      }
+    });
+    chipObs.observe(chatWin, { childList: true });
+  </script>
 </body>
 </html>
