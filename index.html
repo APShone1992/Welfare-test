@@ -481,6 +481,25 @@
     </div>
   </div>
 
+  <!-- Admin button — isolated script so it works regardless of chat.js -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var btn = document.getElementById("adminBtn");
+      if (btn) {
+        btn.addEventListener("click", function() {
+          var overlay = document.getElementById("adminOverlay");
+          if (overlay) {
+            overlay.style.display = "flex";
+            var pinInput = document.getElementById("adminPinInput");
+            if (pinInput) { pinInput.value = ""; setTimeout(function(){ pinInput.focus(); }, 100); }
+            var pinErr = document.getElementById("adminPinErr");
+            if (pinErr) pinErr.style.display = "none";
+          }
+        });
+      }
+    });
+  </script>
+
   <script src="./public/chat.js"></script>
   <script>
     // ═══ ADMIN PANEL ═══
@@ -527,7 +546,6 @@
       document.getElementById("adminOverlay").style.display = "none";
     }
 
-    document.getElementById("adminBtn").addEventListener("click", openAdmin);
     document.getElementById("adminCloseBtn").addEventListener("click", closeAdmin);
     document.getElementById("adminOverlay").addEventListener("click", function(e) {
       if (e.target === this) closeAdmin();
