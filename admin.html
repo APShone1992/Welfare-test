@@ -23,7 +23,7 @@ header .sub{font-size:12px;opacity:.7;margin-top:2px}
 .tab{padding:13px 22px;font-size:14px;font-weight:600;color:var(--text-sec);white-space:nowrap;cursor:pointer;border:none;background:none;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr);}
 .tab.active{color:var(--brand-light);border-bottom-color:var(--brand-light)}
 .tab:hover:not(.active){color:var(--text)}
-.panel{display:none;padding:28px;max-width:1060px;margin:0 auto;width:100%}
+.panel{display:none;padding:28px;max-width:1120px;margin:0 auto;width:100%}
 .panel.active{display:block}
 h2{font-size:18px;font-weight:700;margin-bottom:4px;color:var(--brand)}
 .pdesc{font-size:13.5px;color:var(--text-sec);margin-bottom:22px}
@@ -31,8 +31,8 @@ h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
 .crow2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
 .crow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px}
-@media(max-width:680px){.crow2,.crow3{grid-template-columns:1fr}}
-.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px}
+@media(max-width:820px){.crow2,.crow3{grid-template-columns:1fr}}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px}
 .sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
 .sc .num{font-size:34px;font-weight:800;line-height:1;color:var(--brand-light)}
 .sc .lbl{font-size:12px;color:var(--text-muted);margin-top:5px;font-weight:500}
@@ -45,7 +45,7 @@ h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
 .btn.dn{background:var(--red)}.btn.dn:hover{background:#b91c1c}
 .bc{display:flex;flex-direction:column;gap:9px}
 .br{display:flex;align-items:center;gap:10px}
-.bl{width:150px;font-size:12.5px;color:var(--text-sec);text-align:right;flex-shrink:0;line-height:1.3}
+.bl{width:160px;font-size:12.5px;color:var(--text-sec);text-align:right;flex-shrink:0;line-height:1.3}
 .bt{flex:1;background:var(--surface-3);border-radius:999px;height:18px;overflow:hidden;min-width:0}
 .bf{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-mid),var(--brand-light));min-width:3px;transition:width .5s}
 .bf.og{background:linear-gradient(90deg,#d97706,#f59e0b)}
@@ -72,7 +72,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .bignum{font-size:52px;font-weight:800;line-height:1;display:block;text-align:center;padding:12px 0}
 .toast{position:fixed;bottom:24px;right:24px;background:#1a3a6b;color:#fff;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(26,58,107,0.30);transform:translateY(80px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:9999;pointer-events:none;}
 .toast.show{transform:translateY(0);opacity:1}
-@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:16px}.tab{padding:10px 14px;font-size:13px}.bl{width:90px}}
+@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:16px}.tab{padding:10px 14px;font-size:13px}.bl{width:110px}}
 </style>
 </head>
 <body>
@@ -83,6 +83,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   </div>
   <a href="index.html" class="btn sec">← Back to chat</a>
 </header>
+
 <div class="tab-bar">
   <button class="tab active" data-tab="overview">Overview</button>
   <button class="tab" data-tab="analytics">Analytics</button>
@@ -103,17 +104,17 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 
 <div id="panel-analytics" class="panel">
   <h2>Analytics</h2>
-  <p class="pdesc">Full breakdown of all recorded usage.</p>
+  <p class="pdesc">Full breakdown of recorded usage.</p>
   <div class="sgrid" id="an-stats"></div>
   <div class="crow3">
     <div class="card" style="text-align:center"><h3>Resolution rate</h3><span class="bignum" id="an-res" style="color:var(--green)">—</span><div style="font-size:12px;color:var(--text-muted)">queries answered by bot</div></div>
     <div class="card" style="text-align:center"><h3>Avg messages / session</h3><span class="bignum" id="an-avg" style="color:var(--brand-light)">—</span><div style="font-size:12px;color:var(--text-muted)">messages per visit</div></div>
-    <div class="card" style="text-align:center"><h3>SMS texts generated</h3><span class="bignum" id="an-sms" style="color:var(--purple)">—</span><div style="font-size:12px;color:var(--text-muted)">pay &amp; deduction queries</div></div>
+    <div class="card" style="text-align:center"><h3>SMS texts generated</h3><span class="bignum" id="an-sms" style="color:var(--purple)">—</span><div style="font-size:12px;color:var(--text-muted)">pay & deduction queries</div></div>
   </div>
   <div class="card"><h3>All query types — all time</h3><div class="bc" id="an-intents"></div></div>
   <div class="crow2">
     <div class="card"><h3>Sessions by day of week</h3><div class="bc" id="an-dow"></div></div>
-    <div class="card"><h3>Sessions by hour (UK time)</h3><div class="bc" id="an-hour"></div></div>
+    <div class="card"><h3>Sessions by hour (UK)</h3><div class="bc" id="an-hour"></div></div>
   </div>
   <div class="card"><h3>Daily sessions — last 30 days</h3><div class="spark" id="an-spark30"></div></div>
   <div class="card"><h3>Most common unanswered phrases</h3><div class="bc" id="an-unres"></div></div>
@@ -121,7 +122,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 
 <div id="panel-sms" class="panel">
   <h2>SMS Log</h2>
-  <p class="pdesc">Every pay or deduction query submitted through the bot — logged the moment the user completes the form.</p>
+  <p class="pdesc">Every pay or deduction query submitted through the bot — logged when the user completes the form.</p>
   <div class="fbar">
     <input type="text" id="sms-q" placeholder="Search name, phone, query…" oninput="renderSMS()"/>
     <select id="sms-t" onchange="renderSMS()"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
@@ -131,7 +132,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   <div id="sms-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
   <div class="tw">
     <table class="dt">
-      <thead><tr><th>Date &amp; Time</th><th>Name</th><th>Phone</th><th>Type</th><th>Query</th></tr></thead>
+      <thead><tr><th>Date & Time</th><th>Name</th><th>Phone</th><th>Type</th><th>Query</th></tr></thead>
       <tbody id="sms-body"></tbody>
     </table>
   </div>
@@ -139,7 +140,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 
 <div id="panel-unresolved" class="panel">
   <h2>Unresolved Queries</h2>
-  <p class="pdesc">Messages the bot couldn't answer, plus responses users marked 👎 unhelpful. Use these to find coverage gaps.</p>
+  <p class="pdesc">Messages the bot couldn't answer, plus responses users marked 👎 unhelpful.</p>
   <div class="fbar">
     <input type="text" id="ur-q" placeholder="Search…" oninput="renderUnresolved()"/>
     <select id="ur-t" onchange="renderUnresolved()"><option value="">All</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
@@ -149,7 +150,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   <div id="ur-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
   <div class="tw">
     <table class="dt">
-      <thead><tr><th>Date &amp; Time</th><th>Query</th><th>Type</th><th></th></tr></thead>
+      <thead><tr><th>Date & Time</th><th>Query</th><th>Type</th><th></th></tr></thead>
       <tbody id="ur-body"></tbody>
     </table>
   </div>
@@ -157,180 +158,189 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 
 <div class="toast" id="toast"></div>
 <script>
-// Storage keys — must exactly match chat.js
-const K_SESS = "ws_sessions_v1";
-const K_INT  = "ws_intents_v1";
-const K_SMS  = "ws_sms_log_v1";
-const K_UNRES= "ws_unresolved_v1";
+(() => {
+  // Storage keys — must match chat.js
+  const K_SESS = "ws_sessions_v1";
+  const K_INT  = "ws_intents_v1";
+  const K_SMS  = "ws_sms_log_v1";
+  const K_UNRES= "ws_unresolved_v1";
 
-const ld  = k => { try{ return JSON.parse(localStorage.getItem(k)||"[]"); }catch{ return []; } };
-const sv  = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} };
-const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-const isoD= ts => new Date(ts).toISOString().slice(0,10);
-const now = () => new Date().toISOString().slice(0,10);
-const fmtDT = ts => new Date(ts).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
-const shortD= iso => { const [,m,d]=iso.split("-"); const mn=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${+d} ${mn[+m]}`; };
-const daysBack = n => Array.from({length:n},(_,i)=>{ const d=new Date(Date.now()-(n-1-i)*86400000); return d.toISOString().slice(0,10); });
+  const ld  = k => { try{ return JSON.parse(localStorage.getItem(k)||"[]"); }catch{ return []; } };
+  const sv  = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} };
+  const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const isoD= ts => new Date(ts).toISOString().slice(0,10);
+  const now = () => new Date().toISOString().slice(0,10);
+  const fmtDT = ts => new Date(ts).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const shortD= iso => { const [,m,d]=iso.split("-"); const mn=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${+d} ${mn[+m]}`; };
+  const daysBack = n => Array.from({length:n},(_,i)=>{ const d=new Date(Date.now()-(n-1-i)*86400000); return d.toISOString().slice(0,10); });
 
-function showToast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2800); }
+  function showToast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2600); }
 
-function dlCSV(rows,fn){
-  const c=rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n");
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([c],{type:"text/csv;charset=utf-8;"})); a.download=fn; a.click();
-}
+  function dlCSV(rows,fn){
+    const c=rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([c],{type:"text/csv;charset=utf-8;"})); a.download=fn; a.click();
+  }
 
-function barChart(elId, rows, cls){
-  const el=document.getElementById(elId); if(!el) return;
-  if(!rows.length){ el.innerHTML=`<div class="empty"><div class="ico">📭</div><p>No data yet</p></div>`; return; }
-  const max=Math.max(...rows.map(r=>r.v),1);
-  el.innerHTML=rows.map(r=>`<div class="br"><div class="bl">${esc(r.l)}</div><div class="bt"><div class="bf ${cls||""}" style="width:${Math.round(r.v/max*100)}%"></div></div><div class="bv">${r.v}</div></div>`).join("");
-}
+  function barChart(elId, rows, cls){
+    const el=document.getElementById(elId); if(!el) return;
+    if(!rows.length){ el.innerHTML=`<div class="empty"><div class="ico">📭</div><p>No data yet</p></div>`; return; }
+    const max=Math.max(...rows.map(r=>r.v),1);
+    el.innerHTML=rows.map(r=>`<div class="br"><div class="bl">${esc(r.l)}</div><div class="bt"><div class="bf ${cls||""}" style="width:${Math.round(r.v/max*100)}%"></div></div><div class="bv">${r.v}</div></div>`).join("");
+  }
 
-function sparkline(elId, days, counts){
-  const el=document.getElementById(elId); if(!el) return;
-  const max=Math.max(...counts,1);
-  const n=days.length; const step=n<=7?1:n<=14?2:5;
-  el.innerHTML=`
-    <div class="sparkline">${days.map((d,i)=>`<div class="scol"><div class="sbar" style="height:${Math.max(5,Math.round(counts[i]/max*100))}%" title="${shortD(d)}: ${counts[i]}"></div></div>`).join("")}</div>
-    <div class="slabels">${days.map((d,i)=>`<div class="slbl">${i%step===0?shortD(d):""}</div>`).join("")}</div>`;
-}
+  function sparkline(elId, days, counts){
+    const el=document.getElementById(elId); if(!el) return;
+    const max=Math.max(...counts,1);
+    const n=days.length; const step=n<=7?1:n<=14?2:5;
+    el.innerHTML=`
+      <div class="sparkline">${days.map((d,i)=>`<div class="scol"><div class="sbar" style="height:${Math.max(5,Math.round(counts[i]/max*100))}%" title="${shortD(d)}: ${counts[i]}"></div></div>`).join("")}</div>
+      <div class="slabels">${days.map((d,i)=>`<div class="slbl">${i%step===0?shortD(d):""}</div>`).join("")}</div>`;
+  }
 
-const IL = {greeting:"Greeting",smalltalk:"Small talk",thanks:"Thanks",bye:"Goodbye",pay_query:"Pay query",deduction_query:"Deduction",sms_sent:"SMS submitted",work_allocation:"Work allocation",manager_dispute:"Manager dispute",equipment:"Equipment",contract:"Contract",dept_contacts:"Dept contacts",btor_ntf:"BTOR NTF",cityfibre_ntf:"CF NTF",fleet:"Fleet",accident:"Accident",parking:"Parking",recruitment:"Recruitment",street_works:"Street works",smart_awards:"Smart awards",id_cards:"ID cards",opening_times:"Opening times",available_now:"Availability",location:"Location",contact_support:"Welfare contact"};
-const il = k => IL[k]||k;
+  const IL = {greeting:"Greeting",smalltalk:"Small talk",thanks:"Thanks",bye:"Goodbye",pay_query:"Pay query",deduction_query:"Deduction",sms_sent:"SMS submitted",work_allocation:"Work allocation",manager_dispute:"Manager dispute",equipment:"Equipment",contract:"Contract",dept_contacts:"Dept contacts",btor_ntf:"BTOR NTF",cityfibre_ntf:"CF NTF",fleet:"Fleet",accident:"Accident",parking:"Parking",recruitment:"Recruitment",street_works:"Street works",smart_awards:"Smart awards",id_cards:"ID cards",opening_times:"Opening times",available_now:"Availability",location:"Location",contact_support:"Welfare contact"};
+  const il = k => IL[k]||k;
 
-// Tabs
-document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click",()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
-    t.classList.add("active");
-    const id=t.dataset.tab;
-    document.getElementById("panel-"+id).classList.add("active");
-    ({overview:renderOverview,analytics:renderAnalytics,sms:renderSMS,unresolved:renderUnresolved})[id]?.();
+  // Tabs
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.addEventListener("click",()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+      t.classList.add("active");
+      const id=t.dataset.tab;
+      document.getElementById("panel-"+id).classList.add("active");
+      ({overview:renderOverview,analytics:renderAnalytics,sms:renderSMS,unresolved:renderUnresolved})[id]?.();
+    });
   });
-});
 
-function renderOverview(){
-  const sess=ld(K_SESS), ints=ld(K_INT), sms=ld(K_SMS), ur=ld(K_UNRES);
-  const td=now(), yd=isoD(Date.now()-86400000), w7=Date.now()-7*86400000;
-  const tdS=sess.filter(s=>s.date===td).length;
-  const ydS=sess.filter(s=>s.date===yd).length;
-  const w7S=sess.filter(s=>s.start>=w7).length;
-  const tdSMS=sms.filter(s=>isoD(s.ts)===td).length;
-  const tdUR=ur.filter(u=>isoD(u.ts)===td).length;
-  const totMsg=sess.reduce((a,s)=>a+(s.messages||0),0);
-  const chg=(a,b)=>a===b?`<span class="sub" style="color:var(--text-muted)">same as yesterday</span>`:a>b?`<span class="sub" style="color:var(--green)">▲ ${a-b} vs yesterday</span>`:`<span class="sub" style="color:var(--red)">▼ ${b-a} vs yesterday</span>`;
+  function renderOverview(){
+    const sess=ld(K_SESS), ints=ld(K_INT), sms=ld(K_SMS), ur=ld(K_UNRES);
+    const td=now(), yd=isoD(Date.now()-86400000), w7=Date.now()-7*86400000;
+    const tdS=sess.filter(s=>s.date===td).length;
+    const ydS=sess.filter(s=>s.date===yd).length;
+    const w7S=sess.filter(s=>s.start>=w7).length;
+    const tdSMS=sms.filter(s=>isoD(s.ts)===td).length;
+    const tdUR=ur.filter(u=>isoD(u.ts)===td).length;
+    const totMsg=sess.reduce((a,s)=>a+(s.messages||0),0);
+    const chg=(a,b)=>a===b?`<span class="sub" style="color:var(--text-muted)">same as yesterday</span>`:a>b?`<span class="sub" style="color:var(--green)">▲ ${a-b} vs yesterday</span>`:`<span class="sub" style="color:var(--red)">▼ ${b-a} vs yesterday</span>`;
 
-  document.getElementById("ov-stats").innerHTML=`
-    <div class="sc"><div class="num">${sess.length}</div><div class="lbl">Total sessions ever</div><div class="sub" style="color:var(--text-muted)">${w7S} in last 7 days</div></div>
-    <div class="sc"><div class="num">${tdS}</div><div class="lbl">Sessions today</div>${chg(tdS,ydS)}</div>
-    <div class="sc cp"><div class="num">${sms.length}</div><div class="lbl">Total SMS queries</div><div class="sub" style="color:var(--text-muted)">${tdSMS} today</div></div>
-    <div class="sc co"><div class="num">${ur.length}</div><div class="lbl">Unresolved queries</div><div class="sub" style="color:var(--text-muted)">${tdUR} today</div></div>
-    <div class="sc cg"><div class="num">${totMsg}</div><div class="lbl">Total messages sent</div><div class="sub" style="color:var(--text-muted)">across all sessions</div></div>`;
+    document.getElementById("ov-stats").innerHTML=`
+      <div class="sc"><div class="num">${sess.length}</div><div class="lbl">Total sessions ever</div><div class="sub" style="color:var(--text-muted)">${w7S} in last 7 days</div></div>
+      <div class="sc"><div class="num">${tdS}</div><div class="lbl">Sessions today</div>${chg(tdS,ydS)}</div>
+      <div class="sc cp"><div class="num">${sms.length}</div><div class="lbl">Total SMS queries</div><div class="sub" style="color:var(--text-muted)">${tdSMS} today</div></div>
+      <div class="sc co"><div class="num">${ur.length}</div><div class="lbl">Unresolved queries</div><div class="sub" style="color:var(--text-muted)">${tdUR} today</div></div>
+      <div class="sc cg"><div class="num">${totMsg}</div><div class="lbl">Total messages sent</div><div class="sub" style="color:var(--text-muted)">across all sessions</div></div>`;
 
-  const d14=daysBack(14);
-  sparkline("ov-spark", d14, d14.map(d=>sess.filter(s=>s.date===d).length));
+    const d14=daysBack(14);
+    sparkline("ov-spark", d14, d14.map(d=>sess.filter(s=>s.date===d).length));
 
-  const ic={};ints.filter(i=>i.date===td).forEach(i=>ic[i.intent]=(ic[i.intent]||0)+1);
-  const top=Object.entries(ic).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([k,v])=>({l:il(k),v}));
-  const el=document.getElementById("ov-today");
-  if(!top.length){ el.innerHTML=`<div class="empty"><div class="ico">💬</div><p>No queries yet today</p></div>`; }
-  else barChart("ov-today",top);
+    const ic={};ints.filter(i=>i.date===td).forEach(i=>ic[i.intent]=(ic[i.intent]||0)+1);
+    const top=Object.entries(ic).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([k,v])=>({l:il(k),v}));
+    const el=document.getElementById("ov-today");
+    if(!top.length){ el.innerHTML=`<div class="empty"><div class="ico">💬</div><p>No queries yet today</p></div>`; }
+    else barChart("ov-today",top);
 
-  const evts=[
-    ...sess.slice(-6).map(s=>({ts:s.start,type:"session",txt:`New session — ${s.messages||0} message${s.messages!==1?"s":""}`})),
-    ...sms.slice(-5).map(s=>({ts:s.ts,type:"sms",txt:`SMS: <b>${esc(s.name||"—")}</b> · ${esc(s.phone||"—")} · ${esc(s.type||"—")}`})),
-    ...ur.slice(-4).map(u=>({ts:u.ts,type:"unres",txt:`Couldn't answer: "<i>${esc(u.text.replace(" [marked unhelpful]","").slice(0,70))}</i>"`})),
-  ].sort((a,b)=>b.ts-a.ts).slice(0,12);
+    const evts=[
+      ...sess.slice(-6).map(s=>({ts:s.start,type:"session",txt:`New session — ${s.messages||0} message${s.messages!==1?"s":""}`})),
+      ...sms.slice(-5).map(s=>({ts:s.ts,type:"sms",txt:`SMS: <b>${esc(s.name||"—")}</b> · ${esc(s.phone||"—")} · ${esc(s.type||"—")}`})),
+      ...ur.slice(-4).map(u=>({ts:u.ts,type:"unres",txt:`Couldn't answer: "<i>${esc(u.text.replace(" [marked unhelpful]","").slice(0,70))}</i>"`})),
+    ].sort((a,b)=>b.ts-a.ts).slice(0,12);
 
-  const tbl=document.getElementById("ov-tbl");
-  if(!evts.length){ tbl.innerHTML=`<tr><td><div class="empty"><div class="ico">💬</div><p>No activity yet — open the chat to start recording data</p></div></td></tr>`; }
-  else tbl.innerHTML=`<thead><tr><th>Time</th><th>Event</th><th>Type</th></tr></thead><tbody>`+evts.map(e=>`<tr><td style="white-space:nowrap;color:var(--text-muted);font-size:12px">${fmtDT(e.ts)}</td><td>${e.txt}</td><td>${e.type==="sms"?`<span class="tag pu">SMS</span>`:e.type==="unres"?`<span class="tag og">Unresolved</span>`:`<span class="tag bl">Session</span>`}</td></tr>`).join("")+"</tbody>";
+    const tbl=document.getElementById("ov-tbl");
+    if(!evts.length){ tbl.innerHTML=`<tr><td><div class="empty"><div class="ico">💬</div><p>No activity yet — open the chat to start recording data</p></div></td></tr>`; }
+    else tbl.innerHTML=`<thead><tr><th>Time</th><th>Event</th><th>Type</th></tr></thead><tbody>`+evts.map(e=>`<tr><td style="white-space:nowrap;color:var(--text-muted);font-size:12px">${fmtDT(e.ts)}</td><td>${e.txt}</td><td>${e.type==="sms"?`<span class="tag pu">SMS</span>`:e.type==="unres"?`<span class="tag og">Unresolved</span>`:`<span class="tag bl">Session</span>`}</td></tr>`).join("")+"</tbody>";
 
-  document.getElementById("syncTime").textContent="Last updated "+new Date().toLocaleTimeString("en-GB");
-}
+    document.getElementById("syncTime").textContent="Last updated "+new Date().toLocaleTimeString("en-GB");
+  }
 
-function renderAnalytics(){
-  const sess=ld(K_SESS), ints=ld(K_INT), sms=ld(K_SMS), ur=ld(K_UNRES);
-  const totMsg=sess.reduce((a,s)=>a+(s.messages||0),0);
-  const avgMsg=sess.length?(totMsg/sess.length).toFixed(1):"—";
-  const resRate=ints.length+ur.length?Math.round(ints.length/(ints.length+ur.length)*100)+"%":"—";
-  const uDays=new Set(sess.map(s=>s.date)).size;
-  const dc={};sess.forEach(s=>dc[s.date]=(dc[s.date]||0)+1);
-  const peak=Object.entries(dc).sort((a,b)=>b[1]-a[1])[0];
-  const peakStr=peak?`${shortD(peak[0])} (${peak[1]})` :"—";
+  function renderAnalytics(){
+    const sess=ld(K_SESS), ints=ld(K_INT), sms=ld(K_SMS), ur=ld(K_UNRES);
+    const totMsg=sess.reduce((a,s)=>a+(s.messages||0),0);
+    const avgMsg=sess.length?(totMsg/sess.length).toFixed(1):"—";
+    const resRate=ints.length+ur.length?Math.round(ints.length/(ints.length+ur.length)*100)+"%":"—";
+    const uDays=new Set(sess.map(s=>s.date)).size;
+    const dc={};sess.forEach(s=>dc[s.date]=(dc[s.date]||0)+1);
+    const peak=Object.entries(dc).sort((a,b)=>b[1]-a[1])[0];
+    const peakStr=peak?`${shortD(peak[0])} (${peak[1]})` :"—";
 
-  document.getElementById("an-stats").innerHTML=`
-    <div class="sc"><div class="num">${sess.length}</div><div class="lbl">Total sessions</div></div>
-    <div class="sc cg"><div class="num">${ints.length}</div><div class="lbl">Queries answered</div></div>
-    <div class="sc cr"><div class="num">${ur.length}</div><div class="lbl">Unresolved</div></div>
-    <div class="sc cp"><div class="num">${sms.length}</div><div class="lbl">SMS generated</div></div>
-    <div class="sc"><div class="num">${uDays}</div><div class="lbl">Days with activity</div></div>
-    <div class="sc co"><div class="num" style="font-size:18px;font-weight:700">${peakStr}</div><div class="lbl">Busiest day</div></div>`;
+    document.getElementById("an-stats").innerHTML=`
+      <div class="sc"><div class="num">${sess.length}</div><div class="lbl">Total sessions</div></div>
+      <div class="sc cg"><div class="num">${ints.length}</div><div class="lbl">Queries answered</div></div>
+      <div class="sc cr"><div class="num">${ur.length}</div><div class="lbl">Unresolved</div></div>
+      <div class="sc cp"><div class="num">${sms.length}</div><div class="lbl">SMS generated</div></div>
+      <div class="sc"><div class="num">${uDays}</div><div class="lbl">Days with activity</div></div>
+      <div class="sc co"><div class="num" style="font-size:18px;font-weight:700">${peakStr}</div><div class="lbl">Busiest day</div></div>`;
 
-  document.getElementById("an-res").textContent=resRate;
-  document.getElementById("an-avg").textContent=avgMsg;
-  document.getElementById("an-sms").textContent=sms.length;
+    document.getElementById("an-res").textContent=resRate;
+    document.getElementById("an-avg").textContent=avgMsg;
+    document.getElementById("an-sms").textContent=sms.length;
 
-  const ic={};ints.forEach(i=>ic[i.intent]=(ic[i.intent]||0)+1);
-  barChart("an-intents",Object.entries(ic).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>({l:il(k),v})));
+    const ic={};ints.forEach(i=>ic[i.intent]=(ic[i.intent]||0)+1);
+    barChart("an-intents",Object.entries(ic).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>({l:il(k),v})));
 
-  const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],dw=Array(7).fill(0);
-  sess.forEach(s=>dw[new Date(s.start).getDay()]++);
-  barChart("an-dow",DOW.map((l,i)=>({l,v:dw[i]})));
+    const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],dw=Array(7).fill(0);
+    sess.forEach(s=>dw[new Date(s.start).getDay()]++);
+    barChart("an-dow",DOW.map((l,i)=>({l,v:dw[i]})));
 
-  const hc=Array(24).fill(0);
-  sess.forEach(s=>hc[new Date(s.start).getHours()]++);
-  barChart("an-hour",hc.map((v,h)=>({l:`${String(h).padStart(2,"0")}:00`,v})).filter(r=>r.v>0));
+    const hc=Array(24).fill(0);
+    sess.forEach(s=>hc[new Date(s.start).getHours()]++);
+    barChart("an-hour",hc.map((v,h)=>({l:`${String(h).padStart(2,"0")}:00`,v})).filter(r=>r.v>0));
 
-  const d30=daysBack(30);
-  sparkline("an-spark30",d30,d30.map(d=>sess.filter(s=>s.date===d).length));
+    const d30=daysBack(30);
+    sparkline("an-spark30",d30,d30.map(d=>sess.filter(s=>s.date===d).length));
 
-  const pc={};ur.forEach(u=>{const c=u.text.replace(" [marked unhelpful]","").trim().toLowerCase().slice(0,60);pc[c]=(pc[c]||0)+1;});
-  barChart("an-unres",Object.entries(pc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>({l:k,v})),"og");
-}
+    const pc={};ur.forEach(u=>{const c=u.text.replace(" [marked unhelpful]","").trim().toLowerCase().slice(0,60);pc[c]=(pc[c]||0)+1;});
+    barChart("an-unres",Object.entries(pc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>({l:k,v})),"og");
+  }
 
-function renderSMS(){
-  const log=ld(K_SMS);
-  const q=(document.getElementById("sms-q")?.value||"").toLowerCase();
-  const tf=(document.getElementById("sms-t")?.value||"").toLowerCase();
-  const f=log.filter(s=>{
-    const ms=!q||(s.name||"").toLowerCase().includes(q)||(s.phone||"").includes(q)||(s.description||"").toLowerCase().includes(q)||(s.type||"").toLowerCase().includes(q);
-    const mt=!tf||(s.type||"").toLowerCase().includes(tf);
-    return ms&&mt;
-  }).slice().reverse();
-  document.getElementById("sms-cnt").textContent=`Showing ${f.length} of ${log.length} entr${log.length===1?"y":"ies"}`;
-  const tb=document.getElementById("sms-body");
-  if(!f.length){ tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="ico">📱</div><p>${log.length?"No entries match":"No SMS queries logged yet"}</p></div></td></tr>`; return; }
-  tb.innerHTML=f.map(s=>{const tl=(s.type||"").toLowerCase();const tc=tl.includes("pay")?"gr":tl.includes("deduct")?"og":"bl";return `<tr><td style="white-space:nowrap;color:var(--text-muted);font-size:12px">${fmtDT(s.ts)}</td><td><b>${esc(s.name||"—")}</b></td><td><a href="tel:${esc(s.phone||"")}" style="color:var(--brand-light);text-decoration:none">${esc(s.phone||"—")}</a></td><td><span class="tag ${tc}">${esc(s.type||"—")}</span></td><td style="max-width:340px;color:var(--text-sec)">${esc(s.description||"—")}</td></tr>`;}).join("");
-}
-function exportSMS(){ const l=ld(K_SMS); if(!l.length){showToast("Nothing to export");return;} dlCSV([["Date & Time","Name","Phone","Type","Query"],...l.map(s=>[fmtDT(s.ts),s.name||"",s.phone||"",s.type||"",s.description||""])],`sms-log-${now()}.csv`); showToast("Exported!"); }
-function clearSMS(){ if(!confirm("Clear entire SMS log?"))return; localStorage.removeItem(K_SMS); renderSMS(); showToast("Cleared"); }
+  // SMS
+  function renderSMS(){
+    const log=ld(K_SMS);
+    const q=(document.getElementById("sms-q")?.value||"").toLowerCase();
+    const tf=(document.getElementById("sms-t")?.value||"").toLowerCase();
+    const f=log.filter(s=>{
+      const ms=!q||(s.name||"").toLowerCase().includes(q)||(s.phone||"").includes(q)||(s.description||"").toLowerCase().includes(q)||(s.type||"").toLowerCase().includes(q);
+      const mt=!tf||(s.type||"").toLowerCase().includes(tf);
+      return ms&&mt;
+    }).slice().reverse();
+    document.getElementById("sms-cnt").textContent=`Showing ${f.length} of ${log.length} entr${log.length===1?"y":"ies"}`;
+    const tb=document.getElementById("sms-body");
+    if(!f.length){ tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="ico">📱</div><p>${log.length?"No entries match":"No SMS queries logged yet"}</p></div></td></tr>`; return; }
+    tb.innerHTML=f.map(s=>{const tl=(s.type||"").toLowerCase();const tc=tl.includes("pay")?"gr":tl.includes("deduct")?"og":"bl";return `<tr><td style="white-space:nowrap;color:var(--text-muted);font-size:12px">${fmtDT(s.ts)}</td><td><b>${esc(s.name||"—")}</b></td><td><a href="tel:${esc(s.phone||"")}" style="color:var(--brand-light);text-decoration:none">${esc(s.phone||"—")}</a></td><td><span class="tag ${tc}">${esc(s.type||"—")}</span></td><td style="max-width:420px;color:var(--text-sec)">${esc(s.description||"—")}</td></tr>`;}).join("");
+  }
+  function exportSMS(){ const l=ld(K_SMS); if(!l.length){showToast("Nothing to export");return;} dlCSV([["Date & Time","Name","Phone","Type","Query"],...l.map(s=>[fmtDT(s.ts),s.name||"",s.phone||"",s.type||"",s.description||""])],`sms-log-${now()}.csv`); showToast("Exported!"); }
+  function clearSMS(){ if(!confirm("Clear entire SMS log?"))return; localStorage.removeItem(K_SMS); renderSMS(); showToast("Cleared"); }
 
-function renderUnresolved(){
-  const data=ld(K_UNRES);
-  const q=(document.getElementById("ur-q")?.value||"").toLowerCase();
-  const tf=document.getElementById("ur-t")?.value||"";
-  const f=data.filter(d=>{
-    const iu=d.text.includes("[marked unhelpful]");
-    const ms=!q||d.text.toLowerCase().includes(q);
-    const mt=!tf||(tf==="unhelpful"&&iu)||(tf==="unanswered"&&!iu);
-    return ms&&mt;
-  }).slice().reverse();
-  document.getElementById("ur-cnt").textContent=`Showing ${f.length} of ${data.length} entr${data.length===1?"y":"ies"}`;
-  const tb=document.getElementById("ur-body");
-  if(!f.length){ tb.innerHTML=`<tr><td colspan="4"><div class="empty"><div class="ico">✅</div><p>${data.length?"No entries match":"No unresolved queries yet!"}</p></div></td></tr>`; return; }
-  tb.innerHTML=f.map(d=>{
-    const oi=data.indexOf(d);
-    const iu=d.text.includes("[marked unhelpful]");
-    return `<tr><td style="white-space:nowrap;color:var(--text-muted);font-size:12px">${fmtDT(d.ts)}</td><td>${esc(d.text.replace(" [marked unhelpful]",""))}</td><td>${iu?`<span class="tag rd">👎 Unhelpful</span>`:`<span class="tag og">❓ Unanswered</span>`}</td><td><button onclick="delUR(${oi})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px" title="Delete">✕</button></td></tr>`;
-  }).join("");
-}
-function delUR(i){ const d=ld(K_UNRES); d.splice(i,1); sv(K_UNRES,d); renderUnresolved(); showToast("Deleted"); }
-function exportUnresolved(){ const d=ld(K_UNRES); if(!d.length){showToast("Nothing to export");return;} dlCSV([["Date & Time","Query","Type"],...d.map(x=>[fmtDT(x.ts),x.text.replace(" [marked unhelpful]",""),x.text.includes("[marked unhelpful]")?"Unhelpful":"Unanswered"])],`unresolved-${now()}.csv`); showToast("Exported!"); }
-function clearUnresolved(){ if(!confirm("Clear all unresolved queries?"))return; localStorage.removeItem(K_UNRES); renderUnresolved(); showToast("Cleared"); }
+  // Unresolved
+  function renderUnresolved(){
+    const data=ld(K_UNRES);
+    const q=(document.getElementById("ur-q")?.value||"").toLowerCase();
+    const tf=document.getElementById("ur-t")?.value||"";
+    const f=data.filter(d=>{
+      const iu=d.text.includes("[marked unhelpful]");
+      const ms=!q||d.text.toLowerCase().includes(q);
+      const mt=!tf||(tf==="unhelpful"&&iu)||(tf==="unanswered"&&!iu);
+      return ms&&mt;
+    }).slice().reverse();
+    document.getElementById("ur-cnt").textContent=`Showing ${f.length} of ${data.length} entr${data.length===1?"y":"ies"}`;
+    const tb=document.getElementById("ur-body");
+    if(!f.length){ tb.innerHTML=`<tr><td colspan="4"><div class="empty"><div class="ico">✅</div><p>${data.length?"No entries match":"No unresolved queries yet!"}</p></div></td></tr>`; return; }
+    tb.innerHTML=f.map(d=>{
+      const oi=data.indexOf(d);
+      const iu=d.text.includes("[marked unhelpful]");
+      return `<tr><td style="white-space:nowrap;color:var(--text-muted);font-size:12px">${fmtDT(d.ts)}</td><td>${esc(d.text.replace(" [marked unhelpful]",""))}</td><td>${iu?`<span class="tag rd">👎 Unhelpful</span>`:`<span class="tag og">❓ Unanswered</span>`}</td><td><button onclick="delUR(${oi})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0 4px" title="Delete">✕</button></td></tr>`;
+    }).join("");
+  }
+  function delUR(i){ const d=ld(K_UNRES); d.splice(i,1); sv(K_UNRES,d); renderUnresolved(); showToast("Deleted"); }
+  function exportUnresolved(){ const d=ld(K_UNRES); if(!d.length){showToast("Nothing to export");return;} dlCSV([["Date & Time","Query","Type"],...d.map(x=>[fmtDT(x.ts),x.text.replace(" [marked unhelpful]",""),x.text.includes("[marked unhelpful]")?"Unhelpful":"Unanswered"])],`unresolved-${now()}.csv`); showToast("Exported!"); }
+  function clearUnresolved(){ if(!confirm("Clear all unresolved queries?"))return; localStorage.removeItem(K_UNRES); renderUnresolved(); showToast("Cleared"); }
 
-renderOverview();
+  // Expose for inline handlers
+  window.renderSMS=renderSMS; window.exportSMS=exportSMS; window.clearSMS=clearSMS;
+  window.renderUnresolved=renderUnresolved; window.delUR=delUR; window.exportUnresolved=exportUnresolved; window.clearUnresolved=clearUnresolved;
+
+  // Initial render
+  renderOverview();
+})();
 </script>
 </body>
 </html>
