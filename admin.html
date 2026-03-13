@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <title>Welfare Support — Admin</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-
 <style>
 :root{
   --brand:#1a3a6b;--brand-mid:#1e4d9b;--brand-light:#2563d4;
@@ -16,516 +15,389 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:var(--font);background:var(--surface-2);color:var(--text)}
-body{display:flex;flex-direction:column;min-height:100vh;margin:0}
-a{color:inherit;text-decoration:none}
-button{cursor:pointer}
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{
-  outline:2px solid var(--brand-light); outline-offset:2px; border-radius:6px;
-}
-
-/* Header */
-header{
-  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);
-  color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 2px 12px rgba(26,58,107,0.18);flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10;
-}
+body{display:flex;flex-direction:column;min-height:100vh}
+a{color:inherit;text-decoration:none}button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--brand-light);outline-offset:2px;border-radius:6px}
+header{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(26,58,107,0.18);flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
 header h1{font-size:18px;font-weight:700}
-header .sub{font-size:12px;opacity:.8;margin-top:2px}
+.hdr-sub{font-size:12px;opacity:.85;margin-top:3px;display:flex;align-items:center;gap:6px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#6b7280;flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:#4ade80}.sync-dot.err{background:#f87171}.sync-dot.spin{background:#fbbf24;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-
-/* Tabs */
-.tab-bar{display:flex;border-bottom:2px solid var(--border-mid);background:var(--surface);padding:0 24px;overflow-x:auto;}
-.tab{
-  padding:13px 22px;font-size:14px;font-weight:600;color:var(--text-sec);white-space:nowrap;border:none;background:none;
-  border-bottom:2px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr);
-}
+.tab-bar{display:flex;border-bottom:2px solid var(--border-mid);background:var(--surface);padding:0 24px;overflow-x:auto}
+.tab{padding:13px 22px;font-size:14px;font-weight:600;color:var(--text-sec);white-space:nowrap;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr)}
 .tab[aria-selected="true"]{color:var(--brand-light);border-bottom-color:var(--brand-light)}
 .tab:hover{color:var(--text)}
-
-/* Panels & cards */
-.panel{display:none;padding:28px;max-width:1400px;margin:0 auto;width:100%;flex:1;overflow:auto}
+.panel{display:none;padding:28px;max-width:1400px;margin:0 auto;width:100%}
 .panel.active{display:block}
 h2{font-size:18px;font-weight:700;margin-bottom:4px;color:var(--brand)}
 .pdesc{font-size:13.5px;color:var(--text-sec);margin-bottom:22px}
 h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
-
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 1px 5px rgba(13,31,60,0.06)}
 .crow2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
 .crow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px}
 @media(max-width:820px){.crow2,.crow3{grid-template-columns:1fr}}
-
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px}
-.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 5px rgba(13,31,60,0.06)}
 .sc .num{font-size:34px;font-weight:800;line-height:1;color:var(--brand-light)}
 .sc .lbl{font-size:12px;color:var(--text-muted);margin-top:5px;font-weight:500}
-.sc .sub{font-size:11.5px;margin-top:3px}
+.sc .sub{font-size:11.5px;margin-top:3px;color:var(--text-muted)}
 .sc.cg .num{color:var(--green)}.sc.co .num{color:var(--orange)}.sc.cp .num{color:var(--purple)}.sc.cr .num{color:var(--red)}
-
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;font-size:13.5px;font-weight:600;font-family:var(--font);background:var(--brand);color:#fff;border:none;border-radius:8px;transition:background var(--tr),box-shadow var(--tr);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;font-size:13.5px;font-weight:600;font-family:var(--font);background:var(--brand);color:#fff;border:none;border-radius:8px;transition:background var(--tr),box-shadow var(--tr)}
 .btn:hover{background:var(--brand-mid);box-shadow:0 4px 12px rgba(26,58,107,0.22)}
 .btn.sec{background:var(--surface-3);color:var(--brand);border:1.5px solid var(--border-mid)}.btn.sec:hover{background:var(--accent);box-shadow:none}
 .btn.gr{background:var(--green)}.btn.gr:hover{background:#15803d}
 .btn.dn{background:var(--red)}.btn.dn:hover{background:#b91c1c}
-
 .fbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-.fbar input,.fbar select{padding:8px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13.5px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr);}
+.fbar input,.fbar select{padding:8px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13.5px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr)}
 .fbar input{flex:1;min-width:160px}.fbar input:focus,.fbar select:focus{border-color:var(--brand-light)}
-
 .tw{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);max-height:65vh}
 table.dt{width:100%;border-collapse:collapse;font-size:13.5px}
-table.dt thead th{position:sticky;top:0;background:var(--surface-3);text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text-sec);border-bottom:2px solid var(--border-mid);white-space:nowrap;}
+table.dt thead th{position:sticky;top:0;background:var(--surface-3);text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text-sec);border-bottom:2px solid var(--border-mid);white-space:nowrap}
 table.dt th.sortable{cursor:pointer;user-select:none}
 table.dt th.sortable:hover{color:var(--brand-light)}
+table.dt th.sort-asc::after{content:" \u2191"}
+table.dt th.sort-desc::after{content:" \u2193"}
 table.dt td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word}
 table.dt tr:last-child td{border-bottom:none}
 table.dt tbody tr:hover td{background:var(--surface-2)}
-.cell-ellipsis{max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.empty{text-align:center;padding:48px 20px;color:var(--text-muted)}.empty .ico{font-size:38px;margin-bottom:10px}.empty p{font-size:14px}
+.cell-ellipsis{max-width:480px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{text-align:center;padding:48px 20px;color:var(--text-muted)}
+.empty .ico{font-size:38px;margin-bottom:10px}.empty p{font-size:14px}
 .bignum{font-size:52px;font-weight:800;line-height:1;display:block;text-align:center;padding:12px 0}
-
-.toast{position:fixed;bottom:24px;right:24px;background:#1a3a6b;color:#fff;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(26,58,107,0.30);transform:translateY(80px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:9999;pointer-events:auto;display:flex;gap:10px;align-items:center;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:700;text-transform:capitalize}
+.badge.pay{background:#dbeafe;color:#1e40af}
+.badge.deduction{background:#fce7f3;color:#9d174d}
+.badge.unanswered{background:#fef3c7;color:#92400e}
+.badge.unhelpful{background:#fee2e2;color:#991b1b}
+.badge.sms{background:#ede9fe;color:#5b21b6}
+.badge.unresolved{background:#fef3c7;color:#92400e}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a3a6b;color:#fff;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(26,58,107,0.30);transform:translateY(80px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:9999;display:flex;gap:10px;align-items:center}
 .toast.show{transform:translateY(0);opacity:1}
-.toast .actions{display:flex;gap:8px}
-
-@media(max-width:600px){
-  .sgrid{grid-template-columns:repeat(2,1fr)}
-  .panel{padding:16px}
-  .tab{padding:10px 14px;font-size:13px}
-}
+.toast .t-actions{display:flex;gap:8px}
+.loading-overlay{position:fixed;inset:0;background:rgba(247,249,255,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:14px}
+.spinner{width:40px;height:40px;border:4px solid var(--border-mid);border-top-color:var(--brand-light);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay p{font-size:14px;color:var(--text-sec);font-weight:600}
+@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:16px}.tab{padding:10px 14px;font-size:13px}}
 </style>
 </head>
 <body>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><p>Loading shared data\u2026</p></div>
 <header>
   <div>
-    <h1>📊 Welfare Support — Admin</h1>
-    <div class="sub" id="syncTime">Loading…</div>
+    <h1>\U0001f4ca Welfare Support \u2014 Admin</h1>
+    <div class="hdr-sub"><span class="sync-dot spin" id="syncDot"></span><span id="syncLabel">Loading\u2026</span></div>
   </div>
   <div class="header-actions">
-    <button class="btn sec" id="fsToggle" title="Enter full screen">⛶ Full screen</button>
-    <a href="index.html" class="btn sec">← Back to chat</a>
+    <button class="btn sec" id="refreshBtn">\u21bb Refresh</button>
+    <button class="btn sec" id="fsToggle">\u26f6 Full screen</button>
+    <a href="index.html" class="btn sec">\u2190 Back to chat</a>
   </div>
 </header>
-
 <div class="tab-bar" role="tablist" aria-label="Admin sections">
-  <button class="tab" role="tab" aria-selected="true" aria-controls="panel-overview" id="tab-overview">Overview</button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-analytics" id="tab-analytics">Analytics</button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-sms" id="tab-sms">SMS Log</button>
-  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-unresolved" id="tab-unresolved">Unresolved</button>
+  <button class="tab" role="tab" aria-selected="true">Overview</button>
+  <button class="tab" role="tab" aria-selected="false">Analytics</button>
+  <button class="tab" role="tab" aria-selected="false">SMS Log</button>
+  <button class="tab" role="tab" aria-selected="false">Unresolved</button>
 </div>
 
-<!-- Panels -->
-<div id="panel-overview" class="panel active" role="tabpanel" aria-labelledby="tab-overview">
+<div id="panel-overview" class="panel active" role="tabpanel">
   <h2>Overview</h2>
-  <p class="pdesc">Live snapshot of bot usage — reads from storage (or backend when enabled).</p>
+  <p class="pdesc">Live snapshot \u2014 data stored in-app, shared with every admin who opens this page.</p>
   <div class="sgrid" id="ov-stats"></div>
   <div class="crow2">
-    <div class="card">
-      <h3>Sessions — last 14 days</h3>
-      <div id="ov-spark" class="empty"><div class="ico">📉</div><p>Wire your sessions source to populate this.</p></div>
-    </div>
-    <div class="card">
-      <h3>Top topics today</h3>
-      <div class="empty"><div class="ico">🏷️</div><p>Connect intents to show trending topics.</p></div>
-    </div>
+    <div class="card"><h3>SMS by type</h3><div id="ov-type-chart"></div></div>
+    <div class="card"><h3>Unresolved breakdown</h3><div id="ov-ur-chart"></div></div>
   </div>
   <div class="card">
-    <h3>Recent events</h3>
-    <div class="tw">
-      <table class="dt" id="ov-tbl">
-        <thead><tr><th>Date & Time</th><th>Type</th><th>Detail</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <h3>Recent events (last 20)</h3>
+    <div class="tw"><table class="dt" id="ov-tbl"><thead><tr><th>Date &amp; Time</th><th>Type</th><th>Detail</th></tr></thead><tbody></tbody></table></div>
   </div>
 </div>
 
-<div id="panel-analytics" class="panel" role="tabpanel" aria-labelledby="tab-analytics">
+<div id="panel-analytics" class="panel" role="tabpanel">
   <h2>Analytics</h2>
-  <p class="pdesc">Full breakdown of recorded usage.</p>
-  <div class="sgrid" id="an-stats"></div>
+  <p class="pdesc">Full breakdown of all data stored in the app.</p>
   <div class="crow3">
-    <div class="card" style="text-align:center">
-      <h3>Resolution rate</h3>
-      <span class="bignum" id="an-res" style="color:var(--green)">—</span>
-      <div style="font-size:12px;color:var(--text-muted)">queries answered by bot</div>
-    </div>
-    <div class="card" style="text-align:center">
-      <h3>Avg messages / session</h3>
-      <span class="bignum" id="an-avg" style="color:var(--brand-light)">—</span>
-      <div style="font-size:12px;color:var(--text-muted)">messages per visit</div>
-    </div>
-    <div class="card" style="text-align:center">
-      <h3>SMS texts generated</h3>
-      <span class="bignum" id="an-sms" style="color:var(--purple)">—</span>
-      <div style="font-size:12px;color:var(--text-muted)">pay & deduction queries</div>
-    </div>
-  </div>
-  <div class="card">
-    <h3>All query types — all time</h3>
-    <div class="empty"><div class="ico">📊</div><p>Connect your intents data source.</p></div>
+    <div class="card" style="text-align:center"><h3>Total SMS logged</h3><span class="bignum" id="an-sms" style="color:var(--purple)">0</span><div style="font-size:12px;color:var(--text-muted)">pay &amp; deduction queries</div></div>
+    <div class="card" style="text-align:center"><h3>Unresolved items</h3><span class="bignum" id="an-ur" style="color:var(--red)">0</span><div style="font-size:12px;color:var(--text-muted)">need review</div></div>
+    <div class="card" style="text-align:center"><h3>Unique people</h3><span class="bignum" id="an-people" style="color:var(--green)">0</span><div style="font-size:12px;color:var(--text-muted)">distinct senders</div></div>
   </div>
   <div class="crow2">
-    <div class="card"><h3>Sessions by day of week</h3><div class="empty"><p>Connect your sessions source.</p></div></div>
-    <div class="card"><h3>Sessions by hour (UK)</h3><div class="empty"><p>Connect your sessions source.</p></div></div>
+    <div class="card"><h3>SMS \u2014 Pay vs Deduction</h3><div id="an-sms-split" style="padding:8px 0"></div></div>
+    <div class="card"><h3>Unresolved \u2014 Unanswered vs Unhelpful</h3><div id="an-ur-split" style="padding:8px 0"></div></div>
   </div>
-  <div class="card"><h3>Daily sessions — last 30 days</h3><div class="empty"><p>Connect your sessions source.</p></div></div>
-  <div class="card"><h3>Most common unanswered phrases</h3><div class="empty"><p>Connect intents / unresolved source.</p></div></div>
+  <div class="card"><h3>All unique senders</h3><div id="an-senders"></div></div>
 </div>
 
-<div id="panel-sms" class="panel" role="tabpanel" aria-labelledby="tab-sms">
+<div id="panel-sms" class="panel" role="tabpanel">
   <h2>SMS Log</h2>
-  <p class="pdesc">Every pay or deduction query submitted through the bot — logged when sent.</p>
+  <p class="pdesc">Every pay or deduction query \u2014 stored in the app, visible to all admins.</p>
   <div class="fbar">
-    <input type="text" id="sms-q" placeholder="Search name, phone, query…"/>
-    <select id="sms-t">
-      <option value="">All types</option>
-      <option value="pay">Pay</option>
-      <option value="deduction">Deduction</option>
-    </select>
-    <button class="btn gr" id="sms-export">⬇ Export CSV</button>
-    <button class="btn dn" id="sms-clear">🗑 Clear all</button>
+    <input type="text" id="sms-q" placeholder="Search name, phone, query\u2026"/>
+    <select id="sms-t"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
+    <button class="btn gr" id="sms-export">\u2b07 Export CSV</button>
+    <button class="btn dn" id="sms-clear">\U0001f5d1 Clear all</button>
   </div>
   <div id="sms-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
-  <div class="tw">
-    <table class="dt">
-      <thead>
-        <tr>
-          <th class="sortable" data-sort="timestamp">Date & Time</th>
-          <th class="sortable" data-sort="sender">Name</th>
-          <th>Phone</th>
-          <th class="sortable" data-sort="type">Type</th>
-          <th>Query</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="sms-body"></tbody>
-    </table>
-  </div>
+  <div class="tw"><table class="dt"><thead><tr>
+    <th class="sortable" data-sort="timestamp">Date &amp; Time</th>
+    <th class="sortable" data-sort="sender">Name</th>
+    <th>Phone</th>
+    <th class="sortable" data-sort="type">Type</th>
+    <th>Query</th>
+    <th style="width:50px"></th>
+  </tr></thead><tbody id="sms-body"></tbody></table></div>
 </div>
 
-<div id="panel-unresolved" class="panel" role="tabpanel" aria-labelledby="tab-unresolved">
+<div id="panel-unresolved" class="panel" role="tabpanel">
   <h2>Unresolved Queries</h2>
-  <p class="pdesc">Messages the bot couldn't answer, plus responses users marked 👎 unhelpful.</p>
+  <p class="pdesc">Messages the bot couldn\u2019t answer + \U0001f44e unhelpful responses \u2014 stored in the app.</p>
   <div class="fbar">
-    <input type="text" id="ur-q" placeholder="Search…"/>
-    <select id="ur-t">
-      <option value="">All</option>
-      <option value="unanswered">Unanswered</option>
-      <option value="unhelpful">Marked unhelpful</option>
-    </select>
-    <button class="btn gr" id="ur-export">⬇ Export CSV</button>
-    <button class="btn dn" id="ur-clear">🗑 Clear all</button>
+    <input type="text" id="ur-q" placeholder="Search\u2026"/>
+    <select id="ur-t"><option value="">All</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
+    <button class="btn gr" id="ur-export">\u2b07 Export CSV</button>
+    <button class="btn dn" id="ur-clear">\U0001f5d1 Clear all</button>
   </div>
   <div id="ur-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
-  <div class="tw">
-    <table class="dt">
-      <thead>
-        <tr>
-          <th class="sortable" data-sort="timestamp">Date & Time</th>
-          <th class="sortable" data-sort="query">Query</th>
-          <th class="sortable" data-sort="type">Type</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="ur-body"></tbody>
-    </table>
-  </div>
+  <div class="tw"><table class="dt"><thead><tr>
+    <th class="sortable" data-sort="timestamp">Date &amp; Time</th>
+    <th class="sortable" data-sort="query">Query</th>
+    <th class="sortable" data-sort="type">Type</th>
+    <th style="width:50px"></th>
+  </tr></thead><tbody id="ur-body"></tbody></table></div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite">
-  <span id="toast-msg"></span>
-  <div class="actions" id="toast-actions"></div>
+  <span id="toast-msg"></span><div class="t-actions" id="toast-actions"></div>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-/* =============== Utilities =============== */
-const $  = (sel,root=document)=>root.querySelector(sel);
-const $$ = (sel,root=document)=>Array.from(root.querySelectorAll(sel));
-const debounce = (fn,ms=200)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
-const fmtDT = ts => new Date(typeof ts==="string"?Number(ts):ts).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
-const plural = (n, s, p=null)=>`${n} ${n===1?(s):(p||s+"s")}`;
-function showToast(msg, {actions=[]}={}){
-  const el = $("#toast");
-  $("#toast-msg").textContent = msg;
-  const actC = $("#toast-actions");
-  actC.innerHTML = "";
-  actions.forEach(a=>{
-    const b=document.createElement("button");
-    b.className="btn sec"; b.textContent=a.label; b.onclick=a.onClick; actC.appendChild(b);
-  });
-  el.classList.add("show");
-  setTimeout(()=>{ el.classList.remove("show"); actC.innerHTML=""; }, 3200);
-}
+document.addEventListener('DOMContentLoaded', async () => {
 
-/* =============== Storage & Sync =============== */
-const K_SMS="ws_sms_log_v1", K_UNRES="ws_unresolved_v1";
-const Local = { get:(k,d=[])=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(d));}catch{return d;}}, set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)) };
-const Sync = {
-  enabled:false, baseURL:"",
-  async list(r){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}`,{credentials:"include"}); if(!res.ok) throw 0; return res.json(); },
-  async create(r,p){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}`,{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify(p),credentials:"include"}); if(!res.ok) throw 0; return res.json(); },
-  async remove(r,id){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}/${encodeURIComponent(id)}`,{method:"DELETE",credentials:"include"}); if(!res.ok) throw 0; return true; },
-  async clear(r){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}`,{method:"DELETE",credentials:"include"}); if(!res.ok) throw 0; return true; }
-};
-const Store = {
-  async getSMS(){ try{ const d=await Sync.list("sms"); Local.set(K_SMS,d); return d; }catch{return Local.get(K_SMS,[]);} },
-  async addSMS(rec){ rec.id=rec.id||Date.now(); rec.timestamp=rec.timestamp||Date.now(); const d=Local.get(K_SMS,[]); d.push(rec); Local.set(K_SMS,d); try{ if(Sync.enabled) await Sync.create("sms",rec);}catch{} return d; },
-  async deleteSMS(id){ const d=Local.get(K_SMS,[]).filter(x=>x.id!==id); Local.set(K_SMS,d); try{ if(Sync.enabled) await Sync.remove("sms",id);}catch{} return d; },
-  async clearSMS(){ Local.set(K_SMS,[]); try{ if(Sync.enabled) await Sync.clear("sms"); }catch{} return []; },
-  async getUnresolved(){ try{ const d=await Sync.list("unresolved"); Local.set(K_UNRES,d); return d; }catch{return Local.get(K_UNRES,[]);} },
-  async addUnresolved(rec){ rec.id=rec.id||Date.now(); rec.timestamp=rec.timestamp||Date.now(); const d=Local.get(K_UNRES,[]); d.push(rec); Local.set(K_UNRES,d); try{ if(Sync.enabled) await Sync.create("unresolved",rec);}catch{} return d; },
-  async deleteUnresolved(id){ const d=Local.get(K_UNRES,[]).filter(x=>x.id!==id); Local.set(K_UNRES,d); try{ if(Sync.enabled) await Sync.remove("unresolved",id);}catch{} return d; },
-  async clearUnresolved(){ Local.set(K_UNRES,[]); try{ if(Sync.enabled) await Sync.clear("unresolved"); }catch{} return []; }
-};
+/* ===== SHARED STORAGE =====
+   window.storage (shared=true) persists data for ALL users.
+   Falls back to localStorage if window.storage is unavailable. */
+const Store = (() => {
+  const K_SMS = 'ws:sms:v1';
+  const K_UR  = 'ws:unresolved:v1';
+  const HAS_SHARED = typeof window.storage !== 'undefined';
 
-/* =============== CSV export =============== */
-function dlCSV(rows, fn){
-  const csv = rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n");
-  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"});
-  const a=document.createElement("a");
-  const url = URL.createObjectURL(blob);
-  a.href=url; a.download=fn;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-/* =============== Fullscreen =============== */
-function updateFsButton(){
-  const inFS = !!document.fullscreenElement;
-  const btn = $("#fsToggle");
-  if(!btn) return;
-  btn.textContent = inFS ? "🗗 Exit full screen" : "⛶ Full screen";
-  btn.title = inFS ? "Exit full screen" : "Enter full screen";
-}
-$("#fsToggle")?.addEventListener("click", async ()=>{
-  try{
-    if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); }
-    else{ await document.exitFullscreen(); }
-  }catch(e){ showToast("Fullscreen blocked by browser"); }
-});
-document.addEventListener("fullscreenchange", updateFsButton);
-
-/* =============== Tabs (ARIA + keyboard) =============== */
-(function initTabs(){
-  const tabs = $$(".tab-bar [role=tab]"); const panels = $$(".panel");
-  function activate(idx){
-    tabs.forEach((t,i)=>{
-      const on = i===idx;
-      t.setAttribute("aria-selected", String(on));
-      panels[i].classList.toggle("active", on);
-      if(on) panels[i].scrollTop = 0;
-    });
+  async function read(key) {
+    if (HAS_SHARED) {
+      try { const r = await window.storage.get(key, true); return r ? JSON.parse(r.value) : []; }
+      catch { return []; }
+    }
+    try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
   }
+  async function write(key, arr) {
+    if (HAS_SHARED) await window.storage.set(key, JSON.stringify(arr), true);
+    else localStorage.setItem(key, JSON.stringify(arr));
+  }
+  function mkId() { return Date.now() + '_' + Math.random().toString(36).slice(2); }
+
+  return {
+    isShared: HAS_SHARED,
+    statusText: HAS_SHARED
+      ? '\u2705 Shared storage active \u2014 all admins see this data'
+      : '\u26a0\ufe0f Local storage only \u2014 open via Claude.ai to share data',
+    async getSMS()    { return read(K_SMS); },
+    async getUR()     { return read(K_UR); },
+    async addSMS(rec) { const a=await read(K_SMS); const r={...rec,id:mkId(),timestamp:Date.now()}; a.push(r); await write(K_SMS,a); return a; },
+    async deleteSMS(id){ const a=(await read(K_SMS)).filter(x=>x.id!==id); await write(K_SMS,a); return a; },
+    async clearSMS()  { await write(K_SMS,[]); return []; },
+    async addUR(rec)  { const a=await read(K_UR); const r={...rec,id:mkId(),timestamp:Date.now()}; a.push(r); await write(K_UR,a); return a; },
+    async deleteUR(id){ const a=(await read(K_UR)).filter(x=>x.id!==id); await write(K_UR,a); return a; },
+    async clearUR()   { await write(K_UR,[]); return []; }
+  };
+})();
+
+/* ===== UTILS ===== */
+const $  = (s,r=document) => r.querySelector(s);
+const $$ = (s,r=document) => Array.from(r.querySelectorAll(s));
+const debounce = (fn,ms=200) => { let t; return (...a) => { clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+const fmtDT = ts => new Date(typeof ts==='string'?Number(ts):ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const plural = (n,s) => n+' '+(n===1?s:s+'s');
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function badge(t) {
+  const cls=['pay','deduction','unanswered','unhelpful','sms','unresolved'].includes(t)?t:'';
+  return '<span class="badge '+cls+'">'+esc(t||'\u2014')+'</span>';
+}
+function barChart(el,items) {
+  if(!el)return;
+  if(!items.length||items.every(i=>!i.val)){el.innerHTML='<div class="empty" style="padding:20px"><p>No data yet</p></div>';return;}
+  const mx=Math.max(...items.map(x=>x.val),1);
+  el.innerHTML=items.map(({label,val,color='var(--brand-light)'})=>
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+    '<div style="width:100px;font-size:12.5px;font-weight:600;color:var(--text-sec);text-align:right;flex-shrink:0">'+esc(label)+'</div>'+
+    '<div style="flex:1;background:var(--surface-3);border-radius:6px;height:22px;overflow:hidden">'+
+    '<div style="width:'+Math.round(val/mx*100)+'%;background:'+color+';height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;transition:width .4s ease">'+
+    '<span style="font-size:11px;font-weight:700;color:#fff">'+(val||'')+'</span></div></div>'+
+    '<div style="width:24px;font-size:12.5px;font-weight:700;color:var(--text-sec)">'+val+'</div></div>'
+  ).join('');
+}
+function showToast(msg,{actions=[]}={}) {
+  $('#toast-msg').textContent=msg;
+  const ac=$('#toast-actions'); ac.innerHTML='';
+  actions.forEach(a=>{const b=document.createElement('button');b.className='btn sec';b.textContent=a.label;b.onclick=a.onClick;ac.appendChild(b);});
+  $('#toast').classList.add('show');
+  setTimeout(()=>{$('#toast').classList.remove('show');ac.innerHTML='';},3500);
+}
+function setSyncStatus(state,text) {
+  $('#syncDot').className='sync-dot '+({ok:'ok',err:'err',spin:'spin'}[state]||'');
+  $('#syncLabel').textContent=text;
+}
+
+/* ===== TABS ===== */
+(()=>{
+  const tabs=$$('.tab-bar [role=tab]'), panels=$$('.panel');
+  function go(i){tabs.forEach((t,j)=>{t.setAttribute('aria-selected',String(i===j));panels[j].classList.toggle('active',i===j);});}
   tabs.forEach((t,i)=>{
-    t.addEventListener("click", () => activate(i));
-    t.addEventListener("keydown", (e)=>{
-      if(["ArrowRight","ArrowLeft","Home","End"].includes(e.key)){
-        e.preventDefault();
-        let ni=i; if(e.key==="ArrowRight") ni=(i+1)%tabs.length; if(e.key==="ArrowLeft") ni=(i-1+tabs.length)%tabs.length; if(e.key==="Home") ni=0; if(e.key==="End") ni=tabs.length-1;
-        tabs[ni].focus(); activate(ni);
-      }
+    t.addEventListener('click',()=>go(i));
+    t.addEventListener('keydown',e=>{
+      if(!['ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;
+      e.preventDefault();let n=i;
+      if(e.key==='ArrowRight')n=(i+1)%tabs.length;
+      if(e.key==='ArrowLeft') n=(i-1+tabs.length)%tabs.length;
+      if(e.key==='Home')n=0;if(e.key==='End')n=tabs.length-1;
+      tabs[n].focus();go(n);
     });
   });
 })();
 
-/* =============== SMS table =============== */
-const SMS = {
-  data:[], sort:{key:"timestamp",dir:"desc"}, q:"", type:"",
-  applyFilters(){
-    let out=[...this.data];
-    if(this.type) out=out.filter(x=>x.type===this.type);
-    if(this.q){ const q=this.q.toLowerCase(); out=out.filter(x=>(x.sender||"").toLowerCase().includes(q)||(x.phone||"").toLowerCase().includes(q)||(x.content||"").toLowerCase().includes(q)); }
-    const {key,dir}=this.sort;
-    out.sort((a,b)=>{
-      const va=a[key]??"", vb=b[key]??"";
-      if(key==="timestamp") return dir==="asc"?va-vb:vb-va;
-      return dir==="asc"?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
-    });
-    return out;
-  },
-  async load(){ this.data=await Store.getSMS(); this.render(); },
-  render(){
-    const body=$("#sms-body"); body.innerHTML="";
-    const rows=this.applyFilters();
-    $("#sms-cnt").textContent = rows.length ? `${plural(rows.length,"message")}` : "No messages";
-    if(!rows.length){
-      const tr=document.createElement("tr"); const td=document.createElement("td");
-      td.colSpan=6; td.className="empty"; td.textContent="No messages found"; tr.appendChild(td); body.appendChild(tr); return;
-    }
-    rows.forEach(x=>{
-      const tr=document.createElement("tr");
-      const td1=document.createElement("td"); td1.textContent=fmtDT(x.timestamp);
-      const td2=document.createElement("td"); td2.textContent=x.sender||"";
-      const td3=document.createElement("td"); td3.textContent=x.phone||"";
-      const td4=document.createElement("td"); td4.textContent=x.type||"";
-      const td5=document.createElement("td"); td5.className="cell-ellipsis"; td5.title=x.content||""; td5.textContent=x.content||"";
-      const td6=document.createElement("td");
-      const del=document.createElement("button"); del.className="btn dn"; del.textContent="🗑";
-      del.setAttribute("aria-label", `Delete message from ${x.sender||"unknown"}`);
-      del.addEventListener("click", ()=>this.remove(x.id)); td6.appendChild(del);
-      tr.append(td1,td2,td3,td4,td5,td6); body.appendChild(tr);
-    });
-  },
-  async remove(id){
-    const snapshot=[...this.data];
-    await Store.deleteSMS(id);
-    await this.load();
-    await renderOverview(); // keep dashboard in sync
-    showToast("Message deleted",{actions:[{label:"Undo",onClick:async()=>{
-      const rec=snapshot.find(r=>r.id===id);
-      if(rec){ await Store.addSMS(rec); await this.load(); await renderOverview(); }
-    }}]});
-  },
-  async clearAll(){
-    const prev=[...this.data]; if(!confirm("Clear all SMS logs?")) return;
-    await Store.clearSMS(); await this.load(); await renderOverview();
-    showToast("All SMS cleared",{actions:[{label:"Undo",onClick:async()=>{
-      for(const r of prev) await Store.addSMS(r);
-      await this.load(); await renderOverview();
-    }}]});
-  },
-  exportCSV(){
-    const rows=this.applyFilters().map(x=>[fmtDT(x.timestamp),x.sender||"",x.phone||"",x.type||"",x.content||""]);
-    dlCSV([["Date","Name","Phone","Type","Query"],...rows], `sms_${new Date().toISOString().slice(0,10)}.csv`); showToast("CSV exported");
-  },
-  bind(){
-    $("#sms-q").addEventListener("input", debounce(e=>{ this.q=e.target.value; this.render(); },200));
-    $("#sms-t").addEventListener("change", e=>{ this.type=e.target.value; this.render(); });
-    $("#sms-export").addEventListener("click", () => this.exportCSV());
-    $("#sms-clear").addEventListener("click", () => this.clearAll());
-    $$("#panel-sms thead th.sortable").forEach(th=>{
-      th.addEventListener("click", ()=>{
-        const key=th.dataset.sort;
-        if(this.sort.key===key){ this.sort.dir=this.sort.dir==="asc"?"desc":"asc"; } else { this.sort.key=key; this.sort.dir="asc"; }
-        this.render();
-      });
-    });
-  }
-};
+/* ===== FULLSCREEN ===== */
+function updFs(){$('#fsToggle').textContent=document.fullscreenElement?'\U0001f5d7 Exit full screen':'\u26f6 Full screen';}
+$('#fsToggle').addEventListener('click',async()=>{
+  if(!document.fullscreenEnabled){showToast('\u26a0 Full screen only works via http://, not file://');return;}
+  try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen();}
+  catch{showToast('\u26a0 Browser blocked full screen');}
+});
+document.addEventListener('fullscreenchange',updFs);
 
-/* =============== Unresolved table =============== */
-const UR = {
-  data:[], sort:{key:"timestamp",dir:"desc"}, q:"", type:"",
-  applyFilters(){
-    let out=[...this.data];
-    if(this.type) out=out.filter(x=>x.type===this.type);
-    if(this.q){ const q=this.q.toLowerCase(); out=out.filter(x=>(x.query||"").toLowerCase().includes(q)); }
-    const {key,dir}=this.sort;
-    out.sort((a,b)=>{
-      const va=a[key]??"", vb=b[key]??"";
-      if(key==="timestamp") return dir==="asc"?va-vb:vb-va;
-      return dir==="asc"?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
-    });
-    return out;
-  },
-  async load(){ this.data=await Store.getUnresolved(); this.render(); },
-  render(){
-    const body=$("#ur-body"); body.innerHTML="";
-    const rows=this.applyFilters();
-    $("#ur-cnt").textContent = rows.length ? `${plural(rows.length,"item")}` : "No entries";
-    if(!rows.length){
-      const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=4; td.className="empty"; td.textContent="No entries found"; tr.appendChild(td); body.appendChild(tr); return;
-    }
-    rows.forEach(x=>{
-      const tr=document.createElement("tr");
-      const td1=document.createElement("td"); td1.textContent=fmtDT(x.timestamp);
-      const td2=document.createElement("td"); td2.className="cell-ellipsis"; td2.title=x.query||""; td2.textContent=x.query||"";
-      const td3=document.createElement("td"); td3.textContent=x.type||"";
-      const td4=document.createElement("td");
-      const del=document.createElement("button"); del.className="btn dn"; del.textContent="🗑";
-      del.setAttribute("aria-label","Delete unresolved item");
-      del.addEventListener("click", ()=>this.remove(x.id)); td4.appendChild(del);
-      tr.append(td1,td2,td3,td4); body.appendChild(tr);
-    });
-  },
-  async remove(id){
-    const snapshot=[...this.data];
-    await Store.deleteUnresolved(id);
-    await this.load();
-    await renderOverview(); // keep dashboard in sync
-    showToast("Deleted",{actions:[{label:"Undo",onClick:async()=>{
-      const rec=snapshot.find(r=>r.id===id);
-      if(rec){ await Store.addUnresolved(rec); await this.load(); await renderOverview(); }
-    }}]});
-  },
-  async clearAll(){
-    const prev=[...this.data]; if(!confirm("Clear all unresolved logs?")) return;
-    await Store.clearUnresolved(); await this.load(); await renderOverview();
-    showToast("All cleared",{actions:[{label:"Undo",onClick:async()=>{
-      for(const r of prev) await Store.addUnresolved(r);
-      await this.load(); await renderOverview();
-    }}]});
-  },
-  exportCSV(){
-    const rows=this.applyFilters().map(x=>[fmtDT(x.timestamp),x.query||"",x.type||""]);
-    dlCSV([["Date","Query","Type"],...rows], `unresolved_${new Date().toISOString().slice(0,10)}.csv`); showToast("CSV exported");
-  },
-  bind(){
-    $("#ur-q").addEventListener("input", debounce(e=>{ this.q=e.target.value; this.render(); },200));
-    $("#ur-t").addEventListener("change", e=>{ this.type=e.target.value; this.render(); });
-    $("#ur-export").addEventListener("click", () => this.exportCSV());
-    $("#ur-clear").addEventListener("click", () => this.clearAll());
-    $$("#panel-unresolved thead th.sortable").forEach(th=>{
-      th.addEventListener("click", ()=>{
-        const key=th.dataset.sort;
-        if(this.sort.key===key){ this.sort.dir=this.sort.dir==="asc"?"desc":"asc"; } else { this.sort.key=key; this.sort.dir="asc"; }
-        this.render();
-      });
-    });
-  }
-};
-
-/* =============== Overview =============== */
-async function renderOverview(){
-  const sms=await Store.getSMS(); const ur=await Store.getUnresolved();
-  const stats=$("#ov-stats"); stats.innerHTML="";
-  const mk=(num,lbl,sub="",cls="")=>{ const d=document.createElement("div"); d.className=`sc ${cls}`; d.innerHTML=`<div class="num">${num}</div><div class="lbl">${lbl}</div>${sub?`<div class="sub">${sub}</div>`:""}`; return d; };
-  stats.append(
-    mk(sms.length,"SMS logged","pay & deduction","cp"),
-    mk(ur.length,"Unresolved items","to review", ur.length? "cr":""),
-    mk(new Set(sms.map(x=>(x.sender||"").trim()).filter(Boolean)).size,"Unique people","by sender")
-  );
-  const all=[...sms.map(x=>({ts:x.timestamp,type:"SMS",detail:`${x.type||"—"} — ${x.sender||""}`})), ...ur.map(x=>({ts:x.timestamp,type:"Unresolved",detail:`${x.type||"—"} — ${x.query||""}`}))].sort((a,b)=>b.ts-a.ts).slice(0,20);
-  const tb=$("#ov-tbl tbody"); tb.innerHTML="";
-  if(!all.length){
-    const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=3; td.className="empty"; td.textContent="No recent events"; tr.appendChild(td); tb.appendChild(tr);
-  } else {
-    all.forEach(e=>{ const tr=document.createElement("tr"); const td1=document.createElement("td"); td1.textContent=fmtDT(e.ts); const td2=document.createElement("td"); td2.textContent=e.type; const td3=document.createElement("td"); td3.className="cell-ellipsis"; td3.title=e.detail; td3.textContent=e.detail; tr.append(td1,td2,td3); tb.appendChild(tr); });
-  }
+/* ===== CSV ===== */
+function dlCSV(rows,fn){
+  const csv=rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})),download:fn});
+  document.body.appendChild(a);a.click();a.remove();
 }
 
-/* =============== Boot =============== */
-function tickSyncTime(){ $("#syncTime").textContent="Synced: "+new Date().toLocaleString(); }
+/* ===== OVERVIEW ===== */
+async function renderOverview() {
+  const [sms,ur]=await Promise.all([Store.getSMS(),Store.getUR()]);
+  const s=$('#ov-stats');s.innerHTML='';
+  const mk=(num,lbl,sub,cls='')=>{const d=document.createElement('div');d.className='sc '+cls;d.innerHTML='<div class="num">'+num+'</div><div class="lbl">'+lbl+'</div><div class="sub">'+sub+'</div>';return d;};
+  s.append(
+    mk(sms.length,'SMS logged','pay & deduction','cp'),
+    mk(ur.length,'Unresolved',ur.length?'needs review':'all clear',ur.length?'cr':'cg'),
+    mk(new Set(sms.map(x=>(x.sender||'').trim().toLowerCase()).filter(Boolean)).size,'Unique people','distinct senders')
+  );
+  barChart($('#ov-type-chart'),[{label:'Pay',val:sms.filter(x=>x.type==='pay').length,color:'var(--brand-light)'},{label:'Deduction',val:sms.filter(x=>x.type==='deduction').length,color:'var(--purple)'}]);
+  barChart($('#ov-ur-chart'),[{label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},{label:'Unhelpful',val:ur.filter(x=>x.type==='unhelpful').length,color:'var(--red)'}]);
+  const ev=[...sms.map(x=>({ts:x.timestamp,t:'SMS',d:(x.type||'\u2014')+' \u2014 '+(x.sender||'')})),...ur.map(x=>({ts:x.timestamp,t:'Unresolved',d:(x.type||'\u2014')+' \u2014 '+(x.query||'')}))].sort((a,b)=>b.ts-a.ts).slice(0,20);
+  const tb=$('#ov-tbl tbody');tb.innerHTML='';
+  if(!ev.length){tb.innerHTML='<tr><td colspan="3" class="empty"><div class="ico">\U0001f4cb</div><p>No events yet</p></td></tr>';}
+  else ev.forEach(e=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+fmtDT(e.ts)+'</td><td>'+badge(e.t==='SMS'?'sms':'unresolved')+'</td><td class="cell-ellipsis" title="'+esc(e.d)+'">'+esc(e.d)+'</td>';tb.appendChild(tr);});
+}
+
+/* ===== ANALYTICS ===== */
+async function renderAnalytics() {
+  const [sms,ur]=await Promise.all([Store.getSMS(),Store.getUR()]);
+  $('#an-sms').textContent=sms.length;
+  $('#an-ur').textContent=ur.length;
+  const names=[...new Set(sms.map(x=>(x.sender||'').trim()).filter(Boolean))];
+  $('#an-people').textContent=names.length;
+  barChart($('#an-sms-split'),[{label:'Pay',val:sms.filter(x=>x.type==='pay').length,color:'var(--brand-light)'},{label:'Deduction',val:sms.filter(x=>x.type==='deduction').length,color:'var(--purple)'}]);
+  barChart($('#an-ur-split'),[{label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},{label:'Unhelpful',val:ur.filter(x=>x.type==='unhelpful').length,color:'var(--red)'}]);
+  $('#an-senders').innerHTML=names.length?names.map(n=>'<span style="display:inline-block;background:var(--surface-3);border:1px solid var(--border-mid);border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:600;margin:3px">'+esc(n)+'</span>').join(''):'<div class="empty"><p>No senders yet</p></div>';
+}
+
+/* ===== SMS TABLE ===== */
+const SMS={
+  data:[],sort:{key:'timestamp',dir:'desc'},q:'',type:'',
+  fil(){let o=[...this.data];if(this.type)o=o.filter(x=>x.type===this.type);if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.sender||'').toLowerCase().includes(q)||(x.phone||'').toLowerCase().includes(q)||(x.content||'').toLowerCase().includes(q));}const{key,dir}=this.sort;return o.sort((a,b)=>{const va=a[key]??'',vb=b[key]??'';return key==='timestamp'?(dir==='asc'?va-vb:vb-va):(dir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)));});},
+  async load(){this.data=await Store.getSMS();this.render();},
+  render(){
+    const rows=this.fil();
+    $('#sms-cnt').textContent=plural(rows.length,'message')+(this.data.length!==rows.length?' ('+this.data.length+' total)':'');
+    $$('#panel-sms th.sortable').forEach(th=>{th.classList.remove('sort-asc','sort-desc');if(th.dataset.sort===this.sort.key)th.classList.add(this.sort.dir==='asc'?'sort-asc':'sort-desc');});
+    const body=$('#sms-body');body.innerHTML='';
+    if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty"><div class="ico">\U0001f4ed</div><p>'+(this.data.length?'No results match filter':'No SMS logs yet')+'</p></td></tr>';return;}
+    rows.forEach(x=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td>'+fmtDT(x.timestamp)+'</td><td>'+esc(x.sender||'\u2014')+'</td><td>'+esc(x.phone||'\u2014')+'</td><td>'+badge(x.type)+'</td><td class="cell-ellipsis" title="'+esc(x.content)+'">'+esc(x.content||'\u2014')+'</td><td></td>';
+      const del=document.createElement('button');del.className='btn dn';del.textContent='\U0001f5d1';del.title='Delete';
+      del.onclick=()=>this.remove(x.id);tr.lastElementChild.appendChild(del);body.appendChild(tr);
+    });
+  },
+  async remove(id){const snap=[...this.data];await Store.deleteSMS(id);await this.load();await renderOverview();await renderAnalytics();showToast('Message deleted',{actions:[{label:'Undo',onClick:async()=>{const r=snap.find(x=>x.id===id);if(r){await Store.addSMS(r);await this.load();await renderOverview();await renderAnalytics();}}}]});},
+  async clearAll(){if(!confirm('Clear ALL SMS logs?'))return;const prev=[...this.data];await Store.clearSMS();await this.load();await renderOverview();await renderAnalytics();showToast('All SMS cleared',{actions:[{label:'Undo',onClick:async()=>{for(const r of prev)await Store.addSMS(r);await this.load();await renderOverview();await renderAnalytics();}}]});},
+  exportCSV(){dlCSV([['Date','Name','Phone','Type','Query'],...this.fil().map(x=>[fmtDT(x.timestamp),x.sender||'',x.phone||'',x.type||'',x.content||''])], 'sms_'+new Date().toISOString().slice(0,10)+'.csv');showToast('CSV exported \u2713');},
+  bind(){
+    $('#sms-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
+    $('#sms-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
+    $('#sms-export').addEventListener('click',()=>this.exportCSV());
+    $('#sms-clear').addEventListener('click',()=>this.clearAll());
+    $$('#panel-sms thead th.sortable').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.sort;this.sort={key:k,dir:this.sort.key===k&&this.sort.dir==='asc'?'desc':'asc'};this.render();}));
+  }
+};
+
+/* ===== UNRESOLVED TABLE ===== */
+const UR_TBL={
+  data:[],sort:{key:'timestamp',dir:'desc'},q:'',type:'',
+  fil(){let o=[...this.data];if(this.type)o=o.filter(x=>x.type===this.type);if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.query||'').toLowerCase().includes(q));}const{key,dir}=this.sort;return o.sort((a,b)=>{const va=a[key]??'',vb=b[key]??'';return key==='timestamp'?(dir==='asc'?va-vb:vb-va):(dir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)));});},
+  async load(){this.data=await Store.getUR();this.render();},
+  render(){
+    const rows=this.fil();
+    $('#ur-cnt').textContent=plural(rows.length,'item')+(this.data.length!==rows.length?' ('+this.data.length+' total)':'');
+    $$('#panel-unresolved th.sortable').forEach(th=>{th.classList.remove('sort-asc','sort-desc');if(th.dataset.sort===this.sort.key)th.classList.add(this.sort.dir==='asc'?'sort-asc':'sort-desc');});
+    const body=$('#ur-body');body.innerHTML='';
+    if(!rows.length){body.innerHTML='<tr><td colspan="4" class="empty"><div class="ico">\u2705</div><p>'+(this.data.length?'No results match filter':'No unresolved queries \u2014 great!')+'</p></td></tr>';return;}
+    rows.forEach(x=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td>'+fmtDT(x.timestamp)+'</td><td class="cell-ellipsis" title="'+esc(x.query)+'">'+esc(x.query||'\u2014')+'</td><td>'+badge(x.type)+'</td><td></td>';
+      const del=document.createElement('button');del.className='btn dn';del.textContent='\U0001f5d1';del.title='Delete';
+      del.onclick=()=>this.remove(x.id);tr.lastElementChild.appendChild(del);body.appendChild(tr);
+    });
+  },
+  async remove(id){const snap=[...this.data];await Store.deleteUR(id);await this.load();await renderOverview();await renderAnalytics();showToast('Deleted',{actions:[{label:'Undo',onClick:async()=>{const r=snap.find(x=>x.id===id);if(r){await Store.addUR(r);await this.load();await renderOverview();await renderAnalytics();}}}]});},
+  async clearAll(){if(!confirm('Clear all unresolved logs?'))return;const prev=[...this.data];await Store.clearUR();await this.load();await renderOverview();await renderAnalytics();showToast('All cleared',{actions:[{label:'Undo',onClick:async()=>{for(const r of prev)await Store.addUR(r);await this.load();await renderOverview();await renderAnalytics();}}]});},
+  exportCSV(){dlCSV([['Date','Query','Type'],...this.fil().map(x=>[fmtDT(x.timestamp),x.query||'',x.type||''])], 'unresolved_'+new Date().toISOString().slice(0,10)+'.csv');showToast('CSV exported \u2713');},
+  bind(){
+    $('#ur-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
+    $('#ur-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
+    $('#ur-export').addEventListener('click',()=>this.exportCSV());
+    $('#ur-clear').addEventListener('click',()=>this.clearAll());
+    $$('#panel-unresolved thead th.sortable').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.sort;this.sort={key:k,dir:this.sort.key===k&&this.sort.dir==='asc'?'desc':'asc'};this.render();}));
+  }
+};
+
+/* ===== BOOT ===== */
+async function refreshAll(){setSyncStatus('spin','Refreshing\u2026');await Promise.all([SMS.load(),UR_TBL.load(),renderOverview(),renderAnalytics()]);setSyncStatus('ok',Store.statusText);}
 
 (async function boot(){
-  // Optional: enable backend sync
-  // Sync.enabled = true;
-  // Sync.baseURL = "/api";
-
-  // Dev seed if empty (and not syncing)
-  if(!Sync.enabled){
-    if(!Local.get(K_SMS).length){
-      await Store.addSMS({sender:"John Doe", phone:"+447712345678", type:"pay", content:"When is my next payment?", status:"sent"});
-      await Store.addSMS({sender:"Mary Smith", phone:"+447700112233", type:"deduction", content:"Why was £50 deducted?", status:"sent"});
-    }
-    if(!Local.get(K_UNRES).length){
-      await Store.addUnresolved({query:"How do I claim benefits?", type:"unanswered"});
-    }
+  const existingSMS=await Store.getSMS();
+  if(!existingSMS.length){
+    await Store.addSMS({sender:'John Doe',phone:'+447712345678',type:'pay',content:'When is my next payment?'});
+    await Store.addSMS({sender:'Mary Smith',phone:'+447700112233',type:'deduction',content:'Why was \u00a350 deducted from my payment?'});
+    await Store.addSMS({sender:'Ahmed Khan',phone:'+447911223344',type:'pay',content:"I haven't received this month's pay."});
   }
-
-  // Bind + Render
-  SMS.bind(); UR.bind();
-  await SMS.load(); await UR.load();
-  await renderOverview();
-
-  updateFsButton();
-  tickSyncTime(); // update immediately
-  setInterval(tickSyncTime, 3000);
+  const existingUR=await Store.getUR();
+  if(!existingUR.length){
+    await Store.addUR({query:'How do I appeal a sanction decision?',type:'unanswered'});
+    await Store.addUR({query:'What counts as a disability for PIP?',type:'unhelpful'});
+  }
+  SMS.bind(); UR_TBL.bind();
+  await Promise.all([SMS.load(),UR_TBL.load(),renderOverview(),renderAnalytics()]);
+  setSyncStatus('ok',Store.statusText);
+  $('#loadingOverlay').style.display='none';
+  $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();showToast('Data refreshed \u2713');});
+  setInterval(refreshAll,30000);
+  updFs();
 })();
+
 });
 </script>
 </body>
