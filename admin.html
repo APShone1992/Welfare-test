@@ -1,166 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Welfare Support Admin Dashboard</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
+<meta charset="UTF-8"/>
+<title>Welfare Support — Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto;background:#f4f6fb;color:#0f172a;}
-header{background:#1a3a6b;color:white;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;}
-header h1{margin:0;font-size:20px;}
-.live{font-size:13px;opacity:.9;}
-.container{padding:30px;max-width:1400px;margin:auto;}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:30px;}
-.card{background:white;border-radius:10px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,0.08);}
-.stat{font-size:32px;font-weight:800;color:#2563d4;}
-.label{font-size:12px;color:#6b7280;}
-.section{margin-top:40px;}
-table{width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;}
-th,td{padding:12px;border-bottom:1px solid #e5e7eb;font-size:14px;text-align:left;}
-th{background:#f1f5f9;font-size:12px;}
-button{background:#2563d4;border:none;color:white;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;}
-button.danger{background:#dc2626;}
-.alert{background:#fff4e5;border-left:4px solid #f59e0b;padding:10px;margin-bottom:8px;border-radius:4px;font-size:14px;}
-.chart{display:flex;align-items:flex-end;gap:4px;height:120px;margin-top:12px;}
-.bar{flex:1;background:#2563d4;border-radius:4px 4px 0 0;opacity:.8;}
-.bar:hover{opacity:1;}
+:root{
+  --brand:#1a3a6b;--brand-mid:#1e4d9b;--brand-light:#2563d4;
+  --accent:#e8f0fe;--surface:#fff;--surface-2:#f7f9ff;--surface-3:#eef2fb;
+  --border:rgba(26,58,107,0.10);--border-mid:rgba(26,58,107,0.18);
+  --text:#0d1f3c;--text-sec:#4a5878;--text-muted:#8a94a8;
+  --red:#dc2626;--green:#16a34a;--orange:#d97706;--purple:#7c3aed;
+  --radius:10px;--font:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;--tr:0.15s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--font);background:var(--surface-2);color:var(--text);overflow:hidden}
+body{display:flex;flex-direction:column}
+header{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(26,58,107,0.18);flex-wrap:wrap;gap:10px;}
+header h1{font-size:18px;font-weight:700}
+header .sub{font-size:12px;opacity:.8;margin-top:2px}
+.tab-bar{display:flex;border-bottom:2px solid var(--border-mid);background:var(--surface);padding:0 24px;overflow-x:auto;}
+.tab{padding:13px 22px;font-size:14px;font-weight:600;color:var(--text-sec);white-space:nowrap;cursor:pointer;border:none;background:none;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr);}
+.tab.active{color:var(--brand-light);border-bottom-color:var(--brand-light)}
+.tab:hover:not(.active){color:var(--text)}
+.panel{display:none;padding:28px;max-width:1400px;margin:0 auto;width:100%;height:calc(100vh - 120px);overflow-y:auto}
+.panel.active{display:block}
+h2{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--brand)}
+.pdesc{font-size:13.5px;color:var(--text-sec);margin-bottom:22px}
+h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
+.crow2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.crow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px}
+@media(max-width:1024px){.crow2,.crow3{grid-template-columns:1fr}}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
+.sc .num{font-size:34px;font-weight:800;line-height:1;color:var(--brand-light)}
+.sc .lbl{font-size:12px;color:var(--text-muted);margin-top:5px;font-weight:500}
+.sc .sub{font-size:11.5px;margin-top:3px}
+.sc.cg .num{color:var(--green)}.sc.co .num{color:var(--orange)}.sc.cp .num{color:var(--purple)}.sc.cr .num{color:var(--red)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:13.5px;font-weight:600;font-family:var(--font);background:var(--brand);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:background var(--tr),box-shadow var(--tr);text-decoration:none;}
+.btn:hover{background:var(--brand-mid);box-shadow:0 4px 12px rgba(26,58,107,0.22)}
+.btn.sec{background:var(--surface-3);color:var(--brand);border:1.5px solid var(--border-mid)}.btn.sec:hover{background:var(--accent);box-shadow:none}
+.btn.gr{background:var(--green)}.btn.gr:hover{background:#15803d}
+.btn.dn{background:var(--red)}.btn.dn:hover{background:#b91c1c}
+.bc{display:flex;flex-direction:column;gap:9px}
+.br{display:flex;align-items:center;gap:10px}
+.bl{width:160px;font-size:12.5px;color:var(--text-sec);text-align:right;flex-shrink:0;line-height:1.3}
+.bt{flex:1;background:var(--surface-3);border-radius:999px;height:18px;overflow:hidden;min-width:0}
+.bf{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-mid),var(--brand-light));min-width:3px;transition:width .5s}
+.bf.og{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.bv{width:32px;font-size:12.5px;color:var(--text-sec);text-align:right;flex-shrink:0;font-weight:600}
+.spark{display:flex;flex-direction:column;gap:4px}
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:52px}
+.scol{flex:1;display:flex;flex-direction:column;align-items:center}
+.sbar{width:100%;background:var(--brand-light);border-radius:3px 3px 0 0;opacity:.7;min-height:3px;transition:opacity .2s}
+.sbar:hover{opacity:1}
+.slabels{display:flex;gap:3px;margin-top:3px}
+.slbl{flex:1;font-size:9px;color:var(--text-muted);text-align:center;overflow:hidden}
+.tw{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius)}
+table.dt{width:100%;border-collapse:collapse;font-size:13.5px}
+table.dt th{text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text-sec);border-bottom:2px solid var(--border-mid);background:var(--surface-3);white-space:nowrap;}
+table.dt td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tbody tr:hover td{background:var(--surface-2)}
+.tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600}
+.tag.bl{background:var(--accent);color:var(--brand-light)}.tag.gr{background:#dcfce7;color:var(--green)}.tag.og{background:#fef3c7;color:var(--orange)}.tag.rd{background:#fee2e2;color:var(--red)}.tag.pu{background:#ede9fe;color:var(--purple)}
+.fbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.fbar input,.fbar select{padding:8px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13.5px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr);}
+.fbar input{flex:1;min-width:160px}.fbar input:focus,.fbar select:focus{border-color:var(--brand-light)}
+.empty{text-align:center;padding:48px 20px;color:var(--text-muted)}.empty .ico{font-size:38px;margin-bottom:10px}.empty p{font-size:14px}
+.bignum{font-size:52px;font-weight:800;line-height:1;display:block;text-align:center;padding:12px 0}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a3a6b;color:#fff;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(26,58,107,0.30);transform:translateY(80px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:9999;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1}
 </style>
 </head>
 <body>
-
 <header>
-<div>
-<h1>📊 Welfare Support Admin</h1>
-<div class="live" id="liveUsers">Loading...</div>
-</div>
-<div>
-<button onclick="resetAnalytics()" class="danger">Reset Data</button>
-<a href="index.html"><button>Open Chat</button></a>
-</div>
+  <div>
+    <h1>📊 Welfare Support — Admin</h1>
+    <div class="sub" id="syncTime">Loading…</div>
+  </div>
 </header>
 
-<div class="container">
-
-<div class="grid" id="stats"></div>
-
-<div class="section">
-<h2>📈 Sessions Last 14 Days</h2>
-<div class="chart" id="sessionsChart"></div>
+<div class="tab-bar">
+  <button class="tab active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="analytics">Analytics</button>
+  <button class="tab" data-tab="sms">SMS Log</button>
+  <button class="tab" data-tab="unresolved">Unresolved</button>
 </div>
 
-<div class="section">
-<h2>⚠️ Top Unanswered Questions</h2>
-<div id="alerts"></div>
+<div id="panel-overview" class="panel active">
+  <h2>Overview</h2>
+  <p class="pdesc">Live snapshot of bot usage.</p>
+  <div class="sgrid" id="ov-stats"></div>
+  <div class="crow2">
+    <div class="card"><h3>Sessions — last 14 days</h3><div class="spark" id="ov-spark"></div></div>
+    <div class="card"><h3>Top topics today</h3><div class="bc" id="ov-today"></div></div>
+  </div>
 </div>
 
-<div class="section">
-<h2>💬 Recent Chat Sessions</h2>
-<table>
-<thead>
-<tr>
-<th>Start Time</th><th>Messages</th><th>Status</th>
-</tr>
-</thead>
-<tbody id="sessionTable"></tbody>
-</table>
+<div id="panel-analytics" class="panel">
+  <h2>Analytics</h2>
+  <p class="pdesc">Detailed breakdown of recorded usage.</p>
+  <div class="sgrid" id="an-stats"></div>
+  <div class="crow3">
+    <div class="card" style="text-align:center"><h3>Resolution rate</h3><span class="bignum" id="an-res" style="color:var(--green)">—</span></div>
+    <div class="card" style="text-align:center"><h3>Avg messages / session</h3><span class="bignum" id="an-avg" style="color:var(--brand-light)">—</span></div>
+    <div class="card" style="text-align:center"><h3>SMS texts generated</h3><span class="bignum" id="an-sms" style="color:var(--purple)">—</span></div>
+  </div>
+  <div class="card"><h3>All query types — all time</h3><div class="bc" id="an-intents"></div></div>
 </div>
 
-<div class="section">
-<h2>📱 SMS Requests</h2>
-<button onclick="exportCSV('sms')">Export CSV</button>
-<table>
-<thead>
-<tr><th>Date</th><th>Name</th><th>Phone</th><th>Type</th><th>Query</th></tr>
-</thead>
-<tbody id="smsTable"></tbody>
-</table>
+<div id="panel-sms" class="panel">
+  <h2>SMS Log</h2>
+  <p class="pdesc">Pay/deduction queries submitted through the bot.</p>
+  <div class="fbar">
+    <input type="text" id="sms-q" placeholder="Search name, phone, query…" oninput="renderSMS()"/>
+    <select id="sms-t" onchange="renderSMS()"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
+    <button class="btn gr" onclick="exportSMS()">⬇ Export CSV</button>
+  </div>
+  <div id="sms-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
+  <div class="tw">
+    <table class="dt">
+      <thead><tr><th>Date & Time</th><th>Name</th><th>Phone</th><th>Type</th><th>Query</th></tr></thead>
+      <tbody id="sms-body"></tbody>
+    </table>
+  </div>
 </div>
 
-<div class="section">
-<h2>❓ Unresolved Queries</h2>
-<button onclick="exportCSV('unresolved')">Export CSV</button>
-<table>
-<thead>
-<tr><th>Date</th><th>Query</th></tr>
-</thead>
-<tbody id="unresolvedTable"></tbody>
-</table>
+<div id="panel-unresolved" class="panel">
+  <h2>Unresolved Queries</h2>
+  <p class="pdesc">Messages the bot couldn't answer or were marked unhelpful.</p>
+  <div class="fbar">
+    <input type="text" id="ur-q" placeholder="Search…" oninput="renderUnresolved()"/>
+    <select id="ur-t" onchange="renderUnresolved()"><option value="">All</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
+    <button class="btn gr" onclick="exportUnresolved()">⬇ Export CSV</button>
+  </div>
+  <div id="ur-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
+  <div class="tw">
+    <table class="dt">
+      <thead><tr><th>Date & Time</th><th>Query</th><th>Type</th></tr></thead>
+      <tbody id="ur-body"></tbody>
+    </table>
+  </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-const K_SESS="ws_sessions_v1",K_INT="ws_intents_v1",K_SMS="ws_sms_log_v1",K_UNRES="ws_unresolved_v1";
+(() => {
+  const K_SESS = "ws_sessions_v1";
+  const K_INT  = "ws_intents_v1";
+  const K_SMS  = "ws_sms_log_v1";
+  const K_UNRES= "ws_unresolved_v1";
 
-// Sample data for demo
-if(!localStorage.getItem(K_SESS)){
-localStorage.setItem(K_SESS,JSON.stringify([
-{start:Date.now()-60000,messages:5,date:new Date().toISOString().slice(0,10)},
-{start:Date.now()-120000,messages:3,date:new Date().toISOString().slice(0,10)}
-]));
-localStorage.setItem(K_INT,JSON.stringify([{q:"help",a:"Answered"}]));
-localStorage.setItem(K_SMS,JSON.stringify([{ts:Date.now(),name:"John Doe",phone:"1234567890",type:"info",description:"Need support"}]));
-localStorage.setItem(K_UNRES,JSON.stringify([{ts:Date.now(),text:"How to apply?"},{ts:Date.now(),text:"What is eligibility?"}]));
-}
+  const ld  = k => { try{ return JSON.parse(localStorage.getItem(k)||"[]"); }catch{ return []; } };
+  const sv  = (k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} };
+  const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const now = () => new Date().toISOString().slice(0,10);
+  const fmtDT = ts => new Date(ts).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
 
-function load(k){try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return[]}}
+  function showToast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2600); }
+  function dlCSV(rows,fn){ const c=rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n"); const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([c],{type:"text/csv;charset=utf-8;"})); a.download=fn; a.click(); }
 
-function renderStats(){
-const sess=load(K_SESS),intents=load(K_INT),sms=load(K_SMS),unresolved=load(K_UNRES),totalMessages=sess.reduce((a,s)=>a+(s.messages||0),0);
-document.getElementById("stats").innerHTML=`
-<div class="card"><div class="stat">${sess.length}</div><div class="label">Total Sessions</div></div>
-<div class="card"><div class="stat">${intents.length}</div><div class="label">Queries Answered</div></div>
-<div class="card"><div class="stat">${sms.length}</div><div class="label">SMS Requests</div></div>
-<div class="card"><div class="stat">${unresolved.length}</div><div class="label">Unresolved Questions</div></div>
-<div class="card"><div class="stat">${totalMessages}</div><div class="label">Messages Sent</div></div>
-`; }
+  function barChart(elId, rows, cls){ const el=document.getElementById(elId); if(!el) return; if(!rows.length){ el.innerHTML=`<div class="empty"><div class="ico">📭</div><p>No data yet</p></div>`; return; } const max=Math.max(...rows.map(r=>r.v),1); el.innerHTML=rows.map(r=>`<div class="br"><div class="bl">${esc(r.l)}</div><div class="bt"><div class="bf ${cls||""}" style="width:${Math.round(r.v/max*100)}%"></div></div><div class="bv">${r.v}</div></div>`).join(""); }
 
-function renderLiveUsers(){
-const sess=load(K_SESS);
-const active=sess.filter(s=>Date.now()-s.start<300000).length;
-document.getElementById("liveUsers").innerText="🟢 Live users: "+active;
-}
+  function sparkline(elId, days, counts){ const el=document.getElementById(elId); if(!el) return; const max=Math.max(...counts,1); el.innerHTML=`<div class="sparkline">${days.map((d,i)=>`<div class="scol"><div class="sbar" style="height:${Math.max(5,Math.round(counts[i]/max*100))}%"></div></div>`).join("")}</div>`; }
 
-function renderSessions(){
-const sess=load(K_SESS).slice().reverse();
-document.getElementById("sessionTable").innerHTML=sess.slice(0,10).map(s=>`<tr><td>${new Date(s.start).toLocaleString()}</td><td>${s.messages||0}</td><td>${Date.now()-s.start<300000?"🟢 Active":"⚪ Closed"}</td></tr>`).join("");
-}
+  const IL = {greeting:"Greeting",smalltalk:"Small talk",thanks:"Thanks",bye:"Goodbye",pay_query:"Pay query",deduction_query:"Deduction"};
+  const il = k => IL[k]||k;
 
-function renderSMS(){
-const sms=load(K_SMS).slice().reverse();
-document.getElementById("smsTable").innerHTML=sms.map(s=>`<tr><td>${new Date(s.ts).toLocaleString()}</td><td>${s.name||""}</td><td>${s.phone||""}</td><td>${s.type||""}</td><td>${s.description||""}</td></tr>`).join("");
-}
+  document.querySelectorAll(".tab").forEach(t=>{ t.addEventListener("click",()=>{ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active")); t.classList.add("active"); const id=t.dataset.tab; document.getElementById("panel-"+id).classList.add("active"); ({overview:renderOverview,analytics:renderAnalytics,sms:renderSMS,unresolved:renderUnresolved})[id]?.(); }); });
 
-function renderUnresolved(){
-const data=load(K_UNRES).slice().reverse();
-document.getElementById("unresolvedTable").innerHTML=data.map(s=>`<tr><td>${new Date(s.ts).toLocaleString()}</td><td>${s.text}</td></tr>`).join("");
-}
+  function renderOverview(){ const sess=ld(K_SESS), ints=ld(K_INT), sms=ld(K_SMS), ur=ld(K_UNRES); document.getElementById("ov-stats").innerHTML=`<div class="sc"><div class="num">${sess.length}</div><div class="lbl">Total sessions</div></div><div class="sc cp"><div class="num">${sms.length}</div><div class="lbl">Total SMS queries</div></div><div class="sc co"><div class="num">${ur.length}</div><div class="lbl">Unresolved queries</div></div>`; const days=[...Array(14)].map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-i); return d.toISOString().slice(0,10); }).reverse(); const counts=days.map(d=>sess.filter(s=>s.date===d).length); sparkline("ov-spark",days,counts); const top=ints.slice(0,5); barChart("ov-today",top); }
 
-function renderAlerts(){
-const data=load(K_UNRES),counts={};
-data.forEach(d=>{let q=d.text.toLowerCase();counts[q]=(counts[q]||0)+1;});
-const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
-document.getElementById("alerts").innerHTML=top.length?top.map(([q,c])=>`<div class="alert">${q} (${c})</div>`).join(""):"No issues detected";
-}
+  function renderAnalytics(){ const sess=ld(K_SESS), ints=ld(K_INT), sms=ld(K_SMS), ur=ld(K_UNRES); document.getElementById("an-stats").innerHTML=`<div class="sc"><div class="num">${sess.length}</div><div class="lbl">Sessions</div></div><div class="sc cp"><div class="num">${sms.length}</div><div class="lbl">SMS sent</div></div><div class="sc cr"><div class="num">${ur.length}</div><div class="lbl">Unresolved</div></div>`; const resRate=Math.round(((sess.length-ur.length)/Math.max(sess.length,1))*100); document.getElementById("an-res").textContent=resRate+"%"; const avgMsgs=Math.round(sess.reduce((a,b)=>a+b.msgs,0)/Math.max(sess.length,1)); document.getElementById("an-avg").textContent=avgMsgs; document.getElementById("an-sms").textContent=sms.length; barChart("an-intents",ints); }
 
-function renderChart(){
-const sess=load(K_SESS),days=14,now=Date.now(),counts=[];
-for(let i=days-1;i>=0;i--){let day=new Date(now-(i*86400000)).toISOString().slice(0,10);counts.push(sess.filter(s=>s.date===day).length);}
-const max=Math.max(...counts,1);
-document.getElementById("sessionsChart").innerHTML=counts.map(c=>`<div class="bar" style="height:${Math.max(5,(c/max)*100)}%"></div>`).join("");
-}
+  function renderSMS(){ const all=ld(K_SMS), q=document.getElementById("sms-q").value.toLowerCase(), t=document.getElementById("sms-t").value; let f=all; if(q) f=f.filter(r=>r.name.toLowerCase().includes(q)||r.phone.includes(q)||r.query.toLowerCase().includes(q)); if(t) f=f.filter(r=>r.type===t); document.getElementById("sms-cnt").textContent=`Showing ${f.length} / ${all.length} entries`; document.getElementById("sms-body").innerHTML=f.map(r=>`<tr><td>${fmtDT(r.date)}</td><td>${esc(r.name)}</td><td>${esc(r.phone)}</td><td><span class="tag ${r.type==='pay'?'gr':'og'}">${esc(r.type)}</span></td><td>${esc(r.query)}</td></tr>`).join(""); }
 
-function exportCSV(type){
-let csv="",data=[];
-if(type==="sms"){csv="Date,Name,Phone,Type,Query\n";data=load(K_SMS);data.forEach(s=>{csv+=`${new Date(s.ts)},${s.name||""},${s.phone||""},${s.type||""},${s.description||""}\n`;});}
-else{csv="Date,Query\n";data=load(K_UNRES);data.forEach(s=>{csv+=`${new Date(s.ts)},${s.text}\n`;});}
-const blob=new Blob([csv],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=type+".csv";a.click();
-}
+  function renderUnresolved(){ const all=ld(K_UNRES), q=document.getElementById("ur-q").value.toLowerCase(), t=document.getElementById("ur-t").value; let f=all; if(q) f=f.filter(r=>r.query.toLowerCase().includes(q)); if(t) f=f.filter(r=>r.type===t); document.getElementById("ur-cnt").textContent=`Showing ${f.length} / ${all.length} entries`; document.getElementById("ur-body").innerHTML=f.map(r=>`<tr><td>${fmtDT(r.date)}</td><td>${esc(r.query)}</td><td><span class="tag ${r.type==='unanswered'?'bl':'rd'}">${esc(r.type)}</span></td></tr>`).join(""); }
 
-function resetAnalytics(){if(!confirm("Delete ALL chatbot analytics?"))return;localStorage.removeItem(K_SESS);localStorage.removeItem(K_INT);localStorage.removeItem(K_SMS);localStorage.removeItem(K_UNRES);location.reload();}
+  window.exportSMS=()=>{ const data=ld(K_SMS).map(r=>[fmtDT(r.date),r.name,r.phone,r.type,r.query]); dlCSV([["Date & Time","Name","Phone","Type","Query"],...data],"sms_export.csv"); showToast("CSV exported!"); }
+  window.exportUnresolved=()=>{ const data=ld(K_UNRES).map(r=>[fmtDT(r.date),r.query,r.type]); dlCSV([["Date & Time","Query","Type"],...data],"unresolved_export.csv"); showToast("CSV exported!"); }
 
-function refresh(){renderStats();renderLiveUsers();renderSessions();renderSMS();renderUnresolved();renderAlerts();renderChart();}
+  function updateClock(){document.getElementById("syncTime").textContent="Last sync: "+new Date().toLocaleTimeString("en-GB");}
+  setInterval(updateClock,5000);updateClock();
 
-refresh();setInterval(refresh,5000);
+  // Example sample data
+  if(!ld(K_SESS).length){ sv(K_SESS,[{date:now(),msgs:12},{date:now(),msgs:8},{date:now(),msgs:20}]); }
+  if(!ld(K_INT).length){ sv(K_INT,[{l:"Greeting",v:30},{l:"Pay query",v:14},{l:"Deduction",v:6},{l:"Thanks",v:12}]); }
+  if(!ld(K_SMS).length){ sv(K_SMS,[{date:Date.now(),name:"Alice",phone:"0712345678",type:"pay",query:"Pay amount?"},{date:Date.now(),name:"Bob",phone:"0723456789",type:"deduction",query:"Deduction?"}]); }
+  if(!ld(K_UNRES).length){ sv(K_UNRES,[{date:Date.now(),query:"What is the bonus?",type:"unanswered"}]); }
+
+  renderOverview();
+})();
 </script>
 </body>
 </html>
