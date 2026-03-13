@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <title>Welfare Support — Admin</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+
 <style>
 :root{
   --brand:#1a3a6b;--brand-mid:#1e4d9b;--brand-light:#2563d4;
@@ -16,63 +17,82 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:var(--font);background:var(--surface-2);color:var(--text)}
 body{display:flex;flex-direction:column;min-height:100vh;margin:0}
-header{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(26,58,107,0.18);flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10;}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{
+  outline:2px solid var(--brand-light); outline-offset:2px; border-radius:6px;
+}
+
+/* Header */
+header{
+  background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);
+  color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 12px rgba(26,58,107,0.18);flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10;
+}
 header h1{font-size:18px;font-weight:700}
-header .sub{font-size:12px;opacity:.7;margin-top:2px}
+header .sub{font-size:12px;opacity:.8;margin-top:2px}
+.header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Tabs */
 .tab-bar{display:flex;border-bottom:2px solid var(--border-mid);background:var(--surface);padding:0 24px;overflow-x:auto;}
-.tab{padding:13px 22px;font-size:14px;font-weight:600;color:var(--text-sec);white-space:nowrap;cursor:pointer;border:none;background:none;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr);}
-.tab.active{color:var(--brand-light);border-bottom-color:var(--brand-light)}
-.tab:hover:not(.active){color:var(--text)}
+.tab{
+  padding:13px 22px;font-size:14px;font-weight:600;color:var(--text-sec);white-space:nowrap;border:none;background:none;
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr);
+}
+.tab[aria-selected="true"]{color:var(--brand-light);border-bottom-color:var(--brand-light)}
+.tab:hover{color:var(--text)}
+
+/* Panels & cards */
 .panel{display:none;padding:28px;max-width:1400px;margin:0 auto;width:100%;flex:1;overflow:auto}
 .panel.active{display:block}
 h2{font-size:18px;font-weight:700;margin-bottom:4px;color:var(--brand)}
 .pdesc{font-size:13.5px;color:var(--text-sec);margin-bottom:22px}
 h3{font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text)}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
+
 .crow2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
 .crow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px}
 @media(max-width:820px){.crow2,.crow3{grid-template-columns:1fr}}
+
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px}
 .sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:0 1px 5px rgba(13,31,60,0.06);}
 .sc .num{font-size:34px;font-weight:800;line-height:1;color:var(--brand-light)}
 .sc .lbl{font-size:12px;color:var(--text-muted);margin-top:5px;font-weight:500}
 .sc .sub{font-size:11.5px;margin-top:3px}
 .sc.cg .num{color:var(--green)}.sc.co .num{color:var(--orange)}.sc.cp .num{color:var(--purple)}.sc.cr .num{color:var(--red)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:13.5px;font-weight:600;font-family:var(--font);background:var(--brand);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:background var(--tr),box-shadow var(--tr);text-decoration:none;}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;font-size:13.5px;font-weight:600;font-family:var(--font);background:var(--brand);color:#fff;border:none;border-radius:8px;transition:background var(--tr),box-shadow var(--tr);}
 .btn:hover{background:var(--brand-mid);box-shadow:0 4px 12px rgba(26,58,107,0.22)}
 .btn.sec{background:var(--surface-3);color:var(--brand);border:1.5px solid var(--border-mid)}.btn.sec:hover{background:var(--accent);box-shadow:none}
 .btn.gr{background:var(--green)}.btn.gr:hover{background:#15803d}
 .btn.dn{background:var(--red)}.btn.dn:hover{background:#b91c1c}
-.bc{display:flex;flex-direction:column;gap:9px}
-.br{display:flex;align-items:center;gap:10px}
-.bl{width:160px;font-size:12.5px;color:var(--text-sec);text-align:right;flex-shrink:0;line-height:1.3}
-.bt{flex:1;background:var(--surface-3);border-radius:999px;height:18px;overflow:hidden;min-width:0}
-.bf{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand-mid),var(--brand-light));min-width:3px;transition:width .5s}
-.bf.og{background:linear-gradient(90deg,#d97706,#f59e0b)}
-.bv{width:32px;font-size:12.5px;color:var(--text-sec);text-align:right;flex-shrink:0;font-weight:600}
-.spark{display:flex;flex-direction:column;gap:4px}
-.sparkline{display:flex;align-items:flex-end;gap:3px;height:52px}
-.scol{flex:1;display:flex;flex-direction:column;align-items:center}
-.sbar{width:100%;background:var(--brand-light);border-radius:3px 3px 0 0;opacity:.7;min-height:3px;transition:opacity .2s}
-.sbar:hover{opacity:1}
-.slabels{display:flex;gap:3px;margin-top:3px}
-.slbl{flex:1;font-size:9px;color:var(--text-muted);text-align:center;overflow:hidden}
-.tw{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius)}
-table.dt{width:100%;border-collapse:collapse;font-size:13.5px}
-table.dt th{text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text-sec);border-bottom:2px solid var(--border-mid);background:var(--surface-3);white-space:nowrap;}
-table.dt td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word}
-table.dt tr:last-child td{border-bottom:none}
-table.dt tbody tr:hover td{background:var(--surface-2)}
-.tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600}
-.tag.bl{background:var(--accent);color:var(--brand-light)}.tag.gr{background:#dcfce7;color:var(--green)}.tag.og{background:#fef3c7;color:var(--orange)}.tag.rd{background:#fee2e2;color:var(--red)}.tag.pu{background:#ede9fe;color:var(--purple)}
+
 .fbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
 .fbar input,.fbar select{padding:8px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13.5px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr);}
 .fbar input{flex:1;min-width:160px}.fbar input:focus,.fbar select:focus{border-color:var(--brand-light)}
+
+.tw{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);max-height:65vh}
+table.dt{width:100%;border-collapse:collapse;font-size:13.5px}
+table.dt thead th{position:sticky;top:0;background:var(--surface-3);text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--text-sec);border-bottom:2px solid var(--border-mid);white-space:nowrap;}
+table.dt th.sortable{cursor:pointer;user-select:none}
+table.dt th.sortable:hover{color:var(--brand-light)}
+table.dt td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tbody tr:hover td{background:var(--surface-2)}
+.cell-ellipsis{max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 .empty{text-align:center;padding:48px 20px;color:var(--text-muted)}.empty .ico{font-size:38px;margin-bottom:10px}.empty p{font-size:14px}
 .bignum{font-size:52px;font-weight:800;line-height:1;display:block;text-align:center;padding:12px 0}
-.toast{position:fixed;bottom:24px;right:24px;background:#1a3a6b;color:#fff;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(26,58,107,0.30);transform:translateY(80px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:9999;pointer-events:none;}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#1a3a6b;color:#fff;padding:10px 14px;border-radius:8px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(26,58,107,0.30);transform:translateY(80px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:9999;pointer-events:auto;display:flex;gap:10px;align-items:center;}
 .toast.show{transform:translateY(0);opacity:1}
-@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:16px}.tab{padding:10px 14px;font-size:13px}.bl{width:110px}}
+.toast .actions{display:flex;gap:8px}
+
+@media(max-width:600px){
+  .sgrid{grid-template-columns:repeat(2,1fr)}
+  .panel{padding:16px}
+  .tab{padding:10px 14px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -81,188 +101,387 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
     <h1>📊 Welfare Support — Admin</h1>
     <div class="sub" id="syncTime">Loading…</div>
   </div>
-  <a href="index.html" class="btn sec">← Back to chat</a>
+  <div class="header-actions">
+    <button class="btn sec" id="fsToggle" title="Enter full screen">⛶ Full screen</button>
+    <a href="index.html" class="btn sec">← Back to chat</a>
+  </div>
 </header>
 
-<div class="tab-bar">
-  <button class="tab active" data-tab="overview">Overview</button>
-  <button class="tab" data-tab="analytics">Analytics</button>
-  <button class="tab" data-tab="sms">SMS Log</button>
-  <button class="tab" data-tab="unresolved">Unresolved</button>
+<div class="tab-bar" role="tablist" aria-label="Admin sections">
+  <button class="tab" role="tab" aria-selected="true" aria-controls="panel-overview" id="tab-overview">Overview</button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-analytics" id="tab-analytics">Analytics</button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-sms" id="tab-sms">SMS Log</button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="panel-unresolved" id="tab-unresolved">Unresolved</button>
 </div>
 
 <!-- Panels -->
-<div id="panel-overview" class="panel active">
+<div id="panel-overview" class="panel active" role="tabpanel" aria-labelledby="tab-overview">
   <h2>Overview</h2>
-  <p class="pdesc">Live snapshot of bot usage — reads directly from storage.</p>
+  <p class="pdesc">Live snapshot of bot usage — reads from storage (or backend when enabled).</p>
   <div class="sgrid" id="ov-stats"></div>
   <div class="crow2">
-    <div class="card"><h3>Sessions — last 14 days</h3><div class="spark" id="ov-spark"></div></div>
-    <div class="card"><h3>Top topics today</h3><div class="bc" id="ov-today"></div></div>
+    <div class="card">
+      <h3>Sessions — last 14 days</h3>
+      <div id="ov-spark" class="empty"><div class="ico">📉</div><p>Wire your sessions source to populate this.</p></div>
+    </div>
+    <div class="card">
+      <h3>Top topics today</h3>
+      <div class="empty"><div class="ico">🏷️</div><p>Connect intents to show trending topics.</p></div>
+    </div>
   </div>
-  <div class="card"><h3>Recent events</h3><div class="tw"><table class="dt" id="ov-tbl"></table></div></div>
+  <div class="card">
+    <h3>Recent events</h3>
+    <div class="tw">
+      <table class="dt" id="ov-tbl">
+        <thead><tr><th>Date & Time</th><th>Type</th><th>Detail</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-<div id="panel-analytics" class="panel">
+<div id="panel-analytics" class="panel" role="tabpanel" aria-labelledby="tab-analytics">
   <h2>Analytics</h2>
   <p class="pdesc">Full breakdown of recorded usage.</p>
   <div class="sgrid" id="an-stats"></div>
   <div class="crow3">
-    <div class="card" style="text-align:center"><h3>Resolution rate</h3><span class="bignum" id="an-res" style="color:var(--green)">—</span><div style="font-size:12px;color:var(--text-muted)">queries answered by bot</div></div>
-    <div class="card" style="text-align:center"><h3>Avg messages / session</h3><span class="bignum" id="an-avg" style="color:var(--brand-light)">—</span><div style="font-size:12px;color:var(--text-muted)">messages per visit</div></div>
-    <div class="card" style="text-align:center"><h3>SMS texts generated</h3><span class="bignum" id="an-sms" style="color:var(--purple)">—</span><div style="font-size:12px;color:var(--text-muted)">pay & deduction queries</div></div>
+    <div class="card" style="text-align:center">
+      <h3>Resolution rate</h3>
+      <span class="bignum" id="an-res" style="color:var(--green)">—</span>
+      <div style="font-size:12px;color:var(--text-muted)">queries answered by bot</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <h3>Avg messages / session</h3>
+      <span class="bignum" id="an-avg" style="color:var(--brand-light)">—</span>
+      <div style="font-size:12px;color:var(--text-muted)">messages per visit</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <h3>SMS texts generated</h3>
+      <span class="bignum" id="an-sms" style="color:var(--purple)">—</span>
+      <div style="font-size:12px;color:var(--text-muted)">pay & deduction queries</div>
+    </div>
   </div>
-  <div class="card"><h3>All query types — all time</h3><div class="bc" id="an-intents"></div></div>
+  <div class="card">
+    <h3>All query types — all time</h3>
+    <div class="empty"><div class="ico">📊</div><p>Connect your intents data source.</p></div>
+  </div>
   <div class="crow2">
-    <div class="card"><h3>Sessions by day of week</h3><div class="bc" id="an-dow"></div></div>
-    <div class="card"><h3>Sessions by hour (UK)</h3><div class="bc" id="an-hour"></div></div>
+    <div class="card"><h3>Sessions by day of week</h3><div class="empty"><p>Connect your sessions source.</p></div></div>
+    <div class="card"><h3>Sessions by hour (UK)</h3><div class="empty"><p>Connect your sessions source.</p></div></div>
   </div>
-  <div class="card"><h3>Daily sessions — last 30 days</h3><div class="spark" id="an-spark30"></div></div>
-  <div class="card"><h3>Most common unanswered phrases</h3><div class="bc" id="an-unres"></div></div>
+  <div class="card"><h3>Daily sessions — last 30 days</h3><div class="empty"><p>Connect your sessions source.</p></div></div>
+  <div class="card"><h3>Most common unanswered phrases</h3><div class="empty"><p>Connect intents / unresolved source.</p></div></div>
 </div>
 
-<div id="panel-sms" class="panel">
+<div id="panel-sms" class="panel" role="tabpanel" aria-labelledby="tab-sms">
   <h2>SMS Log</h2>
   <p class="pdesc">Every pay or deduction query submitted through the bot — logged when sent.</p>
   <div class="fbar">
-    <input type="text" id="sms-q" placeholder="Search name, phone, query…" oninput="renderSMS()"/>
-    <select id="sms-t" onchange="renderSMS()"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
-    <button class="btn gr" onclick="exportSMS()">⬇ Export CSV</button>
-    <button class="btn dn" onclick="clearSMS()">🗑 Clear all</button>
+    <input type="text" id="sms-q" placeholder="Search name, phone, query…"/>
+    <select id="sms-t">
+      <option value="">All types</option>
+      <option value="pay">Pay</option>
+      <option value="deduction">Deduction</option>
+    </select>
+    <button class="btn gr" id="sms-export">⬇ Export CSV</button>
+    <button class="btn dn" id="sms-clear">🗑 Clear all</button>
   </div>
   <div id="sms-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
   <div class="tw">
     <table class="dt">
-      <thead><tr><th>Date & Time</th><th>Name</th><th>Phone</th><th>Type</th><th>Query</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th class="sortable" data-sort="timestamp">Date &amp; Time</th>
+          <th class="sortable" data-sort="sender">Name</th>
+          <th>Phone</th>
+          <th class="sortable" data-sort="type">Type</th>
+          <th>Query</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody id="sms-body"></tbody>
     </table>
   </div>
 </div>
 
-<div id="panel-unresolved" class="panel">
+<div id="panel-unresolved" class="panel" role="tabpanel" aria-labelledby="tab-unresolved">
   <h2>Unresolved Queries</h2>
   <p class="pdesc">Messages the bot couldn't answer, plus responses users marked 👎 unhelpful.</p>
   <div class="fbar">
-    <input type="text" id="ur-q" placeholder="Search…" oninput="renderUnresolved()"/>
-    <select id="ur-t" onchange="renderUnresolved()"><option value="">All</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
-    <button class="btn gr" onclick="exportUnresolved()">⬇ Export CSV</button>
-    <button class="btn dn" onclick="clearUnresolved()">🗑 Clear all</button>
+    <input type="text" id="ur-q" placeholder="Search…"/>
+    <select id="ur-t">
+      <option value="">All</option>
+      <option value="unanswered">Unanswered</option>
+      <option value="unhelpful">Marked unhelpful</option>
+    </select>
+    <button class="btn gr" id="ur-export">⬇ Export CSV</button>
+    <button class="btn dn" id="ur-clear">🗑 Clear all</button>
   </div>
   <div id="ur-cnt" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
   <div class="tw">
     <table class="dt">
-      <thead><tr><th>Date & Time</th><th>Query</th><th>Type</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th class="sortable" data-sort="timestamp">Date &amp; Time</th>
+          <th class="sortable" data-sort="query">Query</th>
+          <th class="sortable" data-sort="type">Type</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody id="ur-body"></tbody>
     </table>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <span id="toast-msg"></span>
+  <div class="actions" id="toast-actions"></div>
+</div>
 
 <script>
-//====================
-// Utility functions
-//====================
-const K_SESS = "ws_sessions_v1";
-const K_INT  = "ws_intents_v1";
-const K_SMS  = "ws_sms_log_v1";
-const K_UNRES= "ws_unresolved_v1";
-
-const ld = k => { try{ return JSON.parse(localStorage.getItem(k)||"[]"); }catch{return [];} };
-const sv = (k,v)=>{ localStorage.setItem(k,JSON.stringify(v)); };
-const esc = s => String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-const now = ()=> new Date().toISOString().slice(0,10);
-const fmtDT = ts => new Date(ts).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
-
-function showToast(msg){ 
-  const t=document.getElementById("toast");
-  t.textContent=msg;
-  t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),2600);
-}
-
-//====================
-// CSV Export
-//====================
-function dlCSV(rows,fn){
-  const c=rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n");
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([c],{type:"text/csv;charset=utf-8;"})); a.download=fn; a.click();
-}
-
-//====================
-// Tabs
-//====================
-document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click",()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-    t.classList.add("active");
-    document.getElementById("panel-"+t.dataset.tab).classList.add("active");
+document.addEventListener("DOMContentLoaded", () => {
+/* =============== Utilities =============== */
+const $  = (sel,root=document)=>root.querySelector(sel);
+const $$ = (sel,root=document)=>Array.from(root.querySelectorAll(sel));
+const debounce = (fn,ms=200)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+const fmtDT = ts => new Date(typeof ts==="string"?Number(ts):ts).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const plural = (n, s, p=null)=>`${n} ${n===1?(s):(p||s+"s")}`;
+function showToast(msg, {actions=[]}={}){
+  const el = $("#toast");
+  $("#toast-msg").textContent = msg;
+  const actC = $("#toast-actions");
+  actC.innerHTML = "";
+  actions.forEach(a=>{
+    const b=document.createElement("button");
+    b.className="btn sec"; b.textContent=a.label; b.onclick=a.onClick; actC.appendChild(b);
   });
+  el.classList.add("show");
+  setTimeout(()=>{ el.classList.remove("show"); actC.innerHTML=""; }, 3200);
+}
+
+/* =============== Storage & Sync =============== */
+const K_SMS="ws_sms_log_v1", K_UNRES="ws_unresolved_v1";
+const Local = { get:(k,d=[])=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(d));}catch{return d;}}, set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)) };
+const Sync = {
+  enabled:false, baseURL:"",
+  async list(r){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}`,{credentials:"include"}); if(!res.ok) throw 0; return res.json(); },
+  async create(r,p){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}`,{method:"POST",headers:{ "Content-Type":"application/json" },body:JSON.stringify(p),credentials:"include"}); if(!res.ok) throw 0; return res.json(); },
+  async remove(r,id){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}/${encodeURIComponent(id)}`,{method:"DELETE",credentials:"include"}); if(!res.ok) throw 0; return true; },
+  async clear(r){ if(!this.enabled) throw 0; const res=await fetch(`${this.baseURL}/${r}`,{method:"DELETE",credentials:"include"}); if(!res.ok) throw 0; return true; }
+};
+const Store = {
+  async getSMS(){ try{ const d=await Sync.list("sms"); Local.set(K_SMS,d); return d; }catch{return Local.get(K_SMS,[]);} },
+  async addSMS(rec){ rec.id=rec.id||Date.now(); rec.timestamp=rec.timestamp||Date.now(); const d=Local.get(K_SMS,[]); d.push(rec); Local.set(K_SMS,d); try{ if(Sync.enabled) await Sync.create("sms",rec);}catch{} return d; },
+  async deleteSMS(id){ const d=Local.get(K_SMS,[]).filter(x=>x.id!==id); Local.set(K_SMS,d); try{ if(Sync.enabled) await Sync.remove("sms",id);}catch{} return d; },
+  async clearSMS(){ Local.set(K_SMS,[]); try{ if(Sync.enabled) await Sync.clear("sms"); }catch{} return []; },
+  async getUnresolved(){ try{ const d=await Sync.list("unresolved"); Local.set(K_UNRES,d); return d; }catch{return Local.get(K_UNRES,[]);} },
+  async addUnresolved(rec){ rec.id=rec.id||Date.now(); rec.timestamp=rec.timestamp||Date.now(); const d=Local.get(K_UNRES,[]); d.push(rec); Local.set(K_UNRES,d); try{ if(Sync.enabled) await Sync.create("unresolved",rec);}catch{} return d; },
+  async deleteUnresolved(id){ const d=Local.get(K_UNRES,[]).filter(x=>x.id!==id); Local.set(K_UNRES,d); try{ if(Sync.enabled) await Sync.remove("unresolved",id);}catch{} return d; },
+  async clearUnresolved(){ Local.set(K_UNRES,[]); try{ if(Sync.enabled) await Sync.clear("unresolved"); }catch{} return []; }
+};
+
+/* =============== CSV export =============== */
+function dlCSV(rows, fn){
+  const csv = rows.map(r=>r.map(x=>`"${String(x??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\ufeff"+csv], {type:"text/csv;charset=utf-8;"}); const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=fn; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* =============== Fullscreen =============== */
+function updateFsButton(){
+  const inFS = !!document.fullscreenElement;
+  const btn = $("#fsToggle");
+  if(!btn) return;
+  btn.textContent = inFS ? "🗗 Exit full screen" : "⛶ Full screen";
+  btn.title = inFS ? "Exit full screen" : "Enter full screen";
+}
+$("#fsToggle")?.addEventListener("click", async ()=>{
+  try{
+    if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); }
+    else{ await document.exitFullscreen(); }
+  }catch(e){ showToast("Fullscreen blocked by browser"); }
 });
+document.addEventListener("fullscreenchange", updateFsButton);
 
-//====================
-// SMS Functions
-//====================
-function renderSMS(){
-  const q=document.getElementById("sms-q").value.toLowerCase();
-  const t=document.getElementById("sms-t").value;
-  const body=document.getElementById("sms-body"); body.innerHTML="";
-  const data=ld(K_SMS).filter(x=>(!t||x.type===t)&&(!q||x.sender.toLowerCase().includes(q)||x.phone.includes(q)||x.content.toLowerCase().includes(q)));
-  document.getElementById("sms-cnt").textContent=`${data.length} message(s)`;
-  if(!data.length){ body.innerHTML=`<tr><td colspan="6" class="empty">No messages found</td></tr>`; return; }
-  data.forEach(x=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${fmtDT(x.timestamp)}</td><td>${esc(x.sender)}</td><td>${esc(x.phone)}</td><td>${esc(x.type)}</td><td>${esc(x.content)}</td>
-      <td><button class="btn dn" onclick="deleteSMS(${x.id})">🗑</button></td>`;
-    body.appendChild(tr);
+/* =============== Tabs (ARIA + keyboard) =============== */
+(function initTabs(){
+  const tabs = $$(".tab-bar [role=tab]"); const panels = $$(".panel");
+  function activate(idx){
+    tabs.forEach((t,i)=>{
+      const on = i===idx;
+      t.setAttribute("aria-selected", String(on));
+      panels[i].classList.toggle("active", on);
+      if(on) panels[i].scrollTop = 0;
+    });
+  }
+  tabs.forEach((t,i)=>{
+    t.addEventListener("click", ()=>activate(i));
+    t.addEventListener("keydown", (e)=>{
+      if(["ArrowRight","ArrowLeft","Home","End"].includes(e.key)){
+        e.preventDefault();
+        let ni=i; if(e.key==="ArrowRight") ni=(i+1)%tabs.length; if(e.key==="ArrowLeft") ni=(i-1+tabs.length)%tabs.length; if(e.key==="Home") ni=0; if(e.key==="End") ni=tabs.length-1;
+        tabs[ni].focus(); activate(ni);
+      }
+    });
   });
-}
-function deleteSMS(id){ let d=ld(K_SMS).filter(x=>x.id!==id); sv(K_SMS,d); renderSMS(); showToast("Message deleted"); }
-function clearSMS(){ if(confirm("Clear all SMS logs?")){ sv(K_SMS,[]); renderSMS(); showToast("All cleared"); } }
-function exportSMS(){ const data=ld(K_SMS).map(x=>[fmtDT(x.timestamp),x.sender,x.phone,x.type,x.content]); dlCSV([["Date","Name","Phone","Type","Query"],...data],"sms_"+now()+".csv"); showToast("CSV exported"); }
-function recordSMS(sender,phone,type,content){ 
-  const log=ld(K_SMS); log.push({id:Date.now(),timestamp:Date.now(),sender,phone,type,content,status:"sent"}); sv(K_SMS,log); renderSMS(); 
+})();
+
+/* =============== SMS table =============== */
+const SMS = {
+  data:[], sort:{key:"timestamp",dir:"desc"}, q:"", type:"",
+  applyFilters(){
+    let out=[...this.data];
+    if(this.type) out=out.filter(x=>x.type===this.type);
+    if(this.q){ const q=this.q.toLowerCase(); out=out.filter(x=>(x.sender||"").toLowerCase().includes(q)||(x.phone||"").toLowerCase().includes(q)||(x.content||"").toLowerCase().includes(q)); }
+    const {key,dir}=this.sort;
+    out.sort((a,b)=>{
+      const va=a[key]??"", vb=b[key]??"";
+      if(key==="timestamp") return dir==="asc"?va-vb:vb-va;
+      return dir==="asc"?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+    });
+    return out;
+  },
+  async load(){ this.data=await Store.getSMS(); this.render(); },
+  render(){
+    const body=$("#sms-body"); body.innerHTML="";
+    const rows=this.applyFilters();
+    $("#sms-cnt").textContent = rows.length ? `${plural(rows.length,"message")}` : "No messages";
+    if(!rows.length){ const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=6; td.className="empty"; td.textContent="No messages found"; tr.appendChild(td); body.appendChild(tr); return; }
+    rows.forEach(x=>{
+      const tr=document.createElement("tr");
+      const td1=document.createElement("td"); td1.textContent=fmtDT(x.timestamp);
+      const td2=document.createElement("td"); td2.textContent=x.sender||"";
+      const td3=document.createElement("td"); td3.textContent=x.phone||"";
+      const td4=document.createElement("td"); td4.textContent=x.type||"";
+      const td5=document.createElement("td"); td5.className="cell-ellipsis"; td5.title=x.content||""; td5.textContent=x.content||"";
+      const td6=document.createElement("td");
+      const del=document.createElement("button"); del.className="btn dn"; del.textContent="🗑"; del.addEventListener("click", ()=>this.remove(x.id)); td6.appendChild(del);
+      tr.append(td1,td2,td3,td4,td5,td6); body.appendChild(tr);
+    });
+  },
+  async remove(id){
+    const snapshot=[...this.data]; await Store.deleteSMS(id); await this.load();
+    showToast("Message deleted",{actions:[{label:"Undo",onClick:async()=>{ const rec=snapshot.find(r=>r.id===id); if(rec){ await Store.addSMS(rec); await this.load(); }} }]});
+  },
+  async clearAll(){
+    const prev=[...this.data]; if(!confirm("Clear all SMS logs?")) return;
+    await Store.clearSMS(); await this.load();
+    showToast("All SMS cleared",{actions:[{label:"Undo",onClick:async()=>{ for(const r of prev) await Store.addSMS(r); await this.load(); }}]});
+  },
+  exportCSV(){
+    const rows=this.applyFilters().map(x=>[fmtDT(x.timestamp),x.sender||"",x.phone||"",x.type||"",x.content||""]);
+    dlCSV([["Date","Name","Phone","Type","Query"],...rows], `sms_${new Date().toISOString().slice(0,10)}.csv`); showToast("CSV exported");
+  },
+  bind(){
+    $("#sms-q").addEventListener("input", debounce(e=>{ this.q=e.target.value; this.render(); },200));
+    $("#sms-t").addEventListener("change", e=>{ this.type=e.target.value; this.render(); });
+    $("#sms-export").addEventListener("click", ()=>this.exportCSV());
+    $("#sms-clear").addEventListener("click", ()=>this.clearAll());
+    $$("#panel-sms thead th.sortable").forEach(th=>{
+      th.addEventListener("click", ()=>{ const key=th.dataset.sort; if(this.sort.key===key){ this.sort.dir=this.sort.dir==="asc"?"desc":"asc"; } else { this.sort.key=key; this.sort.dir="asc"; } this.render(); });
+    });
+  }
+};
+
+/* =============== Unresolved table =============== */
+const UR = {
+  data:[], sort:{key:"timestamp",dir:"desc"}, q:"", type:"",
+  applyFilters(){
+    let out=[...this.data];
+    if(this.type) out=out.filter(x=>x.type===this.type);
+    if(this.q){ const q=this.q.toLowerCase(); out=out.filter(x=>(x.query||"").toLowerCase().includes(q)); }
+    const {key,dir}=this.sort;
+    out.sort((a,b)=>{
+      const va=a[key]??"", vb=b[key]??"";
+      if(key==="timestamp") return dir==="asc"?va-vb:vb-va;
+      return dir==="asc"?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+    });
+    return out;
+  },
+  async load(){ this.data=await Store.getUnresolved(); this.render(); },
+  render(){
+    const body=$("#ur-body"); body.innerHTML="";
+    const rows=this.applyFilters();
+    $("#ur-cnt").textContent = rows.length ? `${plural(rows.length,"item")}` : "No entries";
+    if(!rows.length){ const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=4; td.className="empty"; td.textContent="No entries found"; tr.appendChild(td); body.appendChild(tr); return; }
+    rows.forEach(x=>{
+      const tr=document.createElement("tr");
+      const td1=document.createElement("td"); td1.textContent=fmtDT(x.timestamp);
+      const td2=document.createElement("td"); td2.className="cell-ellipsis"; td2.title=x.query||""; td2.textContent=x.query||"";
+      const td3=document.createElement("td"); td3.textContent=x.type||"";
+      const td4=document.createElement("td");
+      const del=document.createElement("button"); del.className="btn dn"; del.textContent="🗑"; del.addEventListener("click", ()=>this.remove(x.id)); td4.appendChild(del);
+      tr.append(td1,td2,td3,td4); body.appendChild(tr);
+    });
+  },
+  async remove(id){
+    const snapshot=[...this.data]; await Store.deleteUnresolved(id); await this.load();
+    showToast("Deleted",{actions:[{label:"Undo",onClick:async()=>{ const rec=snapshot.find(r=>r.id===id); if(rec){ await Store.addUnresolved(rec); await this.load(); }} }]});
+  },
+  async clearAll(){
+    const prev=[...this.data]; if(!confirm("Clear all unresolved logs?")) return;
+    await Store.clearUnresolved(); await this.load();
+    showToast("All cleared",{actions:[{label:"Undo",onClick:async()=>{ for(const r of prev) await Store.addUnresolved(r); await this.load(); }}]});
+  },
+  exportCSV(){
+    const rows=this.applyFilters().map(x=>[fmtDT(x.timestamp),x.query||"",x.type||""]);
+    dlCSV([["Date","Query","Type"],...rows], `unresolved_${new Date().toISOString().slice(0,10)}.csv`); showToast("CSV exported");
+  },
+  bind(){
+    $("#ur-q").addEventListener("input", debounce(e=>{ this.q=e.target.value; this.render(); },200));
+    $("#ur-t").addEventListener("change", e=>{ this.type=e.target.value; this.render(); });
+    $("#ur-export").addEventListener("click", ()=>this.exportCSV());
+    $("#ur-clear").addEventListener("click", ()=>this.clearAll());
+    $$("#panel-unresolved thead th.sortable").forEach(th=>{
+      th.addEventListener("click", ()=>{ const key=th.dataset.sort; if(this.sort.key===key){ this.sort.dir=this.sort.dir==="asc"?"desc":"asc"; } else { this.sort.key=key; this.sort.dir="asc"; } this.render(); });
+    });
+  }
+};
+
+/* =============== Overview =============== */
+async function renderOverview(){
+  const sms=await Store.getSMS(); const ur=await Store.getUnresolved();
+  const stats=$("#ov-stats"); stats.innerHTML="";
+  const mk=(num,lbl,sub="",cls="")=>{ const d=document.createElement("div"); d.className=`sc ${cls}`; d.innerHTML=`<div class="num">${num}</div><div class="lbl">${lbl}</div>${sub?`<div class="sub">${sub}</div>`:""}`; return d; };
+  stats.append(
+    mk(sms.length,"SMS logged","pay & deduction","cp"),
+    mk(ur.length,"Unresolved items","to review", ur.length? "cr":""),
+    mk(new Set(sms.map(x=>(x.sender||"").trim()).filter(Boolean)).size,"Unique people","by sender")
+  );
+  const all=[...sms.map(x=>({ts:x.timestamp,type:"SMS",detail:`${x.type||"—"} — ${x.sender||""}`})), ...ur.map(x=>({ts:x.timestamp,type:"Unresolved",detail:`${x.type||"—"} — ${x.query||""}`}))].sort((a,b)=>b.ts-a.ts).slice(0,20);
+  const tb=$("#ov-tbl tbody"); tb.innerHTML="";
+  if(!all.length){ const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=3; td.className="empty"; td.textContent="No recent events"; tr.appendChild(td); tb.appendChild(tr); }
+  else{ all.forEach(e=>{ const tr=document.createElement("tr"); const td1=document.createElement("td"); td1.textContent=fmtDT(e.ts); const td2=document.createElement("td"); td2.textContent=e.type; const td3=document.createElement("td"); td3.className="cell-ellipsis"; td3.title=e.detail; td3.textContent=e.detail; tr.append(td1,td2,td3); tb.appendChild(tr); }); }
 }
 
-//====================
-// Unresolved
-//====================
-function renderUnresolved(){
-  const q=document.getElementById("ur-q").value.toLowerCase();
-  const t=document.getElementById("ur-t").value;
-  const body=document.getElementById("ur-body"); body.innerHTML="";
-  const data=ld(K_UNRES).filter(x=>(!t||x.type===t)&&(!q||x.query.toLowerCase().includes(q)));
-  document.getElementById("ur-cnt").textContent=`${data.length} item(s)`;
-  if(!data.length){ body.innerHTML=`<tr><td colspan="4" class="empty">No entries found</td></tr>`; return; }
-  data.forEach(x=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${fmtDT(x.timestamp)}</td><td>${esc(x.query)}</td><td>${esc(x.type)}</td>
-      <td><button class="btn dn" onclick="deleteUnresolved(${x.id})">🗑</button></td>`;
-    body.appendChild(tr);
-  });
-}
-function deleteUnresolved(id){ let d=ld(K_UNRES).filter(x=>x.id!==id); sv(K_UNRES,d); renderUnresolved(); showToast("Deleted"); }
-function clearUnresolved(){ if(confirm("Clear all unresolved logs?")){ sv(K_UNRES,[]); renderUnresolved(); showToast("All cleared"); } }
-function exportUnresolved(){ const data=ld(K_UNRES).map(x=>[fmtDT(x.timestamp),x.query,x.type]); dlCSV([["Date","Query","Type"],...data],"unresolved_"+now()+".csv"); showToast("CSV exported"); }
-function recordUnresolved(query,type){ const log=ld(K_UNRES); log.push({id:Date.now(),timestamp:Date.now(),query,type}); sv(K_UNRES,log); renderUnresolved(); }
+/* =============== Boot =============== */
+function tickSyncTime(){ $("#syncTime").textContent="Synced: "+new Date().toLocaleString(); }
 
-//====================
-// Initial render
-//====================
-renderSMS(); renderUnresolved();
-setInterval(()=>{document.getElementById("syncTime").textContent="Synced: "+new Date().toLocaleString();},3000);
+(async function boot(){
+  // Optional: enable backend sync
+  // Sync.enabled = true;
+  // Sync.baseURL = "/api";
 
-//====================
-// TEST DATA (optional, remove in production)
-//====================
-if(!ld(K_SMS).length){
-  recordSMS("John Doe","+447712345678","pay","When is my next payment?");
-  recordSMS("Mary Smith","+447700112233","deduction","Why was £50 deducted?");
-}
-if(!ld(K_UNRES).length){
-  recordUnresolved("How do I claim benefits?","unanswered");
-}
+  // Dev seed if empty (and not syncing)
+  if(!Sync.enabled){
+    if(!Local.get(K_SMS).length){
+      await Store.addSMS({sender:"John Doe", phone:"+447712345678", type:"pay", content:"When is my next payment?", status:"sent"});
+      await Store.addSMS({sender:"Mary Smith", phone:"+447700112233", type:"deduction", content:"Why was £50 deducted?", status:"sent"});
+    }
+    if(!Local.get(K_UNRES).length){
+      await Store.addUnresolved({query:"How do I claim benefits?", type:"unanswered"});
+    }
+  }
+
+  // Bind + Render
+  SMS.bind(); UR.bind();
+  await SMS.load(); await UR.load();
+  await renderOverview();
+
+  updateFsButton();
+  setInterval(tickSyncTime, 3000);
+})();
+});
 </script>
 </body>
 </html>
