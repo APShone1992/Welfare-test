@@ -146,11 +146,31 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 
 @media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
 @media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
+
+/* PIN GATE */
+.pin-gate{position:fixed;inset:0;background:linear-gradient(145deg,#d6e4ff 0%,#e8f0ff 50%,#f0f5ff 100%);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px}
+.pin-box{background:#fff;border-radius:18px;padding:40px 36px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(13,31,60,0.18),0 0 0 1px rgba(26,58,107,0.08)}
+.pin-icon{font-size:44px;margin-bottom:14px;display:block}
+.pin-box h2{font-size:20px;font-weight:800;color:var(--brand);margin-bottom:6px}
+.pin-box p{font-size:13.5px;color:var(--text-sec);margin-bottom:24px;line-height:1.6}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:20px}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border-mid);background:transparent;transition:background .15s,border-color .15s}
+.pin-dot.filled{background:var(--brand-light);border-color:var(--brand-light)}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto 16px}
+.pin-key{padding:14px;font-size:18px;font-weight:700;background:var(--surface-3);border:1.5px solid var(--border-mid);border-radius:12px;color:var(--text);transition:background var(--tr),transform var(--tr)}
+.pin-key:hover{background:var(--accent);border-color:var(--brand-light)}
+.pin-key:active{transform:scale(.94)}
+.pin-key.wide{grid-column:span 2}
+.pin-err{font-size:13px;color:var(--red);font-weight:600;min-height:20px;margin-bottom:8px}
+.pin-gate.hidden{display:none}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 </style>
 </head>
 <body>
 
 <div class="loader" id="loader"><div class="spin-ring"></div><p id="loader-msg">Connecting to database&hellip;</p></div>
+
+
 
 <header>
   <div class="hdr-left">
@@ -284,6 +304,15 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 <div id="panel-5" class="panel" role="tabpanel">
   <div class="panel-title">&#9881; Supabase Setup</div>
   <div class="panel-desc">One-time setup. Free forever. No credit card. Takes 3 minutes.</div>
+  <div class="card" style="max-width:400px">
+    <div class="card-title">&#128274; Change Admin PIN</div>
+    <div class="form-row"><label>Current PIN</label><input type="password" id="pin-current" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
+    <div class="form-row"><label>New PIN (4 digits)</label><input type="password" id="pin-new" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
+    <div class="form-row"><label>Confirm new PIN</label><input type="password" id="pin-confirm" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
+    <button class="btn btn-primary" id="pin-save">&#128274; Update PIN</button>
+    <div class="setup-status" id="pin-status"></div>
+  </div>
+
   <div class="setup-card">
     <h3>&#128640; How to set up (free, 3 minutes)</h3>
     <ol>
@@ -753,10 +782,33 @@ async function refreshAll(){
 }
 
 /* ═══ BOOT ═══ */
+/* ═══ CHANGE PIN SECTION (Setup tab) ═══ */
+const PIN_KEY = 'ws_admin_pin';
+function getPin(){ return localStorage.getItem(PIN_KEY) || '1234'; }
+function savePin(p){ localStorage.setItem(PIN_KEY, p); }
+
+function initChangePinSection(){
+  $('#pin-save').addEventListener('click', () => {
+    const cur = $('#pin-current').value.trim();
+    const nw  = $('#pin-new').value.trim();
+    const cf  = $('#pin-confirm').value.trim();
+    const st  = $('#pin-status');
+    if(cur !== getPin()){ st.textContent='❌ Current PIN is incorrect'; st.className='setup-status err'; return; }
+    if(!/^\d{4}$/.test(nw)){ st.textContent='❌ New PIN must be exactly 4 digits'; st.className='setup-status err'; return; }
+    if(nw !== cf){ st.textContent='❌ PINs do not match'; st.className='setup-status err'; return; }
+    savePin(nw);
+    st.textContent='✅ PIN updated successfully';
+    st.className='setup-status ok';
+    ['#pin-current','#pin-new','#pin-confirm'].forEach(id=>$(id).value='');
+    setTimeout(()=>{ st.textContent=''; }, 3000);
+  });
+}
+
 (async function boot(){
   // Pre-load credentials if not already saved
   if(!SB.getUrl()) SB.save('https://jlhtcwsbigznojwfxmox.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaHRjd3NiaWd6bm9qd2Z4bW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTkzNjcsImV4cCI6MjA4ODk3NTM2N30.u9hOH97ASyyVaLgBKHdrdBo1F8W1BIqwGrm06vcvasU');
   SMSTbl.bind(); URTbl.bind(); bindManage(); bindModal(); initSetup();
+  initChangePinSection();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
 
