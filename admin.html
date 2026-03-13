@@ -16,42 +16,34 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:var(--font);background:var(--surface-2);color:var(--text)}
 body{display:flex;flex-direction:column;min-height:100vh}
-a{color:inherit;text-decoration:none}
-button{cursor:pointer;font-family:var(--font)}
+a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--font)}
 :focus-visible{outline:2px solid var(--brand-light);outline-offset:2px;border-radius:6px}
 
-/* HEADER */
 header{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(26,58,107,0.2);flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:20}
-.hdr-left h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
+.hdr-left h1{font-size:17px;font-weight:700}
 .hdr-sub{font-size:11.5px;opacity:.85;margin-top:3px;display:flex;align-items:center;gap:6px}
 .dot{width:8px;height:8px;border-radius:50%;background:#6b7280;flex-shrink:0;transition:background .3s}
 .dot.ok{background:#4ade80}.dot.err{background:#f87171}.dot.spin{background:#fbbf24;animation:blink .9s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 .hdr-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
-/* TABS */
 .tab-bar{display:flex;border-bottom:2px solid var(--border-mid);background:var(--surface);padding:0 20px;overflow-x:auto;flex-shrink:0}
-.tab{padding:12px 20px;font-size:13.5px;font-weight:600;color:var(--text-sec);white-space:nowrap;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr);display:flex;align-items:center;gap:6px}
+.tab{padding:12px 18px;font-size:13.5px;font-weight:600;color:var(--text-sec);white-space:nowrap;border:none;background:none;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color var(--tr),border-color var(--tr);display:flex;align-items:center;gap:6px}
 .tab[aria-selected="true"]{color:var(--brand-light);border-bottom-color:var(--brand-light)}
 .tab:hover:not([aria-selected="true"]){color:var(--text);background:var(--surface-2)}
 .tab-badge{background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 6px;min-width:18px;text-align:center;line-height:16px}
 .tab-badge.zero{background:var(--border-mid);color:var(--text-muted)}
 
-/* PANELS */
 .panel{display:none;padding:24px;max-width:1440px;margin:0 auto;width:100%;animation:fadeIn .15s ease}
 .panel.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-/* TYPOGRAPHY */
 .panel-title{font-size:18px;font-weight:800;color:var(--brand);margin-bottom:3px}
 .panel-desc{font-size:13px;color:var(--text-sec);margin-bottom:20px}
 h3{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:12px}
-
-/* CARDS */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(13,31,60,0.05)}
-.card-title{font-size:13px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.card-title{font-size:12px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
 
-/* STAT GRID */
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
 .sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:0 1px 4px rgba(13,31,60,0.05);position:relative;overflow:hidden}
 .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--brand-light);border-radius:var(--radius) var(--radius) 0 0}
@@ -61,14 +53,12 @@ h3{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:12px}
 .sc .lbl{font-size:11.5px;color:var(--text-muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .sc .sub{font-size:11px;margin-top:2px;color:var(--text-muted)}
 
-/* GRID LAYOUTS */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
 .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px}
 @media(max-width:900px){.g3,.g4{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.g2,.g3,.g4{grid-template-columns:1fr}.panel{padding:14px}}
 
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-weight:600;border:none;border-radius:8px;transition:background var(--tr),box-shadow var(--tr),transform var(--tr);white-space:nowrap}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-mid);box-shadow:0 4px 12px rgba(26,58,107,0.25)}
@@ -78,47 +68,46 @@ h3{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:12px}
 .btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
 .btn-icon{padding:7px 9px;font-size:14px;line-height:1}
 
-/* FILTER BAR */
 .fbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
 .finput{padding:8px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr)}
 .finput:focus{border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,212,0.1)}
 .finput-stretch{flex:1;min-width:180px}
 
-/* TABLE */
 .tw{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);max-height:60vh}
 table.dt{width:100%;border-collapse:collapse;font-size:13px}
 table.dt thead th{position:sticky;top:0;background:var(--surface-3);text-align:left;padding:9px 14px;font-size:11.5px;font-weight:700;color:var(--text-sec);border-bottom:2px solid var(--border-mid);white-space:nowrap;z-index:1}
 table.dt th.sort{cursor:pointer;user-select:none;transition:color var(--tr)}
 table.dt th.sort:hover{color:var(--brand-light)}
-table.dt th.asc::after{content:" ↑"}
-table.dt th.desc::after{content:" ↓"}
+table.dt th.asc::after{content:" ↑"}table.dt th.desc::after{content:" ↓"}
 table.dt td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
 table.dt tr:last-child td{border-bottom:none}
-table.dt tbody tr{transition:background var(--tr)}
 table.dt tbody tr:hover td{background:var(--surface-2)}
 .clip{max-width:440px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* BADGES */
-.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize;letter-spacing:.2px}
-.badge-pay{background:#dbeafe;color:#1e40af}
-.badge-deduction{background:#fce7f3;color:#9d174d}
-.badge-unanswered{background:#fef3c7;color:#92400e}
-.badge-unhelpful{background:#fee2e2;color:#991b1b}
-.badge-sms{background:#ede9fe;color:#5b21b6}
-.badge-resolved{background:#dcfce7;color:#14532d}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize}
+.badge-pay{background:#dbeafe;color:#1e40af}.badge-deduction{background:#fce7f3;color:#9d174d}
+.badge-unanswered{background:#fef3c7;color:#92400e}.badge-unhelpful{background:#fee2e2;color:#991b1b}
+.badge-sms{background:#ede9fe;color:#5b21b6}.badge-session{background:#dcfce7;color:#14532d}
 
-/* EMPTY STATE */
 .empty{text-align:center;padding:52px 20px;color:var(--text-muted)}
 .empty-icon{font-size:40px;margin-bottom:10px;display:block}
 .empty p{font-size:13.5px;margin-top:4px}
-
-/* BIG NUMBER */
 .bignum{font-size:48px;font-weight:800;line-height:1;display:block;text-align:center;padding:10px 0}
-
-/* ROW ACTIONS */
 .row-actions{display:flex;gap:4px;justify-content:flex-end}
 
-/* MODAL */
+/* Setup card */
+.setup-card{background:#fffbeb;border:2px solid #fbbf24;border-radius:var(--radius);padding:20px 24px;margin-bottom:20px}
+.setup-card h3{color:#92400e;font-size:15px;margin-bottom:8px}
+.setup-card p{font-size:13.5px;color:#78350f;line-height:1.7;margin-bottom:14px}
+.setup-card ol{font-size:13.5px;color:#78350f;line-height:2.2;padding-left:20px;margin-bottom:16px}
+.setup-card code{background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:12.5px;font-family:monospace}
+.setup-card .setup-fields{display:flex;flex-direction:column;gap:10px;max-width:540px}
+.setup-card input{padding:9px 12px;border:1.5px solid #fbbf24;border-radius:8px;font-size:13.5px;font-family:var(--font);outline:none;background:#fff;width:100%}
+.setup-card input:focus{border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,212,0.1)}
+.setup-status{font-size:13px;font-weight:600;margin-top:8px;min-height:20px}
+.setup-status.ok{color:var(--green)}.setup-status.err{color:var(--red)}
+
+/* Modal */
 .modal-bg{position:fixed;inset:0;background:rgba(13,31,60,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
 .modal-bg.hidden{display:none}
 .modal{background:var(--surface);border-radius:14px;padding:28px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(13,31,60,0.2);animation:popIn .2s cubic-bezier(.22,1,.36,1)}
@@ -132,18 +121,15 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,212,0.1)}
 .form-row textarea{resize:vertical;min-height:80px}
 
-/* TOAST */
 .toast{position:fixed;bottom:22px;right:22px;background:#0d1f3c;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 8px 28px rgba(13,31,60,0.35);transform:translateY(90px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:1000;display:flex;gap:10px;align-items:center;max-width:380px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast-acts{display:flex;gap:6px}
 
-/* LOADING */
 .loader{position:fixed;inset:0;background:rgba(247,249,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;gap:14px}
 .spin-ring{width:42px;height:42px;border:4px solid var(--border-mid);border-top-color:var(--brand-light);border-radius:50%;animation:spin .65s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loader p{font-size:13.5px;color:var(--text-sec);font-weight:600}
 
-/* CHART BARS */
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
 .bar-label{width:96px;font-size:12px;font-weight:600;color:var(--text-sec);text-align:right;flex-shrink:0}
 .bar-track{flex:1;background:var(--surface-3);border-radius:6px;height:24px;overflow:hidden}
@@ -151,8 +137,6 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .bar-fill span{font-size:11px;font-weight:800;color:rgba(255,255,255,.9)}
 .bar-val{width:28px;font-size:12px;font-weight:700;color:var(--text-sec)}
 
-/* TIMELINE */
-.timeline{display:flex;flex-direction:column;gap:0}
 .tl-item{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
 .tl-item:last-child{border-bottom:none}
 .tl-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
@@ -160,27 +144,14 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .tl-main{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl-time{font-size:11.5px;color:var(--text-muted);margin-top:2px}
 
-/* RESPONSIVE HEADER */
-@media(max-width:600px){
-  header{padding:12px 16px}
-  .hdr-right .label-hide{display:none}
-  .tab{padding:10px 14px;font-size:12.5px}
-}
-
-/* PRINT */
-@media print{
-  header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}
-  .panel{display:block!important;padding:0}
-  .tw{max-height:none}
-}
+@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
+@media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
 </style>
 </head>
 <body>
 
-<!-- LOADER -->
-<div class="loader" id="loader"><div class="spin-ring"></div><p>Loading admin data&hellip;</p></div>
+<div class="loader" id="loader"><div class="spin-ring"></div><p id="loader-msg">Connecting to database&hellip;</p></div>
 
-<!-- HEADER -->
 <header>
   <div class="hdr-left">
     <h1>&#128202; Welfare Support &mdash; Admin</h1>
@@ -190,209 +161,197 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
     </div>
   </div>
   <div class="hdr-right">
-    <button class="btn btn-sec btn-sm" id="refreshBtn">&#8635; <span class="label-hide">Refresh</span></button>
-    <button class="btn btn-sec btn-sm" id="fsBtn">&#x26F6; <span class="label-hide">Full screen</span></button>
+    <button class="btn btn-sec btn-sm" id="refreshBtn">&#8635; Refresh</button>
+    <button class="btn btn-sec btn-sm" id="fsBtn">&#x26F6; Full screen</button>
     <button class="btn btn-green btn-sm" id="addSmsBtn">+ Add SMS</button>
-    <a href="index.html" class="btn btn-sec btn-sm">&#8592; <span class="label-hide">Chat</span></a>
+    <a href="index.html" class="btn btn-sec btn-sm">&#8592; Chat</a>
   </div>
 </header>
 
-<!-- TABS -->
 <nav class="tab-bar" role="tablist" aria-label="Admin sections">
-  <button class="tab" role="tab" aria-selected="true"  id="tab-0" aria-controls="panel-overview">&#128202; Overview</button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-1" aria-controls="panel-analytics">&#128200; Analytics</button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-2" aria-controls="panel-sms">&#128172; SMS Log <span class="tab-badge zero" id="badge-sms">0</span></button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-3" aria-controls="panel-unresolved">&#10071; Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-4" aria-controls="panel-manage">&#128295; Manage Data</button>
+  <button class="tab" role="tab" aria-selected="true"  id="tab-0">&#128202; Overview</button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-1">&#128200; Analytics</button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-2">&#128172; SMS Log <span class="tab-badge zero" id="badge-sms">0</span></button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-3">&#10071; Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-4">&#128295; Manage</button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-5">&#9881; Setup</button>
 </nav>
 
-<!-- ═══════════════ PANEL: OVERVIEW ═══════════════ -->
-<div id="panel-overview" class="panel active" role="tabpanel" aria-labelledby="tab-0">
+<!-- OVERVIEW -->
+<div id="panel-0" class="panel active" role="tabpanel">
   <div class="panel-title">Overview</div>
-  <div class="panel-desc">Live snapshot &mdash; all data is stored in-app and visible to every admin.</div>
-
+  <div class="panel-desc">Live data from Supabase &mdash; the same on every device and browser.</div>
+  <div id="setup-warn"></div>
   <div class="sgrid" id="ov-stats"></div>
-
   <div class="g2">
-    <div class="card">
-      <div class="card-title">SMS breakdown</div>
-      <div id="ov-sms-chart"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Unresolved breakdown</div>
-      <div id="ov-ur-chart"></div>
-    </div>
+    <div class="card"><div class="card-title">SMS breakdown</div><div id="ov-sms-chart"></div></div>
+    <div class="card"><div class="card-title">Unresolved breakdown</div><div id="ov-ur-chart"></div></div>
   </div>
-
-  <div class="card">
-    <div class="card-title">Recent activity (last 20 events)</div>
-    <div class="timeline" id="ov-timeline"></div>
-  </div>
+  <div class="card"><div class="card-title">Recent activity</div><div id="ov-timeline"></div></div>
 </div>
 
-<!-- ═══════════════ PANEL: ANALYTICS ═══════════════ -->
-<div id="panel-analytics" class="panel" role="tabpanel" aria-labelledby="tab-1">
+<!-- ANALYTICS -->
+<div id="panel-1" class="panel" role="tabpanel">
   <div class="panel-title">Analytics</div>
-  <div class="panel-desc">Full breakdown of all recorded data across every session.</div>
-
+  <div class="panel-desc">Full breakdown of all recorded data.</div>
   <div class="g4" id="an-stats"></div>
-
   <div class="g2">
-    <div class="card">
-      <div class="card-title">SMS &mdash; Pay vs Deduction</div>
-      <div id="an-sms-split"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Unresolved &mdash; Unanswered vs Unhelpful</div>
-      <div id="an-ur-split"></div>
-    </div>
+    <div class="card"><div class="card-title">SMS &mdash; Pay vs Deduction</div><div id="an-sms-split"></div></div>
+    <div class="card"><div class="card-title">Unresolved &mdash; breakdown</div><div id="an-ur-split"></div></div>
   </div>
-
   <div class="g2">
-    <div class="card">
-      <div class="card-title">Top senders (by volume)</div>
-      <div id="an-top-senders"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Most common unresolved phrases</div>
-      <div id="an-top-queries"></div>
-    </div>
+    <div class="card"><div class="card-title">Top senders</div><div id="an-top-senders"></div></div>
+    <div class="card"><div class="card-title">Most common unresolved phrases</div><div id="an-top-queries"></div></div>
   </div>
-
-  <div class="card">
-    <div class="card-title">All unique senders</div>
-    <div id="an-senders"></div>
-  </div>
+  <div class="card"><div class="card-title">All unique senders</div><div id="an-senders"></div></div>
 </div>
 
-<!-- ═══════════════ PANEL: SMS LOG ═══════════════ -->
-<div id="panel-sms" class="panel" role="tabpanel" aria-labelledby="tab-2">
+<!-- SMS LOG -->
+<div id="panel-2" class="panel" role="tabpanel">
   <div class="panel-title">SMS Log</div>
-  <div class="panel-desc">Every pay and deduction query submitted &mdash; visible to all admins.</div>
-
+  <div class="panel-desc">Every pay and deduction query &mdash; from Supabase, visible on all devices.</div>
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="sms-q" placeholder="Search name, phone or query&hellip;" autocomplete="off"/>
-    <select class="finput" id="sms-t">
-      <option value="">All types</option>
-      <option value="pay">Pay only</option>
-      <option value="deduction">Deduction only</option>
-    </select>
-    <select class="finput" id="sms-sort-field">
-      <option value="timestamp">Sort: Date</option>
-      <option value="sender">Sort: Name</option>
-      <option value="type">Sort: Type</option>
-    </select>
-    <select class="finput" id="sms-sort-dir">
-      <option value="desc">Newest first</option>
-      <option value="asc">Oldest first</option>
-    </select>
+    <select class="finput" id="sms-t"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
     <button class="btn btn-green btn-sm" id="sms-export">&#11015; CSV</button>
     <button class="btn btn-red btn-sm" id="sms-clear">&#128465; Clear all</button>
   </div>
   <div id="sms-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px"></div>
-  <div class="tw">
-    <table class="dt">
-      <thead><tr>
-        <th class="sort" data-col="timestamp">Date &amp; Time</th>
-        <th class="sort" data-col="sender">Name</th>
-        <th>Phone</th>
-        <th class="sort" data-col="type">Type</th>
-        <th>Query</th>
-        <th style="width:80px;text-align:right">Actions</th>
-      </tr></thead>
-      <tbody id="sms-body"></tbody>
-    </table>
-  </div>
+  <div class="tw"><table class="dt"><thead><tr>
+    <th class="sort" data-col="ts">Date &amp; Time</th>
+    <th class="sort" data-col="sender_name">Name</th>
+    <th>Phone</th>
+    <th class="sort" data-col="type">Type</th>
+    <th>Query</th>
+    <th style="width:80px;text-align:right">Actions</th>
+  </tr></thead><tbody id="sms-body"></tbody></table></div>
 </div>
 
-<!-- ═══════════════ PANEL: UNRESOLVED ═══════════════ -->
-<div id="panel-unresolved" class="panel" role="tabpanel" aria-labelledby="tab-3">
+<!-- UNRESOLVED -->
+<div id="panel-3" class="panel" role="tabpanel">
   <div class="panel-title">Unresolved Queries</div>
-  <div class="panel-desc">Messages the bot couldn&rsquo;t answer and responses marked &#128078; unhelpful.</div>
-
+  <div class="panel-desc">Unanswered messages and &#128078; unhelpful responses &mdash; from Supabase.</div>
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="ur-q" placeholder="Search queries&hellip;" autocomplete="off"/>
-    <select class="finput" id="ur-t">
-      <option value="">All types</option>
-      <option value="unanswered">Unanswered</option>
-      <option value="unhelpful">Marked unhelpful</option>
-    </select>
-    <select class="finput" id="ur-sort-dir">
-      <option value="desc">Newest first</option>
-      <option value="asc">Oldest first</option>
-    </select>
+    <select class="finput" id="ur-t"><option value="">All types</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
     <button class="btn btn-green btn-sm" id="ur-export">&#11015; CSV</button>
     <button class="btn btn-red btn-sm" id="ur-clear">&#128465; Clear all</button>
   </div>
   <div id="ur-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px"></div>
-  <div class="tw">
-    <table class="dt">
-      <thead><tr>
-        <th class="sort" data-col="timestamp">Date &amp; Time</th>
-        <th>Query</th>
-        <th class="sort" data-col="type">Type</th>
-        <th style="width:80px;text-align:right">Actions</th>
-      </tr></thead>
-      <tbody id="ur-body"></tbody>
-    </table>
-  </div>
+  <div class="tw"><table class="dt"><thead><tr>
+    <th class="sort" data-col="ts">Date &amp; Time</th>
+    <th>Query</th>
+    <th class="sort" data-col="type">Type</th>
+    <th style="width:80px;text-align:right">Actions</th>
+  </tr></thead><tbody id="ur-body"></tbody></table></div>
 </div>
 
-<!-- ═══════════════ PANEL: MANAGE DATA ═══════════════ -->
-<div id="panel-manage" class="panel" role="tabpanel" aria-labelledby="tab-4">
+<!-- MANAGE -->
+<div id="panel-4" class="panel" role="tabpanel">
   <div class="panel-title">Manage Data</div>
-  <div class="panel-desc">Add, edit or delete records. All changes are instantly shared with every admin.</div>
-
+  <div class="panel-desc">Add records manually. All changes sync to Supabase instantly.</div>
   <div class="g2">
     <div class="card">
-      <div class="card-title">&#128172; Add SMS record manually</div>
+      <div class="card-title">&#128172; Add SMS record</div>
       <div class="form-row"><label>Full name</label><input type="text" id="m-name" placeholder="e.g. John Doe"/></div>
       <div class="form-row"><label>Phone number</label><input type="text" id="m-phone" placeholder="e.g. +447712345678"/></div>
-      <div class="form-row"><label>Type</label>
-        <select id="m-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
-      </div>
-      <div class="form-row"><label>Query / message</label><textarea id="m-content" placeholder="What did they ask?"></textarea></div>
+      <div class="form-row"><label>Type</label><select id="m-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select></div>
+      <div class="form-row"><label>Query</label><textarea id="m-content" placeholder="What did they ask?"></textarea></div>
       <button class="btn btn-primary" id="m-add-sms">&#43; Save SMS record</button>
     </div>
     <div class="card">
-      <div class="card-title">&#10071; Add unresolved record manually</div>
+      <div class="card-title">&#10071; Add unresolved record</div>
       <div class="form-row"><label>Query / phrase</label><textarea id="m-ur-query" placeholder="What did the bot fail to answer?"></textarea></div>
-      <div class="form-row"><label>Reason</label>
-        <select id="m-ur-type"><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
-      </div>
+      <div class="form-row"><label>Reason</label><select id="m-ur-type"><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select></div>
       <button class="btn btn-primary" id="m-add-ur">&#43; Save unresolved record</button>
     </div>
   </div>
-
   <div class="g2">
     <div class="card" style="border-color:#fca5a5">
-      <div class="card-title" style="color:var(--red)">&#9888; Danger zone &mdash; SMS</div>
-      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently delete all SMS log entries. This action is shown to all admins and cannot be undone (there is a brief undo window).</p>
+      <div class="card-title" style="color:var(--red)">&#9888; Delete all SMS logs</div>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all SMS records from Supabase. Cannot be undone.</p>
       <button class="btn btn-red" id="mg-clear-sms">&#128465; Delete all SMS logs</button>
     </div>
     <div class="card" style="border-color:#fca5a5">
-      <div class="card-title" style="color:var(--red)">&#9888; Danger zone &mdash; Unresolved</div>
-      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently delete all unresolved query entries. This action is shown to all admins and cannot be undone (there is a brief undo window).</p>
+      <div class="card-title" style="color:var(--red)">&#9888; Delete all unresolved logs</div>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all unresolved query records from Supabase.</p>
       <button class="btn btn-red" id="mg-clear-ur">&#128465; Delete all unresolved logs</button>
     </div>
   </div>
+</div>
 
-  <div class="card">
-    <div class="card-title">&#128190; Storage info</div>
-    <div id="mg-storage-info" style="font-size:13.5px;color:var(--text-sec);line-height:1.8"></div>
+<!-- SETUP -->
+<div id="panel-5" class="panel" role="tabpanel">
+  <div class="panel-title">&#9881; Supabase Setup</div>
+  <div class="panel-desc">One-time setup. Free forever. No credit card. Takes 3 minutes.</div>
+  <div class="setup-card">
+    <h3>&#128640; How to set up (free, 3 minutes)</h3>
+    <ol>
+      <li>Go to <strong><a href="https://supabase.com" target="_blank" style="color:var(--brand-light)">supabase.com</a></strong> and click <strong>Start your project</strong> (sign in with GitHub)</li>
+      <li>Click <strong>New project</strong>, give it a name like <em>welfare-support</em>, choose a region close to you, set a database password</li>
+      <li>Wait ~2 minutes for it to build, then go to <strong>SQL Editor</strong> and run this SQL to create the tables:<br/>
+        <code style="display:block;margin:8px 0;padding:10px;border-radius:6px;background:#fef3c7;white-space:pre-wrap;font-size:12px">create table sms_log (
+  id bigint generated always as identity primary key,
+  ts bigint not null,
+  sender_name text default '',
+  phone text default '',
+  type text default '',
+  content text default ''
+);
+create table unresolved (
+  id bigint generated always as identity primary key,
+  ts bigint not null,
+  query text default '',
+  type text default ''
+);
+create table sessions (
+  id bigint generated always as identity primary key,
+  ts bigint not null,
+  date text default '',
+  messages int default 0
+);
+alter table sms_log enable row level security;
+alter table unresolved enable row level security;
+alter table sessions enable row level security;
+create policy "public read" on sms_log for select using (true);
+create policy "public insert" on sms_log for insert with check (true);
+create policy "public delete" on sms_log for delete using (true);
+create policy "public read" on unresolved for select using (true);
+create policy "public insert" on unresolved for insert with check (true);
+create policy "public delete" on unresolved for delete using (true);
+create policy "public read" on sessions for select using (true);
+create policy "public insert" on sessions for insert with check (true);</code>
+      </li>
+      <li>Go to <strong>Settings &rarr; API</strong>, copy your <strong>Project URL</strong> and <strong>anon/public key</strong></li>
+      <li>Paste both below and click <strong>Save &amp; Test</strong></li>
+      <li>Paste the same values into <strong>index.html</strong> in the two lines at the top of the Supabase Bridge script</li>
+    </ol>
+    <div class="setup-fields">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Supabase Project URL</label>
+        <input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxx.supabase.co"/>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Anon / Public Key</label>
+        <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."/>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-green" id="cfg-save">&#9989; Save &amp; Test connection</button>
+        <button class="btn btn-red btn-sm" id="cfg-clear">Clear saved credentials</button>
+      </div>
+      <div class="setup-status" id="cfg-status"></div>
+    </div>
   </div>
 </div>
 
-<!-- ADD SMS MODAL (triggered from header) -->
+<!-- ADD SMS MODAL -->
 <div class="modal-bg hidden" id="modal-sms">
   <div class="modal">
     <h3>&#128172; Quick-add SMS record</h3>
     <p>Manually log a pay or deduction query from a member.</p>
     <div class="form-row"><label>Full name</label><input type="text" id="qm-name" placeholder="e.g. Jane Smith"/></div>
     <div class="form-row"><label>Phone number</label><input type="text" id="qm-phone" placeholder="e.g. +447712345678"/></div>
-    <div class="form-row"><label>Type</label>
-      <select id="qm-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
-    </div>
+    <div class="form-row"><label>Type</label><select id="qm-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select></div>
     <div class="form-row"><label>Query</label><textarea id="qm-content" placeholder="What did they ask?"></textarea></div>
     <div class="modal-btns">
       <button class="btn btn-sec" id="qm-cancel">Cancel</button>
@@ -413,541 +372,397 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast" role="status" aria-live="polite">
-  <span id="toast-msg"></span>
-  <div class="toast-acts" id="toast-acts"></div>
+  <span id="toast-msg"></span><div class="toast-acts" id="toast-acts"></div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
 
 /* ═══════════════════════════════════════════════
-   SHARED STORAGE
-   window.storage with shared=true = all admins
-   see the exact same data. Falls back to
-   localStorage when not in Claude.ai artifact.
+   SUPABASE CLIENT
+   Credentials stored in localStorage so you only
+   enter them once. All reads/writes go to Supabase.
 ═══════════════════════════════════════════════ */
-const Store = (() => {
-  const K = { sms:'ws:sms:v2', ur:'ws:ur:v2' };
-  const SH = typeof window.storage !== 'undefined';
+const SB = (() => {
+  const CFG_KEY = 'ws_sb_cfg';
+  let url = '', key = '';
 
-  async function rd(k){
-    if(SH){ try{ const r=await window.storage.get(k,true); return r?JSON.parse(r.value):[]; }catch{ return []; } }
-    try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch{ return []; }
+  function load() {
+    try { const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}'); url=c.url||''; key=c.key||''; } catch {}
   }
-  async function wr(k,v){
-    if(SH) await window.storage.set(k,JSON.stringify(v),true);
-    else localStorage.setItem(k,JSON.stringify(v));
-  }
-  const uid=()=>Date.now()+'_'+Math.random().toString(36).slice(2);
+  function save(u,k) { url=u; key=k; localStorage.setItem(CFG_KEY,JSON.stringify({url:u,key:k})); }
+  function clear() { url=''; key=''; localStorage.removeItem(CFG_KEY); }
+  function ready() { return !!(url && key && url.startsWith('http')); }
 
-  return {
-    shared: SH,
-    label: SH ? '&#9989; Shared storage &mdash; all admins see this data' : '&#9888;&#65039; Local only &mdash; data not shared between browsers',
-    async getSMS(){ return rd(K.sms); },
-    async getUR(){ return rd(K.ur); },
-    async addSMS(r){ const a=await rd(K.sms); const n={...r,id:uid(),timestamp:Date.now()}; a.push(n); await wr(K.sms,a); return n; },
-    async putSMS(id,r){ const a=await rd(K.sms); const i=a.findIndex(x=>x.id===id); if(i>-1){a[i]={...a[i],...r};await wr(K.sms,a);} return a; },
-    async delSMS(id){ const a=(await rd(K.sms)).filter(x=>x.id!==id); await wr(K.sms,a); return a; },
-    async clrSMS(){ await wr(K.sms,[]); },
-    async addUR(r){ const a=await rd(K.ur); const n={...r,id:uid(),timestamp:Date.now()}; a.push(n); await wr(K.ur,a); return n; },
-    async delUR(id){ const a=(await rd(K.ur)).filter(x=>x.id!==id); await wr(K.ur,a); return a; },
-    async clrUR(){ await wr(K.ur,[]); }
-  };
+  function headers(extra={}) {
+    return { 'apikey':key, 'Authorization':'Bearer '+key, 'Content-Type':'application/json', ...extra };
+  }
+
+  async function select(table, params='') {
+    const r = await fetch(`${url}/rest/v1/${table}?${params}&order=ts.desc`, { headers:headers() });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+  async function insert(table, row) {
+    const r = await fetch(`${url}/rest/v1/${table}`, { method:'POST', headers:headers({'Prefer':'return=minimal'}), body:JSON.stringify(row) });
+    if (!r.ok) throw new Error(await r.text());
+  }
+  async function del(table, id) {
+    const r = await fetch(`${url}/rest/v1/${table}?id=eq.${id}`, { method:'DELETE', headers:headers() });
+    if (!r.ok) throw new Error(await r.text());
+  }
+  async function delAll(table) {
+    const r = await fetch(`${url}/rest/v1/${table}?id=gt.0`, { method:'DELETE', headers:headers() });
+    if (!r.ok) throw new Error(await r.text());
+  }
+  async function test() {
+    const r = await fetch(`${url}/rest/v1/sms_log?limit=1`, { headers:headers() });
+    if (!r.ok) throw new Error('HTTP '+r.status+': '+await r.text());
+    return true;
+  }
+
+  load();
+  return { load, save, clear, ready, select, insert, del, delAll, test,
+    getUrl:()=>url, getKey:()=>key };
 })();
 
-/* ═══════════════════════════════════════════════
-   UTILITIES
-═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════ UTILS ═══ */
 const $  = (s,r=document)=>r.querySelector(s);
 const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
 const debounce=(fn,ms=220)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
 const fmtDT=ts=>new Date(typeof ts==='string'?Number(ts):ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-const fmtDate=ts=>new Date(typeof ts==='string'?Number(ts):ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 const plural=(n,s)=>n+' '+(n===1?s:s+'s');
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const val=id=>$(id)?$(id).value.trim():'';
 
 function badge(t){
-  const map={'pay':'badge-pay','deduction':'badge-deduction','unanswered':'badge-unanswered','unhelpful':'badge-unhelpful','sms':'badge-sms','resolved':'badge-resolved'};
-  return `<span class="badge ${map[t]||''}">${esc(t||'—')}</span>`;
+  const m={'pay':'badge-pay','deduction':'badge-deduction','unanswered':'badge-unanswered','unhelpful':'badge-unhelpful','sms':'badge-sms','session':'badge-session'};
+  return `<span class="badge ${m[t]||''}">${esc(t||'—')}</span>`;
 }
 
-/* ═══════════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════════ */
-let toastTimer;
-function toast(msg,{acts=[],duration=3500}={}){
+/* TOAST */
+let toastT;
+function toast(msg,{acts=[],dur=3500}={}){
   $('#toast-msg').textContent=msg;
-  const ac=$('#toast-acts'); ac.innerHTML='';
+  const ac=$('#toast-acts');ac.innerHTML='';
   acts.forEach(a=>{const b=document.createElement('button');b.className='btn btn-sec btn-sm';b.textContent=a.label;b.onclick=()=>{a.fn();$('#toast').classList.remove('show');};ac.appendChild(b);});
-  clearTimeout(toastTimer);
-  $('#toast').classList.add('show');
-  toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),duration);
+  clearTimeout(toastT);$('#toast').classList.add('show');
+  toastT=setTimeout(()=>$('#toast').classList.remove('show'),dur);
 }
 
-/* ═══════════════════════════════════════════════
-   CONFIRM MODAL
-═══════════════════════════════════════════════ */
+/* CONFIRM */
 function confirm2(title,msg){
-  return new Promise(resolve=>{
-    $('#confirm-title').textContent=title;
-    $('#confirm-msg').textContent=msg;
+  return new Promise(res=>{
+    $('#confirm-title').textContent=title;$('#confirm-msg').textContent=msg;
     $('#modal-confirm').classList.remove('hidden');
-    const ok=$('#confirm-ok'), cancel=$('#confirm-cancel');
-    const done=v=>{$('#modal-confirm').classList.add('hidden');ok.onclick=null;cancel.onclick=null;resolve(v);};
-    ok.onclick=()=>done(true); cancel.onclick=()=>done(false);
+    const done=v=>{$('#modal-confirm').classList.add('hidden');$('#confirm-ok').onclick=null;$('#confirm-cancel').onclick=null;res(v);};
+    $('#confirm-ok').onclick=()=>done(true);$('#confirm-cancel').onclick=()=>done(false);
   });
 }
 
-/* ═══════════════════════════════════════════════
-   SYNC STATUS
-═══════════════════════════════════════════════ */
+/* SYNC STATUS */
 function setSyncStatus(state,text){
   $('#syncDot').className='dot '+state;
-  $('#syncLabel').innerHTML=text;
+  $('#syncLabel').textContent=text;
 }
 
-/* ═══════════════════════════════════════════════
-   TAB SYSTEM — properly connected via id + aria-controls
-═══════════════════════════════════════════════ */
-(function initTabs(){
-  const tabs=$$('.tab-bar [role=tab]');
-  const panels=$$('.panel');
-  function activate(idx){
-    tabs.forEach((t,i)=>{
-      const on=i===idx;
-      t.setAttribute('aria-selected',String(on));
-      if(on) t.scrollIntoView({block:'nearest',inline:'nearest'});
-    });
-    panels.forEach((p,i)=>p.classList.toggle('active',i===idx));
-  }
-  tabs.forEach((t,i)=>{
-    t.addEventListener('click',()=>activate(i));
-    t.addEventListener('keydown',e=>{
-      const map={ArrowRight:(i+1)%tabs.length,ArrowLeft:(i-1+tabs.length)%tabs.length,Home:0,End:tabs.length-1};
-      if(map[e.key]!==undefined){e.preventDefault();tabs[map[e.key]].focus();activate(map[e.key]);}
-    });
-  });
-})();
-
-/* ═══════════════════════════════════════════════
-   FULLSCREEN — works when served via http://
-   Shows helpful message if on file://
-═══════════════════════════════════════════════ */
-function updateFsBtn(){
-  $('#fsBtn').innerHTML=document.fullscreenElement
-    ?'&#x1F5D7; <span class="label-hide">Exit</span>'
-    :'&#x26F6; <span class="label-hide">Full screen</span>';
-}
-$('#fsBtn').addEventListener('click',async()=>{
-  // Detect file:// protocol — fullscreen blocked by browsers
-  if(location.protocol==='file:'){
-    toast('⚠ Full screen is blocked on file:// — serve via http:// to enable it. Try: python -m http.server 8080',{duration:6000});
-    return;
-  }
-  if(!document.fullscreenEnabled){
-    toast('⚠ Your browser does not allow full screen on this page');
-    return;
-  }
-  try{
-    if(!document.fullscreenElement) await document.documentElement.requestFullscreen();
-    else await document.exitFullscreen();
-  }catch(e){
-    toast('⚠ Full screen request was blocked by the browser');
-  }
-});
-document.addEventListener('fullscreenchange',updateFsBtn);
-updateFsBtn();
-
-/* ═══════════════════════════════════════════════
-   BAR CHART
-═══════════════════════════════════════════════ */
+/* BAR CHART */
 function barChart(el,items){
   if(!el)return;
-  const total=items.reduce((s,i)=>s+i.val,0);
-  if(!total){el.innerHTML='<div class="empty" style="padding:16px 0"><p>No data yet</p></div>';return;}
+  const tot=items.reduce((s,i)=>s+i.val,0);
+  if(!tot){el.innerHTML='<div class="empty" style="padding:16px 0"><p>No data yet</p></div>';return;}
   const mx=Math.max(...items.map(x=>x.val),1);
   el.innerHTML=items.map(({label,val,color='var(--brand-light)'})=>`
     <div class="bar-row">
       <div class="bar-label">${esc(label)}</div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:${Math.round(val/mx*100)}%;background:${color}">
-          <span>${val||''}</span>
-        </div>
-      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/mx*100)}%;background:${color}"><span>${val||''}</span></div></div>
       <div class="bar-val">${val}</div>
     </div>`).join('');
 }
 
-/* ═══════════════════════════════════════════════
-   TAB BADGES
-═══════════════════════════════════════════════ */
-function updateBadges(smsCount,urCount){
-  const sb=$('#badge-sms'), ub=$('#badge-ur');
-  sb.textContent=smsCount; sb.className='tab-badge'+(smsCount===0?' zero':'');
-  ub.textContent=urCount;  ub.className='tab-badge'+(urCount===0?' zero':'');
-}
-
-/* ═══════════════════════════════════════════════
-   CSV EXPORT
-═══════════════════════════════════════════════ */
+/* CSV */
 function dlCSV(rows,fn){
   const csv=rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\n');
-  const a=Object.assign(document.createElement('a'),{
-    href:URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})),
-    download:fn
-  });
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})),download:fn});
   document.body.appendChild(a);a.click();a.remove();
 }
 
-/* ═══════════════════════════════════════════════
-   OVERVIEW
-═══════════════════════════════════════════════ */
+/* TABS */
+(()=>{
+  const tabs=$$('.tab-bar [role=tab]'),panels=$$('.panel');
+  function go(i){tabs.forEach((t,j)=>{t.setAttribute('aria-selected',String(i===j));panels[j].classList.toggle('active',i===j);});}
+  tabs.forEach((t,i)=>{
+    t.addEventListener('click',()=>go(i));
+    t.addEventListener('keydown',e=>{
+      const m={ArrowRight:(i+1)%tabs.length,ArrowLeft:(i-1+tabs.length)%tabs.length,Home:0,End:tabs.length-1};
+      if(m[e.key]!==undefined){e.preventDefault();tabs[m[e.key]].focus();go(m[e.key]);}
+    });
+  });
+})();
+
+/* FULLSCREEN */
+function updFs(){$('#fsBtn').textContent=document.fullscreenElement?'🗗 Exit':'⛶ Full screen';}
+$('#fsBtn').addEventListener('click',async()=>{
+  if(location.protocol==='file:'){toast('⚠ Full screen blocked on file:// — serve via http:// to enable',{dur:5000});return;}
+  if(!document.fullscreenEnabled){toast('⚠ Browser does not allow full screen here');return;}
+  try{document.fullscreenElement?await document.exitFullscreen():await document.documentElement.requestFullscreen();}
+  catch{toast('⚠ Full screen blocked by browser');}
+});
+document.addEventListener('fullscreenchange',updFs);
+updFs();
+
+/* TAB BADGES */
+function updateBadges(s,u){
+  const sb=$('#badge-sms'),ub=$('#badge-ur');
+  sb.textContent=s;sb.className='tab-badge'+(s===0?' zero':'');
+  ub.textContent=u;ub.className='tab-badge'+(u===0?' zero':'');
+}
+
+/* ═══ SETUP PANEL ═══ */
+function initSetup(){
+  if(SB.getUrl()) $('#cfg-url').value=SB.getUrl();
+  if(SB.getKey()) $('#cfg-key').value=SB.getKey();
+
+  $('#cfg-save').addEventListener('click',async()=>{
+    const u=val('#cfg-url'),k=val('#cfg-key');
+    if(!u||!k){$('#cfg-status').textContent='⚠ Both fields required';$('#cfg-status').className='setup-status err';return;}
+    SB.save(u,k);
+    $('#cfg-status').textContent='Testing connection…';$('#cfg-status').className='setup-status';
+    try{
+      await SB.test();
+      $('#cfg-status').textContent='✅ Connected! Now also paste these values into index.html';
+      $('#cfg-status').className='setup-status ok';
+      await refreshAll();
+    }catch(e){
+      $('#cfg-status').textContent='❌ Failed: '+e.message;
+      $('#cfg-status').className='setup-status err';
+    }
+  });
+  $('#cfg-clear').addEventListener('click',()=>{SB.clear();$('#cfg-url').value='';$('#cfg-key').value='';$('#cfg-status').textContent='Credentials cleared';$('#cfg-status').className='setup-status';});
+}
+
+/* ═══ SETUP WARNING BANNER ═══ */
+function renderSetupWarn(){
+  const el=$('#setup-warn');
+  if(!el)return;
+  if(!SB.ready()){
+    el.innerHTML=`<div class="setup-card" style="margin-bottom:20px">
+      <h3>&#9888; Supabase not configured yet</h3>
+      <p>Data will only be visible on <em>this browser</em> until you connect Supabase. Go to the <strong>&#9881; Setup</strong> tab to get everything syncing across all devices in 3 minutes &mdash; completely free.</p>
+      <button class="btn btn-primary btn-sm" id="goto-setup">Go to Setup &#8594;</button>
+    </div>`;
+    $('#goto-setup')?.addEventListener('click',()=>$$('.tab-bar .tab').at(-1).click());
+  } else { el.innerHTML=''; }
+}
+
+/* ═══ DATA LAYER ═══ */
+// Falls back to localStorage if Supabase not configured
+async function fetchSMS(){
+  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_sms_log_v1')||'[]').map(x=>({id:x.ts,ts:x.ts,sender_name:x.name||'',phone:x.phone||'',type:x.type||'',content:x.description||''}));
+  return SB.select('sms_log','limit=500');
+}
+async function fetchUR(){
+  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_unresolved_v1')||'[]').map(x=>({id:x.ts,ts:x.ts,query:x.text?.replace(' [marked unhelpful]','')||'',type:x.text?.includes('[marked unhelpful]')?'unhelpful':'unanswered'}));
+  return SB.select('unresolved','limit=500');
+}
+async function fetchSessions(){
+  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_sessions_v1')||'[]');
+  return SB.select('sessions','limit=1000');
+}
+
+/* ═══ OVERVIEW ═══ */
 async function renderOverview(){
-  const [sms,ur]=await Promise.all([Store.getSMS(),Store.getUR()]);
+  const [sms,ur]=await Promise.all([fetchSMS(),fetchUR()]);
   updateBadges(sms.length,ur.length);
+  renderSetupWarn();
 
-  // Stat cards
-  const grid=$('#ov-stats'); grid.innerHTML='';
-  const today=new Date(); today.setHours(0,0,0,0);
-  const todayTs=today.getTime();
-  const smsToday=sms.filter(x=>x.timestamp>=todayTs).length;
-  const urToday=ur.filter(x=>x.timestamp>=todayTs).length;
-  const uniquePeople=new Set(sms.map(x=>(x.sender||'').trim().toLowerCase()).filter(Boolean)).size;
+  const todayTs=new Date();todayTs.setHours(0,0,0,0);const tt=todayTs.getTime();
+  const smsToday=sms.filter(x=>x.ts>=tt).length;
+  const uniquePeople=new Set(sms.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
 
+  const grid=$('#ov-stats');grid.innerHTML='';
   [[sms.length,'Total SMS','all time','cp'],[ur.length,'Unresolved','need review',ur.length?'cr':'cg'],[uniquePeople,'Unique people','distinct senders','co'],[smsToday,'SMS today','since midnight','']].forEach(([n,l,s,c])=>{
-    const d=document.createElement('div');
-    d.className='sc '+c;
+    const d=document.createElement('div');d.className='sc '+c;
     d.innerHTML=`<div class="lbl">${l}</div><div class="num">${n}</div><div class="sub">${s}</div>`;
     grid.appendChild(d);
   });
 
-  // Charts
-  barChart($('#ov-sms-chart'),[
-    {label:'Pay',    val:sms.filter(x=>x.type==='pay').length,       color:'var(--brand-light)'},
-    {label:'Deduction',val:sms.filter(x=>x.type==='deduction').length,color:'var(--purple)'}
-  ]);
-  barChart($('#ov-ur-chart'),[
-    {label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},
-    {label:'Unhelpful', val:ur.filter(x=>x.type==='unhelpful').length, color:'var(--red)'}
-  ]);
+  barChart($('#ov-sms-chart'),[{label:'Pay',val:sms.filter(x=>x.type==='pay').length,color:'var(--brand-light)'},{label:'Deduction',val:sms.filter(x=>x.type==='deduction').length,color:'var(--purple)'}]);
+  barChart($('#ov-ur-chart'),[{label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},{label:'Unhelpful',val:ur.filter(x=>x.type==='unhelpful').length,color:'var(--red)'}]);
 
-  // Timeline
-  const tl=$('#ov-timeline'); tl.innerHTML='';
-  const events=[
-    ...sms.map(x=>({ts:x.timestamp,type:'sms',  label:`${x.sender||'Unknown'} — ${x.type||'?'} query`,color:'var(--brand-light)'})),
-    ...ur.map(x=>({ts:x.timestamp, type:'ur',   label:`Unresolved: ${(x.query||'').slice(0,60)}`,     color:'var(--orange)'}))
-  ].sort((a,b)=>b.ts-a.ts).slice(0,20);
-
-  if(!events.length){
-    tl.innerHTML='<div class="empty"><span class="empty-icon">📋</span><p>No events yet. Events will appear here as data is added.</p></div>';
-  } else {
-    events.forEach(e=>{
-      tl.innerHTML+=`<div class="tl-item">
-        <div class="tl-dot" style="background:${e.color}"></div>
-        <div class="tl-body">
-          <div class="tl-main">${esc(e.label)}</div>
-          <div class="tl-time">${fmtDT(e.ts)}</div>
-        </div>
-        ${badge(e.type==='sms'?'sms':'unanswered')}
-      </div>`;
-    });
-  }
+  const tl=$('#ov-timeline');tl.innerHTML='';
+  const events=[...sms.map(x=>({ts:x.ts,type:'sms',label:`${x.sender_name||'Unknown'} — ${x.type||'?'} query`,color:'var(--brand-light)'})),...ur.map(x=>({ts:x.ts,type:'ur',label:`Unresolved: ${(x.query||'').slice(0,60)}`,color:'var(--orange)'}))].sort((a,b)=>b.ts-a.ts).slice(0,20);
+  if(!events.length){tl.innerHTML='<div class="empty"><span class="empty-icon">📋</span><p>No events yet.</p></div>';}
+  else events.forEach(e=>{tl.innerHTML+=`<div class="tl-item"><div class="tl-dot" style="background:${e.color}"></div><div class="tl-body"><div class="tl-main">${esc(e.label)}</div><div class="tl-time">${fmtDT(e.ts)}</div></div>${badge(e.type==='sms'?'sms':'unanswered')}</div>`;});
 }
 
-/* ═══════════════════════════════════════════════
-   ANALYTICS
-═══════════════════════════════════════════════ */
+/* ═══ ANALYTICS ═══ */
 async function renderAnalytics(){
-  const [sms,ur]=await Promise.all([Store.getSMS(),Store.getUR()]);
+  const [sms,ur]=await Promise.all([fetchSMS(),fetchUR()]);
+  const payC=sms.filter(x=>x.type==='pay').length,dedC=sms.filter(x=>x.type==='deduction').length;
+  const uniquePeople=new Set(sms.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
 
-  // Big stats
-  const grid=$('#an-stats'); grid.innerHTML='';
-  const uniquePeople=new Set(sms.map(x=>(x.sender||'').trim().toLowerCase()).filter(Boolean)).size;
-  const payCount=sms.filter(x=>x.type==='pay').length;
-  const dedCount=sms.filter(x=>x.type==='deduction').length;
-  [[sms.length,'Total SMS','cp'],[ur.length,'Unresolved',ur.length?'cr':'cg'],[uniquePeople,'Unique people','co'],[payCount+dedCount>0?Math.round(payCount/(payCount+dedCount)*100)+'%':'—','Pay ratio','']].forEach(([n,l,c])=>{
-    const d=document.createElement('div');d.className='sc '+c;
-    d.innerHTML=`<div class="lbl">${l}</div><div class="num">${n}</div>`;
-    grid.appendChild(d);
+  const grid=$('#an-stats');grid.innerHTML='';
+  [[sms.length,'Total SMS','cp'],[ur.length,'Unresolved',ur.length?'cr':'cg'],[uniquePeople,'Unique people','co'],[payC+dedC>0?Math.round(payC/(payC+dedC)*100)+'%':'—','Pay ratio','']].forEach(([n,l,c])=>{
+    const d=document.createElement('div');d.className='sc '+c;d.innerHTML=`<div class="lbl">${l}</div><div class="num">${n}</div>`;grid.appendChild(d);
   });
 
-  barChart($('#an-sms-split'),[
-    {label:'Pay',      val:payCount, color:'var(--brand-light)'},
-    {label:'Deduction',val:dedCount, color:'var(--purple)'}
-  ]);
-  barChart($('#an-ur-split'),[
-    {label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},
-    {label:'Unhelpful', val:ur.filter(x=>x.type==='unhelpful').length, color:'var(--red)'}
-  ]);
+  barChart($('#an-sms-split'),[{label:'Pay',val:payC,color:'var(--brand-light)'},{label:'Deduction',val:dedC,color:'var(--purple)'}]);
+  barChart($('#an-ur-split'),[{label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},{label:'Unhelpful',val:ur.filter(x=>x.type==='unhelpful').length,color:'var(--red)'}]);
 
-  // Top senders
-  const senderMap={};
-  sms.forEach(x=>{const n=(x.sender||'Unknown').trim();senderMap[n]=(senderMap[n]||0)+1;});
-  const topSenders=Object.entries(senderMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  barChart($('#an-top-senders'),topSenders.map(([label,val])=>({label,val,color:'var(--brand-light)'})));
+  const sm={};sms.forEach(x=>{const n=(x.sender_name||'Unknown').trim();sm[n]=(sm[n]||0)+1;});
+  barChart($('#an-top-senders'),Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,val])=>({label:l,val,color:'var(--brand-light)'})));
 
-  // Top unresolved phrases (first 4 words)
-  const phraseMap={};
-  ur.forEach(x=>{const k=(x.query||'').trim().split(/\s+/).slice(0,5).join(' ').toLowerCase();if(k)phraseMap[k]=(phraseMap[k]||0)+1;});
-  const topPhrases=Object.entries(phraseMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  barChart($('#an-top-queries'),topPhrases.map(([label,val])=>({label,val,color:'var(--orange)'})));
+  const pm={};ur.forEach(x=>{const k=(x.query||'').trim().split(/\s+/).slice(0,5).join(' ').toLowerCase();if(k)pm[k]=(pm[k]||0)+1;});
+  barChart($('#an-top-queries'),Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,val])=>({label:l,val,color:'var(--orange)'})));
 
-  // All senders chips
-  const names=[...new Set(sms.map(x=>(x.sender||'').trim()).filter(Boolean))].sort();
-  $('#an-senders').innerHTML=names.length
-    ?names.map(n=>`<span style="display:inline-block;background:var(--surface-3);border:1px solid var(--border-mid);border-radius:99px;padding:4px 13px;font-size:12px;font-weight:600;margin:3px;color:var(--text)">${esc(n)}</span>`).join('')
-    :'<div class="empty"><p>No senders yet</p></div>';
+  const names=[...new Set(sms.map(x=>(x.sender_name||'').trim()).filter(Boolean))].sort();
+  $('#an-senders').innerHTML=names.length?names.map(n=>`<span style="display:inline-block;background:var(--surface-3);border:1px solid var(--border-mid);border-radius:99px;padding:4px 13px;font-size:12px;font-weight:600;margin:3px">${esc(n)}</span>`).join(''):'<div class="empty"><p>No senders yet</p></div>';
 }
 
-/* ═══════════════════════════════════════════════
-   SMS TABLE
-═══════════════════════════════════════════════ */
+/* ═══ SMS TABLE ═══ */
 const SMSTbl={
-  data:[],q:'',type:'',sortField:'timestamp',sortDir:'desc',
+  data:[],q:'',type:'',sortField:'ts',sortDir:'desc',
   fil(){
     let o=[...this.data];
-    if(this.type) o=o.filter(x=>x.type===this.type);
-    if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.sender||'').toLowerCase().includes(q)||(x.phone||'').toLowerCase().includes(q)||(x.content||'').toLowerCase().includes(q));}
-    return o.sort((a,b)=>{
-      const va=a[this.sortField]??'', vb=b[this.sortField]??'';
-      return this.sortField==='timestamp'?(this.sortDir==='asc'?va-vb:vb-va):(this.sortDir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)));
-    });
+    if(this.type)o=o.filter(x=>x.type===this.type);
+    if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.sender_name||'').toLowerCase().includes(q)||(x.phone||'').toLowerCase().includes(q)||(x.content||'').toLowerCase().includes(q));}
+    return o.sort((a,b)=>{const va=a[this.sortField]??'',vb=b[this.sortField]??'';return this.sortField==='ts'?(this.sortDir==='asc'?va-vb:vb-va):(this.sortDir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)));});
   },
-  async load(){ this.data=await Store.getSMS(); this.render(); },
+  async load(){this.data=await fetchSMS();this.render();},
   render(){
     const rows=this.fil();
     $('#sms-cnt').textContent=plural(rows.length,'record')+(this.data.length!==rows.length?` (${this.data.length} total)`:'');
-    // Update header sort arrows
-    $$('#panel-sms th.sort').forEach(th=>{
-      th.classList.remove('asc','desc');
-      if(th.dataset.col===this.sortField) th.classList.add(this.sortDir);
-    });
-    const body=$('#sms-body'); body.innerHTML='';
-    if(!rows.length){
-      body.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="empty-icon">📭</span><p>${this.data.length?'No records match your filter.':'No SMS logs yet. Records will appear here when members submit queries.'}</p></div></td></tr>`;
-      return;
-    }
+    $$('#panel-2 th.sort').forEach(th=>{th.classList.remove('asc','desc');if(th.dataset.col===this.sortField)th.classList.add(this.sortDir);});
+    const body=$('#sms-body');body.innerHTML='';
+    if(!rows.length){body.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="empty-icon">📭</span><p>${this.data.length?'No records match your filter.':'No SMS logs yet.'}</p></div></td></tr>`;return;}
     rows.forEach(x=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`
-        <td style="white-space:nowrap">${fmtDT(x.timestamp)}</td>
-        <td><strong>${esc(x.sender||'—')}</strong></td>
-        <td style="white-space:nowrap">${esc(x.phone||'—')}</td>
-        <td>${badge(x.type)}</td>
-        <td class="clip" title="${esc(x.content)}">${esc(x.content||'—')}</td>
-        <td><div class="row-actions"></div></td>`;
-      const acts=tr.querySelector('.row-actions');
-      const del=document.createElement('button');
-      del.className='btn btn-red btn-sm btn-icon'; del.title='Delete this record'; del.textContent='🗑';
+      tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td><strong>${esc(x.sender_name||'—')}</strong></td><td style="white-space:nowrap">${esc(x.phone||'—')}</td><td>${badge(x.type)}</td><td class="clip" title="${esc(x.content)}">${esc(x.content||'—')}</td><td><div class="row-actions"></div></td>`;
+      const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.textContent='🗑';
       del.addEventListener('click',()=>this.remove(x.id));
-      acts.appendChild(del);
+      tr.querySelector('.row-actions').appendChild(del);
       body.appendChild(tr);
     });
   },
   async remove(id){
-    const snap=[...this.data];
-    await Store.delSMS(id);
-    await refreshAll();
-    toast('Record deleted',{acts:[{label:'Undo',fn:async()=>{const r=snap.find(x=>x.id===id);if(r){await Store.addSMS(r);await refreshAll();}}}]});
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab to delete records');return;}
+    await SB.del('sms_log',id);await refreshAll();toast('Record deleted');
   },
   async clearAll(){
-    if(!await confirm2('Delete all SMS logs?','This will permanently remove all '+this.data.length+' SMS records. You will have a short window to undo.'))return;
-    const prev=[...this.data];
-    await Store.clrSMS();
-    await refreshAll();
-    toast('All SMS logs cleared',{duration:5000,acts:[{label:'Undo',fn:async()=>{for(const r of prev)await Store.addSMS(r);await refreshAll();}}]});
+    if(!await confirm2('Delete all SMS logs?','This will remove all '+this.data.length+' records from Supabase permanently.'))return;
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    await SB.delAll('sms_log');await refreshAll();toast('All SMS logs deleted');
   },
-  exportCSV(){
-    dlCSV([['Date','Name','Phone','Type','Query'],...this.fil().map(x=>[fmtDT(x.timestamp),x.sender||'',x.phone||'',x.type||'',x.content||''])],
-      `sms_export_${new Date().toISOString().slice(0,10)}.csv`);
-    toast('CSV downloaded ✓');
-  },
+  exportCSV(){dlCSV([['Date','Name','Phone','Type','Query'],...this.fil().map(x=>[fmtDT(x.ts),x.sender_name||'',x.phone||'',x.type||'',x.content||''])],`sms_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
   bind(){
     $('#sms-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
     $('#sms-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
-    $('#sms-sort-field').addEventListener('change',e=>{this.sortField=e.target.value;this.render();});
-    $('#sms-sort-dir').addEventListener('change',e=>{this.sortDir=e.target.value;this.render();});
     $('#sms-export').addEventListener('click',()=>this.exportCSV());
     $('#sms-clear').addEventListener('click',()=>this.clearAll());
-    $$('#panel-sms th.sort').forEach(th=>th.addEventListener('click',()=>{
-      const c=th.dataset.col;
-      if(this.sortField===c){this.sortDir=this.sortDir==='asc'?'desc':'asc';}
-      else{this.sortField=c;this.sortDir='desc';}
-      $('#sms-sort-field').value=this.sortField;
-      $('#sms-sort-dir').value=this.sortDir;
-      this.render();
-    }));
+    $$('#panel-2 th.sort').forEach(th=>th.addEventListener('click',()=>{const c=th.dataset.col;this.sortField===c?this.sortDir=this.sortDir==='asc'?'desc':'asc':(this.sortField=c,this.sortDir='desc');this.render();}));
   }
 };
 
-/* ═══════════════════════════════════════════════
-   UNRESOLVED TABLE
-═══════════════════════════════════════════════ */
+/* ═══ UNRESOLVED TABLE ═══ */
 const URTbl={
   data:[],q:'',type:'',sortDir:'desc',
-  fil(){
-    let o=[...this.data];
-    if(this.type) o=o.filter(x=>x.type===this.type);
-    if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.query||'').toLowerCase().includes(q));}
-    return o.sort((a,b)=>this.sortDir==='asc'?a.timestamp-b.timestamp:b.timestamp-a.timestamp);
-  },
-  async load(){ this.data=await Store.getUR(); this.render(); },
+  fil(){let o=[...this.data];if(this.type)o=o.filter(x=>x.type===this.type);if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.query||'').toLowerCase().includes(q));}return o.sort((a,b)=>this.sortDir==='asc'?a.ts-b.ts:b.ts-a.ts);},
+  async load(){this.data=await fetchUR();this.render();},
   render(){
     const rows=this.fil();
     $('#ur-cnt').textContent=plural(rows.length,'record')+(this.data.length!==rows.length?` (${this.data.length} total)`:'');
-    const body=$('#ur-body'); body.innerHTML='';
-    if(!rows.length){
-      body.innerHTML=`<tr><td colspan="4"><div class="empty"><span class="empty-icon">${this.data.length?'🔍':'✅'}</span><p>${this.data.length?'No records match your filter.':'No unresolved queries — great news!'}</p></div></td></tr>`;
-      return;
-    }
+    const body=$('#ur-body');body.innerHTML='';
+    if(!rows.length){body.innerHTML=`<tr><td colspan="4"><div class="empty"><span class="empty-icon">${this.data.length?'🔍':'✅'}</span><p>${this.data.length?'No records match.':'No unresolved queries — great!'}</p></div></td></tr>`;return;}
     rows.forEach(x=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`
-        <td style="white-space:nowrap">${fmtDT(x.timestamp)}</td>
-        <td class="clip" title="${esc(x.query)}">${esc(x.query||'—')}</td>
-        <td>${badge(x.type)}</td>
-        <td><div class="row-actions"></div></td>`;
-      const acts=tr.querySelector('.row-actions');
-      const del=document.createElement('button');
-      del.className='btn btn-red btn-sm btn-icon'; del.title='Delete'; del.textContent='🗑';
+      tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td class="clip" title="${esc(x.query)}">${esc(x.query||'—')}</td><td>${badge(x.type)}</td><td><div class="row-actions"></div></td>`;
+      const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.textContent='🗑';
       del.addEventListener('click',()=>this.remove(x.id));
-      acts.appendChild(del);
+      tr.querySelector('.row-actions').appendChild(del);
       body.appendChild(tr);
     });
   },
   async remove(id){
-    const snap=[...this.data];
-    await Store.delUR(id);
-    await refreshAll();
-    toast('Record deleted',{acts:[{label:'Undo',fn:async()=>{const r=snap.find(x=>x.id===id);if(r){await Store.addUR(r);await refreshAll();}}}]});
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab to delete records');return;}
+    await SB.del('unresolved',id);await refreshAll();toast('Record deleted');
   },
   async clearAll(){
-    if(!await confirm2('Delete all unresolved logs?','This will permanently remove all '+this.data.length+' unresolved records.'))return;
-    const prev=[...this.data];
-    await Store.clrUR();
-    await refreshAll();
-    toast('All unresolved logs cleared',{duration:5000,acts:[{label:'Undo',fn:async()=>{for(const r of prev)await Store.addUR(r);await refreshAll();}}]});
+    if(!await confirm2('Delete all unresolved logs?','This will remove all '+this.data.length+' records permanently.'))return;
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    await SB.delAll('unresolved');await refreshAll();toast('All unresolved logs deleted');
   },
-  exportCSV(){
-    dlCSV([['Date','Query','Type'],...this.fil().map(x=>[fmtDT(x.timestamp),x.query||'',x.type||''])],
-      `unresolved_export_${new Date().toISOString().slice(0,10)}.csv`);
-    toast('CSV downloaded ✓');
-  },
+  exportCSV(){dlCSV([['Date','Query','Type'],...this.fil().map(x=>[fmtDT(x.ts),x.query||'',x.type||''])],`unresolved_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
   bind(){
     $('#ur-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
     $('#ur-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
-    $('#ur-sort-dir').addEventListener('change',e=>{this.sortDir=e.target.value;this.render();});
     $('#ur-export').addEventListener('click',()=>this.exportCSV());
     $('#ur-clear').addEventListener('click',()=>this.clearAll());
   }
 };
 
-/* ═══════════════════════════════════════════════
-   MANAGE DATA PANEL
-═══════════════════════════════════════════════ */
+/* ═══ MANAGE PANEL ═══ */
 function bindManage(){
-  // Add SMS
   $('#m-add-sms').addEventListener('click',async()=>{
     const sender=val('#m-name'),phone=val('#m-phone'),type=$('#m-type').value,content=val('#m-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
-    await Store.addSMS({sender,phone,type,content});
-    $('#m-name').value='';$('#m-phone').value='';$('#m-content').value='';
-    await refreshAll();
-    toast('SMS record added ✓');
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
+    ['#m-name','#m-phone','#m-content'].forEach(id=>$(id).value='');
+    await refreshAll();toast('SMS record added ✓');
   });
-
-  // Add UR
   $('#m-add-ur').addEventListener('click',async()=>{
     const query=val('#m-ur-query'),type=$('#m-ur-type').value;
     if(!query){toast('⚠ Query text is required');return;}
-    await Store.addUR({query,type});
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    await SB.insert('unresolved',{ts:Date.now(),query,type});
     $('#m-ur-query').value='';
-    await refreshAll();
-    toast('Unresolved record added ✓');
+    await refreshAll();toast('Unresolved record added ✓');
   });
-
-  // Danger zone
   $('#mg-clear-sms').addEventListener('click',()=>SMSTbl.clearAll());
   $('#mg-clear-ur').addEventListener('click',()=>URTbl.clearAll());
-
-  // Storage info
-  $('#mg-storage-info').innerHTML=`
-    <strong>Storage type:</strong> ${Store.shared?'Shared (window.storage, shared=true)':'Local (localStorage)'}<br>
-    <strong>Shared across admins:</strong> ${Store.shared?'&#9989; Yes &mdash; all admins see the same data':'&#10060; No &mdash; each browser has its own copy'}<br>
-    <strong>Auto-refresh:</strong> Every 30 seconds<br>
-    <strong>Status:</strong> ${Store.label}`;
 }
 
-/* ═══════════════════════════════════════════════
-   QUICK-ADD SMS MODAL (header button)
-═══════════════════════════════════════════════ */
+/* ═══ QUICK-ADD MODAL ═══ */
 function bindModal(){
   $('#addSmsBtn').addEventListener('click',()=>$('#modal-sms').classList.remove('hidden'));
   $('#qm-cancel').addEventListener('click',()=>$('#modal-sms').classList.add('hidden'));
   $('#modal-sms').addEventListener('click',e=>{if(e.target===$('#modal-sms'))$('#modal-sms').classList.add('hidden');});
-
   $('#qm-save').addEventListener('click',async()=>{
     const sender=val('#qm-name'),phone=val('#qm-phone'),type=$('#qm-type').value,content=val('#qm-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
-    await Store.addSMS({sender,phone,type,content});
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
     ['#qm-name','#qm-phone','#qm-content'].forEach(id=>$(id).value='');
     $('#modal-sms').classList.add('hidden');
-    await refreshAll();
-    toast('SMS record added ✓');
+    await refreshAll();toast('SMS record added ✓');
   });
 }
 
-/* ═══════════════════════════════════════════════
-   REFRESH ALL PANELS
-═══════════════════════════════════════════════ */
+/* ═══ REFRESH ALL ═══ */
 async function refreshAll(){
   setSyncStatus('spin','Refreshing…');
-  await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load()]);
-  setSyncStatus('ok',Store.label);
+  try{
+    await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load()]);
+    setSyncStatus('ok', SB.ready() ? '✅ Supabase connected — syncing all devices' : '⚠ Not connected — Setup tab');
+  }catch(e){
+    setSyncStatus('err','Error: '+e.message);
+    toast('⚠ '+e.message,{dur:5000});
+  }
 }
 
-/* ═══════════════════════════════════════════════
-   BOOT
-═══════════════════════════════════════════════ */
+/* ═══ BOOT ═══ */
 (async function boot(){
-  // Seed demo data on very first load
-  const existingSMS=await Store.getSMS();
-  if(!existingSMS.length){
-    await Store.addSMS({sender:'John Doe',   phone:'+447712345678',type:'pay',      content:'When is my next payment due?'});
-    await Store.addSMS({sender:'Mary Smith', phone:'+447700112233',type:'deduction',content:'Why was £50 deducted from my last payment?'});
-    await Store.addSMS({sender:'Ahmed Khan', phone:'+447911223344',type:'pay',      content:"I haven't received this month's welfare payment."});
-    await Store.addSMS({sender:'Mary Smith', phone:'+447700112233',type:'pay',      content:'Can I get an advance payment this week?'});
-  }
-  const existingUR=await Store.getUR();
-  if(!existingUR.length){
-    await Store.addUR({query:'How do I appeal a sanction decision?',     type:'unanswered'});
-    await Store.addUR({query:'What counts as a disability for PIP?',      type:'unhelpful'});
-    await Store.addUR({query:'Can I work part-time and still claim UC?',  type:'unanswered'});
-  }
-
-  // Bind all interactions
-  SMSTbl.bind();
-  URTbl.bind();
-  bindManage();
-  bindModal();
-
-  // Refresh button
-  $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Data refreshed ✓');});
-
-  // Initial render
-  await refreshAll();
-
-  // Auto-refresh every 30s
+  SMSTbl.bind(); URTbl.bind(); bindManage(); bindModal(); initSetup();
+  $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
 
-  // Hide loader
+  await refreshAll();
   $('#loader').style.display='none';
 })();
 
-}); // end DOMContentLoaded
+}); // DOMContentLoaded
 </script>
 </body>
 </html>
