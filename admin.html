@@ -754,6 +754,8 @@ async function refreshAll(){
 
 /* ═══ BOOT ═══ */
 (async function boot(){
+  // Pre-load credentials if not already saved
+  if(!SB.getUrl()) SB.save('https://jlhtcwsbigznojwfxmox.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaHRjd3NiaWd6bm9qd2Z4bW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTkzNjcsImV4cCI6MjA4ODk3NTM2N30.u9hOH97ASyyVaLgBKHdrdBo1F8W1BIqwGrm06vcvasU');
   SMSTbl.bind(); URTbl.bind(); bindManage(); bindModal(); initSetup();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
