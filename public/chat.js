@@ -17,9 +17,9 @@ function getGreeting() {
     const ooh = `<br><br>⚠️ We're currently <b>closed</b>${bh ? " (bank holiday)" : ""}. Office hours are <b>Mon–Fri 8:30am–5pm</b>. For urgent queries outside these hours:<br>` +
       `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
       `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`;
-    return `${timeGreet}! I'm <b>Welfare Support</b>.${ooh}<br><br>I can still help answer questions, use the <b>Topics</b> button or type below.`;
+    return `${timeGreet}! I'm <b>Welfare Support</b>.${ooh}<br><br>I can still help answer questions — use the <b>Topics</b> button or type below.`;
   }
-  return `${timeGreet}! I'm <b>Welfare Support</b> How can i help? Use the <b>Topics</b> button or type your question below.`;
+  return `${timeGreet}! I'm <b>Welfare Support</b> — here to help. Use the <b>Topics</b> button or type your question below.`;
 }
 
 let FAQS = [];
@@ -50,16 +50,66 @@ let CHAT_LOG = [];
 let smsCtx = null;
 let distanceCtx = null;
 let flowCtx = null;
-let lastBotIntent = null;   // context memory — last intent bot responded to
-let lastPhoneNumber = null; // context memory — last phone number mentioned
+let lastBotIntent = null;
+let lastPhoneNumber = null;
 
-// --------- Unresolved query log (Fix 9) ---------
-const UNRESOLVED_KEY = "ws_unresolved_v1";
+// --------- Analytics & Data Logging ---------
+const WS_SESSIONS_KEY   = "ws_sessions_v1";
+const WS_INTENTS_KEY    = "ws_intents_v1";
+const WS_SMS_LOG_KEY    = "ws_sms_log_v1";
+const UNRESOLVED_KEY    = "ws_unresolved_v1";
+
+// Session tracking — one session per page load, stored with timestamp
+const SESSION_ID = Date.now() + "_" + Math.random().toString(36).slice(2,7);
+const SESSION_START = Date.now();
+let sessionMsgCount = 0;
+
+function saveSession() {
+  try {
+    const sessions = JSON.parse(localStorage.getItem(WS_SESSIONS_KEY) || "[]");
+    const existing = sessions.findIndex(s => s.id === SESSION_ID);
+    const entry = {
+      id: SESSION_ID,
+      start: SESSION_START,
+      end: Date.now(),
+      messages: sessionMsgCount,
+      date: new Date(SESSION_START).toISOString().slice(0,10)
+    };
+    if (existing >= 0) sessions[existing] = entry;
+    else sessions.push(entry);
+    // Keep last 2000 sessions
+    if (sessions.length > 2000) sessions.splice(0, sessions.length - 2000);
+    localStorage.setItem(WS_SESSIONS_KEY, JSON.stringify(sessions));
+  } catch {}
+}
+
+function logIntent(intent) {
+  try {
+    const intents = JSON.parse(localStorage.getItem(WS_INTENTS_KEY) || "[]");
+    intents.push({ intent, ts: Date.now(), date: new Date().toISOString().slice(0,10) });
+    if (intents.length > 5000) intents.splice(0, intents.length - 5000);
+    localStorage.setItem(WS_INTENTS_KEY, JSON.stringify(intents));
+  } catch {}
+}
+
+function logSMS(entry) {
+  try {
+    const log = JSON.parse(localStorage.getItem(WS_SMS_LOG_KEY) || "[]");
+    log.push({ ...entry, ts: Date.now(), date: new Date().toISOString().slice(0,10) });
+    if (log.length > 2000) log.splice(0, log.length - 2000);
+    localStorage.setItem(WS_SMS_LOG_KEY, JSON.stringify(log));
+  } catch {}
+}
+
+// Save session every 30s and on unload
+setInterval(saveSession, 30000);
+window.addEventListener("beforeunload", saveSession);
+
+// --------- Unresolved query log ---------
 function logUnresolved(text) {
   try {
     const existing = JSON.parse(localStorage.getItem(UNRESOLVED_KEY) || "[]");
     existing.push({ text, ts: Date.now() });
-    // Keep last 200
     if (existing.length > 200) existing.splice(0, existing.length - 200);
     localStorage.setItem(UNRESOLVED_KEY, JSON.stringify(existing));
   } catch {}
@@ -68,7 +118,7 @@ function getUnresolvedLog() {
   try { return JSON.parse(localStorage.getItem(UNRESOLVED_KEY) || "[]"); } catch { return []; }
 }
 
-// --------- Relative timestamps (Fix 3) ---------
+// --------- Relative timestamps ---------
 function relativeTime(ts) {
   const diff = Math.floor((Date.now() - ts) / 1000);
   if (diff < 10) return "Just now";
@@ -76,7 +126,6 @@ function relativeTime(ts) {
   if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
   return formatUKTime(new Date(ts));
 }
-// Update all timestamps every 30 seconds
 setInterval(() => {
   document.querySelectorAll(".timestamp[data-ts]").forEach(el => {
     el.textContent = relativeTime(parseInt(el.dataset.ts));
@@ -463,7 +512,10 @@ function addBubble(text, type, opts = {}) {
   row.appendChild(meta);
   chatWindow.prepend(row);
   const plain = html ? htmlToPlainText(text) : String(text ?? "").trim();
-  if (plain) CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
+  if (plain) {
+    CHAT_LOG.push({ role: type === "bot" ? "Bot" : "User", text: plain, ts: ts.getTime() });
+    if (type === "user") { sessionMsgCount++; saveSession(); }
+  }
   if (type === "bot" && speakThis) speak(plain);
 }
 
@@ -762,8 +814,11 @@ function specialCases(text){
         `Query: <b>${escapeHTML(smsCtx.description)}</b><br><br>` +
         `<a href="${escapeAttrUrl(smsHref)}">📱 Tap here to send your text to ${escapeHTML(SETTINGS.smsNumber)}</a>` +
         `<br><small>Opens your messaging app with the message ready to send.</small>`;
+      // Log SMS to admin
+      logSMS({ name: smsCtx.name, phone: smsCtx.phone, type: smsCtx.type, description: smsCtx.description });
+      logIntent("sms_sent");
       smsCtx = null;
-      return { html, chips: ["Pay / Payroll query", "Deductions query"] };
+      return { html, chips: ["Pay / Payroll query", "Deductions query"], _intent: "sms_sent" };
     }
   }
 
@@ -775,181 +830,78 @@ function specialCases(text){
       "Hello! What's your query today?",
       "Hey, good to hear from you! What do you need help with?"
     ];
-    return { html: greetings[Math.floor(Math.random() * greetings.length)], chips: ["Pay / Payroll query","Work Allocation query","Department Contacts","Equipment Query"] };
+    return { html: greetings[Math.floor(Math.random() * greetings.length)], chips: ["Pay / Payroll query","Work Allocation query","Department Contacts","Equipment Query"], _intent: "greeting" };
   }
 
   if (intent === "smalltalk_how") {
-    return { html: "I'm doing well thanks! I'm here to help with any welfare queries — what do you need?" };
+    return { html: "I'm doing well thanks! I'm here to help with any welfare queries — what do you need?", _intent: "smalltalk" };
   }
 
   if (intent === "thanks") {
     const replies = ["Happy to help! 😊 Anything else I can do for you?","No problem at all! Let me know if there's anything else.","You're welcome! Is there anything else you need?"];
-    return { html: replies[Math.floor(Math.random() * replies.length)] };
+    return { html: replies[Math.floor(Math.random() * replies.length)], _intent: "thanks" };
   }
 
   if (intent === "bye") {
-    return { html: "Take care! 👋 Come back any time you need help." };
+    return { html: "Take care! 👋 Come back any time you need help.", _intent: "bye" };
   }
 
   // Pay / deductions
   if (intent === "pay_query" || intent === "sms_query") {
     smsCtx = { stage: "needName" };
-    return { html: "I'll help you send a text to our pay & deductions team.<br><br>First, what's your <b>full name</b>?" };
+    return { html: "I'll help you send a text to our pay & deductions team.<br><br>First, what's your <b>full name</b>?", _intent: "pay_query" };
   }
 
   if (intent === "deduction_query") {
     smsCtx = { stage: "needName" };
-    return { html: "I can help with that. I'll get your details and send a text to the team.<br><br>What's your <b>full name</b>?" };
+    return { html: "I can help with that. I'll get your details and send a text to the team.<br><br>What's your <b>full name</b>?", _intent: "deduction_query" };
   }
 
   // Work allocation
   if (intent === "work_allocation") {
     flowCtx = { type: "workAllocation", stage: "askRaised" };
-    return { html: "Sorry to hear that. Has this already been raised with your <b>Field and Area Manager</b>?", chips: ["Yes", "No"] };
+    return { html: "Sorry to hear that. Has this already been raised with your <b>Field and Area Manager</b>?", chips: ["Yes", "No"], _intent: "work_allocation" };
   }
 
   // Manager dispute
   if (intent === "manager_dispute") {
     flowCtx = { type: "managerDispute", stage: "askFieldManager" };
-    return { html: "I understand, let's get this sorted. Is this regarding your <b>Field Manager</b>?", chips: ["Yes", "No"] };
+    return { html: "I understand, let's get this sorted. Is this regarding your <b>Field Manager</b>?", chips: ["Yes", "No"], _intent: "manager_dispute" };
   }
 
   // Contract
   if (intent === "contract") {
-    return { html: "For any contract change queries, please raise this with your <b>Area Manager</b>.", chips: ["Department Contacts","How can I contact support?"] };
+    return { html: "For any contract change queries, please raise this with your <b>Area Manager</b>.", chips: ["Department Contacts","How can I contact support?"], _intent: "contract" };
   }
 
   // Equipment
   if (intent === "equipment_stock") {
     flowCtx = { type: "equipment", stage: "stockFormSubmitted" };
-    return { html: "For stock queries — have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes", "No"] };
+    return { html: "For stock queries — have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes", "No"], _intent: "equipment" };
   }
   if (intent === "equipment_tooling") {
     flowCtx = { type: "equipment", stage: "byboxSubmitted" };
-    return { html: "For tooling queries — has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes", "No"] };
+    return { html: "For tooling queries — has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes", "No"], _intent: "equipment" };
   }
   if (intent === "equipment_van") {
     flowCtx = { type: "equipment", stage: "vanRaised" };
-    return { html: "For van queries — have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes", "No"] };
+    return { html: "For van queries — have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes", "No"], _intent: "equipment" };
   }
   if (intent === "equipment") {
     flowCtx = { type: "equipment", stage: "askType" };
-    return { html: "No problem, let's get that sorted. Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock", "Tooling", "Van"] };
+    return { html: "No problem, let's get that sorted. Is this regarding <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock", "Tooling", "Van"], _intent: "equipment" };
   }
 
-  // Street works
-  if (intent === "street_works") {
-    return { html: `For any Street Work queries please contact <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a>.` };
-  }
-
-  // Smart awards
-  if (intent === "smart_awards") {
-    return { html: `For any Smart Award queries please contact <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a>.` };
-  }
-
-  // ID cards
-  if (intent === "id_cards") {
-    return { html: `For lost, unreceived or expired ID cards, please contact <a href="mailto:nuneaton.admin@kelly.co.uk">nuneaton.admin@kelly.co.uk</a>.` };
-  }
-
-  // Department contacts
-  if (intent === "dept_contacts") {
-    return { html:
-      `Here are the main department contacts:<br>` +
-      `<b>Street Works:</b> <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a><br>` +
-      `<b>Smart Awards:</b> <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a><br>` +
-      `<b>Support / City Fibre Back Office:</b> <a href="tel:02080164966">02080164966</a><br>` +
-      `<b>BTOR Allocations:</b> <a href="tel:02080164962">02080164962</a><br>` +
-      `<b>Fleet:</b> <a href="tel:01582841291">01582841291</a> (OOH: <a href="tel:07940766377">07940766377</a>)<br>` +
-      `<b>Accident / Parking:</b> <a href="tel:07940792355">07940792355</a><br>` +
-      `<b>Recruitment:</b> <a href="tel:02037583058">02037583058</a><br>` +
-      `<b>Welfare:</b> <a href="tel:02087583060">02087583060</a>`,
-      chips: ["BTOR NTF Support","City Fibre NTF Support","Fleet query","Recruitment"]
-    };
-  }
-
-  // Fleet
-  if (intent === "fleet") {
-    return { html: `For any vehicle or fleet queries please call <a href="tel:01582841291"><b>01582841291</b></a> or <a href="tel:07940766377"><b>07940766377</b></a> (out of hours).` };
-  }
-
-  // Accidents
-  if (intent === "accident") {
-    return { html: `For accident or injury reports please call <a href="tel:07940792355"><b>07940792355</b></a> as soon as possible.` };
-  }
-
-  // Parking
-  if (intent === "parking") {
-    return { html: `For any parking queries please call <a href="tel:07940792355"><b>07940792355</b></a>.` };
-  }
-
-  // Recruitment
-  if (intent === "recruitment") {
-    return { html: `For recruitment queries please call <a href="tel:02037583058"><b>02037583058</b></a>.` };
-  }
-
-  // BTOR NTF
-  if (intent === "btor_ntf") {
-    return { html:
-      `<b>BTOR NTF Support numbers by region:</b><br>` +
-      `<b>Wales &amp; Midlands:</b> <a href="tel:07484034863">07484034863</a> or <a href="tel:07483932673">07483932673</a><br>` +
-      `<b>London &amp; SE:</b> <a href="tel:07814089467">07814089467</a> or <a href="tel:07814470466">07814470466</a><br>` +
-      `<b>Wessex:</b> <a href="tel:07977670841">07977670841</a> or <a href="tel:07483555754">07483555754</a><br>` +
-      `<b>North England &amp; Scotland:</b> <a href="tel:07814089601">07814089601</a> or <a href="tel:07484082993">07484082993</a>`
-    };
-  }
-
-  // City Fibre NTF
-  if (intent === "cityfibre_ntf") {
-    return { html:
-      `<b>City Fibre NTF Support numbers by region:</b><br>` +
-      `<b>Scotland:</b> <a href="tel:07866950516">07866950516</a> or <a href="tel:07773652734">07773652734</a><br>` +
-      `<b>Midlands:</b> <a href="tel:07773651968">07773651968</a><br>` +
-      `<b>South:</b> <a href="tel:07773651950">07773651950</a><br>` +
-      `<b>North:</b> <a href="tel:07773652146">07773652146</a>, <a href="tel:07977330563">07977330563</a> or <a href="tel:07773652702">07773652702</a>`
-    };
-  }
-
-  // Opening times
-  if (intent === "opening_times") {
-    return { html: "We're open <b>Monday–Friday, 8:30am–5:00pm</b> (UK time). We're closed on weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"] };
-  }
-
-  if (intent === "bank_holiday") {
-    return { html: "❌ <b>No, we are not open on bank holidays.</b>", chips: ["What are your opening times?"] };
-  }
-
-  if (intent === "available_now") {
-    const open = isOpenNow();
-    const nowUK = formatUKTime(new Date());
-    if (open) return { html: `✅ <b>Yes, we're open right now.</b><br>Current UK time: <b>${escapeHTML(nowUK)}</b>`, chips: ["Department Contacts","How can I contact support?"] };
-    const bh = isBankHolidayToday();
-    return { html:
-      `❌ <b>We're closed right now.</b> Current UK time: <b>${escapeHTML(nowUK)}</b>${bh ? " <small>(Bank holiday)</small>" : ""}<br><br>` +
-      `For urgent out-of-hours queries:<br>` +
-      `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
-      `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a><br>` +
-      `<br>For all other queries please contact us during office hours: <b>Mon–Fri 8:30am–5:00pm</b>.`,
-      chips: ["What are your opening times?","Department Contacts"]
-    };
-  }
-
-  // Location / depot
-  if (intent === "location") {
-    if (q.includes("closest") || q.includes("nearest") || q.includes("how far") || q.includes("distance") || q.includes("directions") || q.includes("get there")) {
-      distanceCtx = { stage:"needOrigin" };
-      return { html:"What town or city are you travelling from? (Or tap <b>Use my location</b>.)", chips:["Use my location","Coventry","Birmingham","Leicester","London"] };
-    }
-    const d = DEPOTS.nuneaton;
-    const tile = osmTileURL(d.lat, d.lon, 13);
-    const gmaps = `https://www.google.com/maps?q=${encodeURIComponent(d.lat + "," + d.lon)}`;
-    return { html:`We're based in <b>Nuneaton, UK</b>.<br>${linkTag(gmaps,"Open in Google Maps")}<br>${imgTag(tile)}` };
-  }
-
-  // Support contact
-  if (intent === "contact_support") {
-    return { html: `You can reach Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> — please hold the line when prompted.`, chips: ["Department Contacts","What are your opening times?"] };
-  }
+  if (intent === "street_works") return { html: `For any Street Work queries please contact <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a>.`, _intent: "street_works" };
+  if (intent === "smart_awards") return { html: `For any Smart Award queries please contact <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a>.`, _intent: "smart_awards" };
+  if (intent === "id_cards") return { html: `For lost, unreceived or expired ID cards, please contact <a href="mailto:nuneaton.admin@kelly.co.uk">nuneaton.admin@kelly.co.uk</a>.`, _intent: "id_cards" };
+  if (intent === "fleet") return { html: `For any vehicle or fleet queries please call <a href="tel:01582841291"><b>01582841291</b></a> or <a href="tel:07940766377"><b>07940766377</b></a> (out of hours).`, _intent: "fleet" };
+  if (intent === "accident") return { html: `For accident or injury reports please call <a href="tel:07940792355"><b>07940792355</b></a> as soon as possible.`, _intent: "accident" };
+  if (intent === "parking") return { html: `For any parking queries please call <a href="tel:07940792355"><b>07940792355</b></a>.`, _intent: "parking" };
+  if (intent === "recruitment") return { html: `For recruitment queries please call <a href="tel:02037583058"><b>02037583058</b></a>.`, _intent: "recruitment" };
+  if (intent === "contact_support") return { html: `You can reach Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> — please hold the line when prompted.`, chips: ["Department Contacts","What are your opening times?"], _intent: "contact_support" };
+  if (intent === "opening_times") return { html: "We're open <b>Monday–Friday, 8:30am–5:00pm</b> (UK time). We're closed on weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"], _intent: "opening_times" };
+  if (intent === "bank_holiday") return { html: "❌ <b>No, we are not open on bank holidays.</b>", chips: ["What are your opening times?"], _intent: "opening_times" };
 
   // Distance flow continuations
   if (distanceCtx?.stage==="needOrigin"){
@@ -1114,6 +1066,7 @@ async function handleUserMessage(text){
 
   const s = specialCases(text);
   if (s){
+    if (s._intent) logIntent(s._intent);
     addBubble(s.html, "bot", { html:true });
     if (s.chips) addChips(s.chips);
     isResponding=false;
