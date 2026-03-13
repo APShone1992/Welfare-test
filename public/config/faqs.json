@@ -1,185 +1,304 @@
 [
   {
     "question": "Send a pay or deduction query by text",
-    "answer": "I'll collect your details and open your messaging app with a pre-filled text to our pay & deductions team. Just tap this topic or type <b>pay query</b> or <b>deduction query</b> to get started.",
-    "synonyms": ["send a text","text support","pay query","deduction query","i have a pay query","i have a deduction query","pay issue","deduction issue","payroll query","wage query","text a query"],
-    "canonicalKeywords": ["pay","deduction","payroll","wage","text"],
+    "answer": "I'll collect your details and open your messaging app with a pre‑filled text to our pay & deductions team. Just tap this topic or type <b>pay query</b> or <b>deduction query</b> to get started.",
+    "synonyms": [
+      "send a text",
+      "text support",
+      "pay query",
+      "deduction query",
+      "i have a pay query",
+      "i have a deduction query",
+      "pay issue",
+      "deduction issue",
+      "payroll query",
+      "wage query",
+      "text a query"
+    ],
+    "canonicalKeywords": ["pay", "deduction", "payroll", "wage", "text"],
     "category": "pay",
-    "followUps": ["Pay / Payroll query","Deductions query"]
+    "followUps": ["Pay / Payroll query", "Deductions query"]
   },
+
   {
     "question": "Get directions to my closest depot",
     "answer": "Ask <b>closest depot</b> and I'll guide you (you can use GPS or select a city).",
-    "synonyms": ["closest depot","how far depot","distance to depot","depot directions"],
-    "canonicalKeywords": ["depot","closest","distance","directions"],
+    "synonyms": ["closest depot", "how far depot", "distance to depot", "depot directions"],
+    "canonicalKeywords": ["depot", "closest", "distance", "directions"],
     "category": "actions",
-    "followUps": ["Where are you located?","Is there parking?"]
+    "followUps": ["Where are you located?", "Is there parking?"]
   },
+
   {
     "question": "What are your opening times?",
     "answer": "We're open <b>Monday–Friday, 8:30–17:00</b> (UK time). We're <b>closed on weekends and bank holidays</b>.",
-    "synonyms": ["opening times","opening hours","office hours","business hours","when do you open","what time do you open","what time do you close"],
-    "canonicalKeywords": ["hours","availability"],
+    "synonyms": [
+      "opening times",
+      "opening hours",
+      "office hours",
+      "business hours",
+      "when do you open",
+      "what time do you open",
+      "what time do you close"
+    ],
+    "canonicalKeywords": ["hours", "availability"],
     "category": "opening",
-    "followUps": ["Is anyone available now?","Are you open on bank holidays?"]
+    "followUps": ["Is anyone available now?", "Are you open on bank holidays?"]
   },
+
   {
     "question": "Are you open on bank holidays?",
     "answer": "<b>No — we are not open on bank holidays.</b>",
-    "synonyms": ["bank holiday","bank holidays","open on bank holidays","closed on bank holidays"],
-    "canonicalKeywords": ["bank holiday","open","closed"],
+    "synonyms": ["bank holiday", "bank holidays", "open on bank holidays", "closed on bank holidays"],
+    "canonicalKeywords": ["bank holiday", "open", "closed"],
     "category": "opening",
-    "followUps": ["What are your opening times?","Is anyone available now?"]
+    "followUps": ["What are your opening times?", "Is anyone available now?"]
   },
+
   {
     "question": "Is anyone available now?",
     "answer": "Ask <b>is anyone available</b> to check if we're open right now (UK time).",
-    "synonyms": ["is anyone available","anyone available","available now","open now","are you open now"],
-    "canonicalKeywords": ["available","open"],
+    "synonyms": [
+      "is anyone available",
+      "anyone available",
+      "available now",
+      "open now",
+      "are you open now"
+    ],
+    "canonicalKeywords": ["available", "open"],
     "category": "opening",
-    "followUps": ["What are your opening times?","How can I contact support?"]
+    "followUps": ["What are your opening times?", "How can I contact support?"]
   },
+
   {
     "question": "How can I contact support?",
     "answer": "You can reach Welfare directly on <a href=\"tel:02087583060\"><b>02087583060</b></a> — please hold the line when prompted.",
-    "synonyms": ["support email","customer service","help contact","contact details","phone number","welfare number","welfare contact"],
-    "canonicalKeywords": ["contact","welfare","support"],
+    "synonyms": [
+      "support email",
+      "customer service",
+      "help contact",
+      "contact details",
+      "phone number",
+      "welfare number",
+      "welfare contact"
+    ],
+    "canonicalKeywords": ["contact", "welfare", "support"],
     "category": "support",
-    "followUps": ["Department Contacts","What are your opening times?"]
+    "followUps": ["Department Contacts", "What are your opening times?"]
   },
+
   {
     "question": "Where are you located?",
     "answer": "We're based in <b>Nuneaton, UK</b>. Visits are by appointment only.",
-    "synonyms": ["address","office location","where is your office","location"],
-    "canonicalKeywords": ["address","map","office"],
+    "synonyms": [
+      "address",
+      "office location",
+      "where is your office",
+      "location"
+    ],
+    "canonicalKeywords": ["address", "map", "office"],
     "category": "general",
     "followUps": ["Get directions to my closest depot"]
   },
+
   {
     "question": "Pay / Payroll query",
     "answer": "For pay queries you can <b>send a text to our team</b> — just type <b>pay query</b> and I'll guide you through it. Alternatively call <a href=\"tel:02037583060\"><b>02037583060</b></a> and select option 1.",
-    "synonyms": ["pay query","payroll query","salary query","wages","i have a pay query","pay issue","payslip"],
-    "canonicalKeywords": ["pay","payroll","salary","wage","wages"],
+    "synonyms": [
+      "pay query",
+      "payroll query",
+      "salary query",
+      "wages",
+      "i have a pay query",
+      "pay issue",
+      "payslip"
+    ],
+    "canonicalKeywords": ["pay", "payroll", "salary", "wage", "wages"],
     "category": "pay",
-    "followUps": ["Send a pay or deduction query by text","Deductions query"]
+    "followUps": ["Send a pay or deduction query by text", "Deductions query"]
   },
+
   {
     "question": "Deductions query",
     "answer": "For deduction queries you can <b>send a text to our team</b> — just type <b>deduction query</b> and I'll guide you through it. Alternatively call <a href=\"tel:02037583060\"><b>02037583060</b></a> and select option 1.",
-    "synonyms": ["deduction query","deductions","i have a deduction query","deduction issue","money taken"],
-    "canonicalKeywords": ["deduction","deductions"],
+    "synonyms": [
+      "deduction query",
+      "deductions",
+      "i have a deduction query",
+      "deduction issue",
+      "money taken"
+    ],
+    "canonicalKeywords": ["deduction", "deductions"],
     "category": "pay",
-    "followUps": ["Send a pay or deduction query by text","Pay / Payroll query"]
+    "followUps": ["Send a pay or deduction query by text", "Pay / Payroll query"]
   },
+
   {
     "question": "Work Allocation query",
     "answer": "Has this been raised with your <b>Field and Area Manager</b>?",
-    "synonyms": ["work allocation","job allocation","allocated work","no work","work query"],
-    "canonicalKeywords": ["work allocation","allocation","jobs"],
+    "synonyms": [
+      "work allocation",
+      "job allocation",
+      "allocated work",
+      "no work",
+      "work query"
+    ],
+    "canonicalKeywords": ["work allocation", "allocation", "jobs"],
     "category": "work",
-    "followUps": ["Work allocation — yes raised with manager","Work allocation — not yet raised"]
+    "followUps": [
+      "Work allocation — yes raised with manager",
+      "Work allocation — not yet raised"
+    ]
   },
+
   {
     "question": "Work allocation — yes raised with manager",
     "answer": "Please contact Welfare directly on <b>02087583060</b> and hold the line.",
-    "synonyms": ["work allocation yes","raised with manager","already raised work allocation"],
+    "synonyms": ["work allocation yes", "raised with manager", "already raised work allocation"],
     "canonicalKeywords": [],
     "category": "work",
     "followUps": ["How can I contact support?"]
   },
+
   {
     "question": "Work allocation — not yet raised",
-    "answer": "Please raise this to your <b>Field and Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <b>02087583060</b> and hold the line.",
-    "synonyms": ["work allocation no","not raised with manager","haven't raised work allocation"],
+    "answer": "Please raise this to your <b>Field and Area Manager</b>. If concerns remain after this step, please contact Welfare directly on <b>02087583060</b> and hold the line.",
+    "synonyms": ["work allocation no", "not raised with manager", "havent raised work allocation"],
     "canonicalKeywords": [],
     "category": "work",
     "followUps": ["How can I contact support?"]
   },
+
   {
     "question": "Contract Change query",
     "answer": "For any contract change queries, please raise this to your <b>Area Manager</b>.",
-    "synonyms": ["contract change","change contract","contract query","contract amendment","amend contract"],
-    "canonicalKeywords": ["contract","contract change"],
+    "synonyms": [
+      "contract change",
+      "change contract",
+      "contract query",
+      "contract amendment",
+      "amend contract"
+    ],
+    "canonicalKeywords": ["contract", "contract change"],
     "category": "contract",
     "followUps": ["How can I contact support?"]
   },
+
   {
     "question": "Street Works query",
     "answer": "For any Street Work queries please contact <a href=\"mailto:Street.Works@kelly.co.uk\">Street.Works@kelly.co.uk</a>.",
-    "synonyms": ["street works","streetworks","street work query"],
-    "canonicalKeywords": ["street works","streetworks"],
+    "synonyms": ["street works", "streetworks", "street work query"],
+    "canonicalKeywords": ["street works", "streetworks"],
     "category": "departments",
     "followUps": ["Department Contacts"]
   },
+
   {
     "question": "Smart Awards query",
     "answer": "For any Smart Award queries please contact <a href=\"mailto:smartawards@kelly.co.uk\">smartawards@kelly.co.uk</a>.",
-    "synonyms": ["smart awards","smartawards","smart award query"],
-    "canonicalKeywords": ["smart awards","smartawards"],
+    "synonyms": ["smart awards", "smartawards", "smart award query"],
+    "canonicalKeywords": ["smart awards", "smartawards"],
     "category": "departments",
     "followUps": ["Department Contacts"]
   },
+
   {
     "question": "ID Cards",
     "answer": "If you have lost, not received, or your ID card has expired, please contact <a href=\"mailto:nuneaton.admin@kelly.co.uk\">nuneaton.admin@kelly.co.uk</a>.",
-    "synonyms": ["id card","id cards","lost id","id expired","id not received","identification card"],
-    "canonicalKeywords": ["id card","id","identification"],
+    "synonyms": [
+      "id card",
+      "id cards",
+      "lost id",
+      "id expired",
+      "id not received",
+      "identification card"
+    ],
+    "canonicalKeywords": ["id card", "id", "identification"],
     "category": "general",
     "followUps": ["How can I contact support?"]
   },
+
   {
     "question": "Department Contacts",
     "answer": "Here are the main department contacts:<br><b>Street Works:</b> <a href=\"mailto:Street.Works@kelly.co.uk\">Street.Works@kelly.co.uk</a><br><b>Smart Awards:</b> <a href=\"mailto:smartawards@kelly.co.uk\">smartawards@kelly.co.uk</a><br><b>Support Team / City Fibre Back Office:</b> 02080164966<br><b>BTOR Allocations Team:</b> 02080164962<br><b>Fleet:</b> 01582841291 (or 07940766377 out of hours)<br><b>Accident / Parking Line:</b> 07940792355<br><b>Recruitment:</b> 02037583058<br><b>Welfare:</b> 02087583060",
-    "synonyms": ["department contacts","departments","contacts","who do i contact","contact list"],
-    "canonicalKeywords": ["department","contacts","contact"],
+    "synonyms": [
+      "department contacts",
+      "departments",
+      "contacts",
+      "who do i contact",
+      "contact list"
+    ],
+    "canonicalKeywords": ["department", "contacts", "contact"],
     "category": "departments",
-    "followUps": ["BTOR NTF Support","City Fibre NTF Support","Street Works query","Smart Awards query"]
+    "followUps": [
+      "BTOR NTF Support",
+      "City Fibre NTF Support",
+      "Street Works query",
+      "Smart Awards query"
+    ]
   },
+
   {
     "question": "BTOR NTF Support",
-    "answer": "Please select which area you are based in:<br><b>Wales &amp; Midlands:</b> 07484034863 or 07483932673<br><b>London &amp; SE:</b> 07814089467 or 07814470466<br><b>Wessex:</b> 07977670841 or 07483555754<br><b>North England &amp; Scotland:</b> 07814089601 or 07484082993",
-    "synonyms": ["btor ntf","btor ntf support","openreach ntf","ntf support btor","ntf"],
-    "canonicalKeywords": ["btor","ntf","openreach"],
+    "answer": "Please select which area you are based in:<br><b>Wales & Midlands:</b> 07484034863 or 07483932673<br><b>London & SE:</b> 07814089467 or 07814470466<br><b>Wessex:</b> 07977670841 or 07483555754<br><b>North England & Scotland:</b> 07814089601 or 07484082993",
+    "synonyms": [
+      "btor ntf",
+      "btor ntf support",
+      "openreach ntf",
+      "ntf support btor",
+      "ntf"
+    ],
+    "canonicalKeywords": ["btor", "ntf", "openreach"],
     "category": "departments",
-    "followUps": ["Department Contacts","City Fibre NTF Support"]
+    "followUps": ["Department Contacts", "City Fibre NTF Support"]
   },
+
   {
     "question": "City Fibre NTF Support",
     "answer": "Please select which area you are based in:<br><b>Scotland:</b> 07866950516 or 07773652734<br><b>Midlands:</b> 07773651968<br><b>South:</b> 07773651950<br><b>North:</b> 07773652146, 07977330563 or 07773652702",
-    "synonyms": ["city fibre ntf","city fibre ntf support","cityfibre ntf","ntf support city fibre"],
-    "canonicalKeywords": ["city fibre","cityfibre","ntf"],
+    "synonyms": [
+      "city fibre ntf",
+      "city fibre ntf support",
+      "cityfibre ntf",
+      "ntf support city fibre"
+    ],
+    "canonicalKeywords": ["city fibre", "cityfibre", "ntf"],
     "category": "departments",
-    "followUps": ["Department Contacts","BTOR NTF Support"]
+    "followUps": ["Department Contacts", "BTOR NTF Support"]
   },
+
   {
     "question": "Fleet query",
     "answer": "For any vehicle or fleet related queries please call <b>01582841291</b> or <b>07940766377</b> (out of hours).",
-    "synonyms": ["fleet","vehicle","van query","fleet query","fleet contact","vehicle query"],
-    "canonicalKeywords": ["fleet","vehicle","van"],
+    "synonyms": ["fleet", "vehicle", "van query", "fleet query", "fleet contact", "vehicle query"],
+    "canonicalKeywords": ["fleet", "vehicle", "van"],
     "category": "departments",
     "followUps": ["Department Contacts"]
   },
+
   {
     "question": "Accident or injury report",
     "answer": "For any accident reports — whether injuries or damage — please call <b>07940792355</b>.",
-    "synonyms": ["accident","injury","accident report","injury report","damage report","accident line"],
-    "canonicalKeywords": ["accident","injury","damage"],
+    "synonyms": ["accident", "injury", "accident report", "injury report", "damage report", "accident line"],
+    "canonicalKeywords": ["accident", "injury", "damage"],
     "category": "departments",
     "followUps": ["Department Contacts"]
   },
+
   {
     "question": "Parking query",
     "answer": "For any parking queries please call <b>07940792355</b>.",
-    "synonyms": ["parking","parking query","parking ticket","parking fine"],
+    "synonyms": ["parking", "parking query", "parking ticket", "parking fine"],
     "canonicalKeywords": ["parking"],
     "category": "departments",
     "followUps": ["Department Contacts"]
   },
+
   {
     "question": "Recruitment",
     "answer": "For recruitment queries please call <b>02037583058</b>.",
-    "synonyms": ["recruitment","recruiting","new job","job application","apply for job","hiring"],
-    "canonicalKeywords": ["recruitment","hiring","job"],
+    "synonyms": ["recruitment", "recruiting", "new job", "job application", "apply for job", "hiring"],
+    "canonicalKeywords": ["recruitment", "hiring", "job"],
     "category": "departments",
     "followUps": ["Department Contacts"]
   }
