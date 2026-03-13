@@ -113,7 +113,7 @@
 
   frame.setAttribute(
     "sandbox",
-    "allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+    "allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-top-navigation"
   );
   frame.setAttribute("allow", "geolocation; microphone");
   document.body.appendChild(frame);
