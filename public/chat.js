@@ -191,7 +191,7 @@ function sanitizeHTML(html) {
     });
     if (el.tagName === "A") {
       const href = el.getAttribute("href") ?? "";
-      const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href);
+      const safe = /^https?:\/\//i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href) || /^sms:/i.test(href);
       if (!safe) el.removeAttribute("href");
       el.setAttribute("rel", "noopener noreferrer");
       el.setAttribute("target", "_blank");
@@ -812,7 +812,7 @@ function specialCases(text){
         `Phone: <b>${escapeHTML(smsCtx.phone)}</b><br>` +
         `Type: <b>${escapeHTML(smsCtx.type)}</b><br>` +
         `Query: <b>${escapeHTML(smsCtx.description)}</b><br><br>` +
-        `<a href="${escapeAttrUrl(smsHref)}">📱 Tap here to send your text to ${escapeHTML(SETTINGS.smsNumber)}</a>` +
+        `<a href="${escapeAttrUrl(smsHref)}" target="_blank" rel="noopener">📱 Tap here to send your text to ${escapeHTML(SETTINGS.smsNumber)}</a>` +
         `<br><small>Opens your messaging app with the message ready to send.</small>`;
       // Log SMS to admin
       logSMS({ name: smsCtx.name, phone: smsCtx.phone, type: smsCtx.type, description: smsCtx.description });
