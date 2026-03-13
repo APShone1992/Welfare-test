@@ -243,7 +243,8 @@
     .drawer-q:hover{background:var(--accent);border-color:rgba(37,99,212,0.22);transform:translateX(2px)}
     .drawer-q:hover::after{transform:translateX(3px);color:var(--brand-light)}
     /* --- Admin panel --- */
-    .admin-overlay{position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .admin-overlay{position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9000;align-items:center;justify-content:center;backdrop-filter:blur(4px);display:none}
+    .admin-overlay.open{display:flex}
     .admin-panel{background:#fff;border-radius:16px;width:min(780px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(13,31,60,0.28),0 0 0 1px rgba(26,58,107,0.10);overflow:hidden}
     .admin-header{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     .admin-header h2{font-size:16px;font-weight:700;margin:0}
@@ -409,8 +410,8 @@
     </div>
   </aside>
 
-  <!-- ═══ ADMIN PANEL (type /admin in chat to open) ═══ -->
-  <div id="adminOverlay" class="admin-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Admin dashboard">
+  <!-- ═══ ADMIN PANEL ═══ -->
+  <div id="adminOverlay" class="admin-overlay" role="dialog" aria-modal="true" aria-label="Admin dashboard">
     <div class="admin-panel">
       <div class="admin-header">
         <div><h2>📊 Admin Dashboard</h2><div class="sub" id="adm-sync">—</div></div>
@@ -481,25 +482,6 @@
     </div>
   </div>
 
-  <!-- Admin button — isolated script so it works regardless of chat.js -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      var btn = document.getElementById("adminBtn");
-      if (btn) {
-        btn.addEventListener("click", function() {
-          var overlay = document.getElementById("adminOverlay");
-          if (overlay) {
-            overlay.style.display = "flex";
-            var pinInput = document.getElementById("adminPinInput");
-            if (pinInput) { pinInput.value = ""; setTimeout(function(){ pinInput.focus(); }, 100); }
-            var pinErr = document.getElementById("adminPinErr");
-            if (pinErr) pinErr.style.display = "none";
-          }
-        });
-      }
-    });
-  </script>
-
   <script src="./public/chat.js"></script>
   <script>
     // ═══ ADMIN PANEL ═══
@@ -532,20 +514,24 @@
     }, true);
 
     function openAdmin() {
-      document.getElementById("adminOverlay").style.display = "flex";
+      var overlay = document.getElementById("adminOverlay");
+      overlay.classList.add("open");
       if (adminUnlocked) {
         showAdminDash();
       } else {
+        document.getElementById("adminPinGate").style.display = "flex";
+        document.getElementById("adminDash").style.display = "none";
         document.getElementById("adminPinInput").value = "";
         document.getElementById("adminPinErr").style.display = "none";
-        setTimeout(() => document.getElementById("adminPinInput").focus(), 100);
+        setTimeout(function(){ document.getElementById("adminPinInput").focus(); }, 150);
       }
     }
 
     function closeAdmin() {
-      document.getElementById("adminOverlay").style.display = "none";
+      document.getElementById("adminOverlay").classList.remove("open");
     }
 
+    document.getElementById("adminBtn").addEventListener("click", openAdmin);
     document.getElementById("adminCloseBtn").addEventListener("click", closeAdmin);
     document.getElementById("adminOverlay").addEventListener("click", function(e) {
       if (e.target === this) closeAdmin();
@@ -732,7 +718,7 @@
       if (e.key === "Escape") {
         const drawerEl = document.getElementById("topicsDrawer");
         if (!drawerEl.hidden) document.getElementById("drawerCloseBtn").click();
-        if (document.getElementById("adminOverlay").style.display !== "none") closeAdmin();
+        if (document.getElementById("adminOverlay").classList.contains("open")) closeAdmin();
       }
     });
     const chatWin = document.getElementById("chatWindow");
