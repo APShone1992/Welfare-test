@@ -33,6 +33,7 @@ header{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);
 .tab:hover:not([aria-selected="true"]){color:var(--text);background:var(--surface-2)}
 .tab-badge{background:var(--red);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 6px;min-width:18px;text-align:center;line-height:16px}
 .tab-badge.zero{background:var(--border-mid);color:var(--text-muted)}
+.tab.superadmin-tab{display:none}.tab.superadmin-tab.unlocked{display:flex}
 
 .panel{display:none;padding:24px;max-width:1440px;margin:0 auto;width:100%;animation:fadeIn .15s ease}
 .panel.active{display:block}
@@ -40,9 +41,8 @@ header{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-mid) 100%);
 
 .panel-title{font-size:18px;font-weight:800;color:var(--brand);margin-bottom:3px}
 .panel-desc{font-size:13px;color:var(--text-sec);margin-bottom:20px}
-h3{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:12px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(13,31,60,0.05)}
-.card-title{font-size:12px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.card-title{font-size:12px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
 
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
 .sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:0 1px 4px rgba(13,31,60,0.05);position:relative;overflow:hidden}
@@ -52,6 +52,8 @@ h3{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:12px}
 .sc.cg .num{color:var(--green)}.sc.co .num{color:var(--orange)}.sc.cp .num{color:var(--purple)}.sc.cr .num{color:var(--red)}
 .sc .lbl{font-size:11.5px;color:var(--text-muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
 .sc .sub{font-size:11px;margin-top:2px;color:var(--text-muted)}
+.sc .trend{font-size:11px;margin-top:4px;font-weight:600}
+.sc .trend.up{color:var(--green)}.sc .trend.dn{color:var(--red)}.sc .trend.eq{color:var(--text-muted)}
 
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
@@ -63,8 +65,8 @@ h3{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:12px}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-mid);box-shadow:0 4px 12px rgba(26,58,107,0.25)}
 .btn-sec{background:var(--surface-3);color:var(--brand);border:1.5px solid var(--border-mid)}.btn-sec:hover{background:var(--accent)}
-.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#15803d;box-shadow:0 4px 12px rgba(22,163,74,0.3)}
-.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:#b91c1c;box-shadow:0 4px 12px rgba(220,38,38,0.3)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#15803d}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:#b91c1c}
 .btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
 .btn-icon{padding:7px 9px;font-size:14px;line-height:1}
 
@@ -76,38 +78,98 @@ h3{font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:12px}
 .tw{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);max-height:60vh}
 table.dt{width:100%;border-collapse:collapse;font-size:13px}
 table.dt thead th{position:sticky;top:0;background:var(--surface-3);text-align:left;padding:9px 14px;font-size:11.5px;font-weight:700;color:var(--text-sec);border-bottom:2px solid var(--border-mid);white-space:nowrap;z-index:1}
-table.dt th.sort{cursor:pointer;user-select:none;transition:color var(--tr)}
+table.dt th.sort{cursor:pointer;user-select:none}
 table.dt th.sort:hover{color:var(--brand-light)}
 table.dt th.asc::after{content:" ↑"}table.dt th.desc::after{content:" ↓"}
 table.dt td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
 table.dt tr:last-child td{border-bottom:none}
 table.dt tbody tr:hover td{background:var(--surface-2)}
-.clip{max-width:440px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clip{max-width:400px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize}
 .badge-pay{background:#dbeafe;color:#1e40af}.badge-deduction{background:#fce7f3;color:#9d174d}
 .badge-unanswered{background:#fef3c7;color:#92400e}.badge-unhelpful{background:#fee2e2;color:#991b1b}
-.badge-sms{background:#ede9fe;color:#5b21b6}.badge-session{background:#dcfce7;color:#14532d}
+.badge-sms{background:#ede9fe;color:#5b21b6}
+.badge-age-hot{background:#fee2e2;color:#991b1b}
+.badge-age-warm{background:#fef3c7;color:#92400e}
+.badge-age-ok{background:#dcfce7;color:#14532d}
 
-.empty{text-align:center;padding:52px 20px;color:var(--text-muted)}
-.empty-icon{font-size:40px;margin-bottom:10px;display:block}
+.empty{text-align:center;padding:44px 20px;color:var(--text-muted)}
+.empty-icon{font-size:38px;margin-bottom:8px;display:block}
 .empty p{font-size:13.5px;margin-top:4px}
-.bignum{font-size:48px;font-weight:800;line-height:1;display:block;text-align:center;padding:10px 0}
 .row-actions{display:flex;gap:4px;justify-content:flex-end}
 
-/* Setup card */
+/* BAR CHARTS */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.bar-label{width:130px;font-size:12px;font-weight:600;color:var(--text-sec);text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-label.wide{width:200px}
+.bar-track{flex:1;background:var(--surface-3);border-radius:6px;height:24px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:9px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.bar-fill span{font-size:11px;font-weight:800;color:rgba(255,255,255,.9)}
+.bar-val{width:32px;font-size:12px;font-weight:700;color:var(--text-sec);text-align:right}
+
+/* SPARKLINE / MINI CHART */
+.sparkline-wrap{display:flex;flex-direction:column;gap:4px}
+.sparkline{display:flex;align-items:flex-end;gap:2px;height:56px}
+.spark-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;transition:opacity .15s;cursor:default}
+.spark-bar:hover{opacity:.75}
+.spark-labels{display:flex;gap:2px}
+.spark-lbl{flex:1;font-size:8.5px;color:var(--text-muted);text-align:center;overflow:hidden}
+
+/* MULTI-LINE TREND CHART */
+.trend-chart{position:relative;height:140px;width:100%}
+.trend-chart svg{width:100%;height:100%;overflow:visible}
+
+/* HEATMAP */
+.heatmap-wrap{overflow-x:auto}
+.heatmap{display:grid;grid-template-columns:40px repeat(24,1fr);gap:2px;font-size:10px;min-width:600px}
+.hmap-corner{display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;color:var(--text-muted);font-weight:600;font-size:9px}
+.hmap-hour{text-align:center;color:var(--text-muted);font-size:9px;padding-bottom:4px}
+.hmap-day{display:flex;align-items:center;justify-content:flex-end;padding-right:6px;color:var(--text-sec);font-weight:600;font-size:10px;height:22px}
+.hmap-cell{height:22px;border-radius:3px;background:var(--surface-3);transition:opacity .15s;cursor:default;position:relative}
+.hmap-cell:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:#0d1f3c;color:#fff;font-size:10px;padding:3px 7px;border-radius:4px;white-space:nowrap;pointer-events:none;z-index:10}
+
+/* GAUGE / RESOLUTION RATE */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0}
+.gauge-svg{width:180px;height:100px}
+.gauge-pct{font-size:32px;font-weight:800;color:var(--brand-light);line-height:1}
+.gauge-label{font-size:12px;color:var(--text-muted);font-weight:600}
+.gauge-trend{font-size:11.5px;font-weight:600;margin-top:2px}
+
+/* HISTOGRAM */
+.histogram{display:flex;align-items:flex-end;gap:4px;height:80px;padding:4px 0}
+.hist-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.hist-bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;background:var(--brand-light);transition:height .4s}
+.hist-lbl{font-size:9.5px;color:var(--text-muted);text-align:center}
+
+/* WEEKLY SUMMARY */
+.week-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.ws-item{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.ws-val{font-size:24px;font-weight:800;color:var(--brand-light);line-height:1.1}
+.ws-lbl{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.ws-delta{font-size:11px;font-weight:700;margin-top:3px}
+.ws-delta.up{color:var(--green)}.ws-delta.dn{color:var(--red)}.ws-delta.eq{color:var(--text-muted)}
+
+/* REPEAT CONTACTS */
+.repeat-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.repeat-row:last-child{border-bottom:none}
+.repeat-name{flex:1;font-weight:600;font-size:13px}
+.repeat-phone{font-size:12px;color:var(--text-sec)}
+.repeat-count{background:var(--brand-light);color:#fff;font-size:12px;font-weight:800;padding:2px 10px;border-radius:99px}
+.repeat-last{font-size:11px;color:var(--text-muted)}
+
+/* SETUP */
 .setup-card{background:#fffbeb;border:2px solid #fbbf24;border-radius:var(--radius);padding:20px 24px;margin-bottom:20px}
 .setup-card h3{color:#92400e;font-size:15px;margin-bottom:8px}
 .setup-card p{font-size:13.5px;color:#78350f;line-height:1.7;margin-bottom:14px}
 .setup-card ol{font-size:13.5px;color:#78350f;line-height:2.2;padding-left:20px;margin-bottom:16px}
-.setup-card code{background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:12.5px;font-family:monospace}
+.setup-card code{background:#fef3c7;padding:1px 6px;border-radius:4px;font-size:12px;font-family:monospace}
 .setup-card .setup-fields{display:flex;flex-direction:column;gap:10px;max-width:540px}
 .setup-card input{padding:9px 12px;border:1.5px solid #fbbf24;border-radius:8px;font-size:13.5px;font-family:var(--font);outline:none;background:#fff;width:100%}
-.setup-card input:focus{border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,212,0.1)}
 .setup-status{font-size:13px;font-weight:600;margin-top:8px;min-height:20px}
 .setup-status.ok{color:var(--green)}.setup-status.err{color:var(--red)}
 
-/* Modal */
+/* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(13,31,60,0.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
 .modal-bg.hidden{display:none}
 .modal{background:var(--surface);border-radius:14px;padding:28px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(13,31,60,0.2);animation:popIn .2s cubic-bezier(.22,1,.36,1)}
@@ -118,25 +180,20 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .form-row{margin-bottom:14px}
 .form-row label{display:block;font-size:12px;font-weight:700;color:var(--text-sec);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
 .form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13.5px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr)}
-.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,212,0.1)}
 .form-row textarea{resize:vertical;min-height:80px}
 
+/* TOAST */
 .toast{position:fixed;bottom:22px;right:22px;background:#0d1f3c;color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;font-weight:600;box-shadow:0 8px 28px rgba(13,31,60,0.35);transform:translateY(90px);opacity:0;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s;z-index:1000;display:flex;gap:10px;align-items:center;max-width:380px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast-acts{display:flex;gap:6px}
 
+/* LOADER */
 .loader{position:fixed;inset:0;background:rgba(247,249,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;gap:14px}
 .spin-ring{width:42px;height:42px;border:4px solid var(--border-mid);border-top-color:var(--brand-light);border-radius:50%;animation:spin .65s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loader p{font-size:13.5px;color:var(--text-sec);font-weight:600}
 
-.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-.bar-label{width:96px;font-size:12px;font-weight:600;color:var(--text-sec);text-align:right;flex-shrink:0}
-.bar-track{flex:1;background:var(--surface-3);border-radius:6px;height:24px;overflow:hidden}
-.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:9px;transition:width .5s cubic-bezier(.22,1,.36,1)}
-.bar-fill span{font-size:11px;font-weight:800;color:rgba(255,255,255,.9)}
-.bar-val{width:28px;font-size:12px;font-weight:700;color:var(--text-sec)}
-
+/* TIMELINE */
 .tl-item{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
 .tl-item:last-child{border-bottom:none}
 .tl-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
@@ -144,19 +201,12 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .tl-main{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl-time{font-size:11.5px;color:var(--text-muted);margin-top:2px}
 
-@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
-@media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
-
-/* SUPERADMIN — hidden tabs */
-.tab.superadmin-tab{display:none}
-.tab.superadmin-tab.unlocked{display:flex}
-
-/* Lock icon in header */
+/* LOCK BTN */
 .lock-btn{background:none;border:none;color:rgba(255,255,255,0.45);font-size:16px;padding:4px 6px;border-radius:6px;transition:color var(--tr),background var(--tr);line-height:1}
 .lock-btn:hover{color:#fff;background:rgba(255,255,255,0.15)}
 .lock-btn.unlocked{color:#4ade80}
 
-/* Superadmin PIN modal */
+/* SUPERADMIN PIN MODAL */
 .sa-pin-modal{position:fixed;inset:0;background:rgba(13,31,60,0.55);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
 .sa-pin-modal.hidden{display:none}
 .sa-pin-box{background:#fff;border-radius:16px;padding:32px 28px;max-width:320px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(13,31,60,0.22)}
@@ -169,42 +219,21 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .sa-key{padding:13px;font-size:17px;font-weight:700;background:var(--surface-3);border:1.5px solid var(--border-mid);border-radius:10px;color:var(--text);transition:background var(--tr),transform var(--tr)}
 .sa-key:hover{background:var(--accent);border-color:var(--brand-light)}
 .sa-key:active{transform:scale(.93)}
-.sa-key.wide{grid-column:span 2}
 .sa-pin-err{font-size:12.5px;color:var(--red);font-weight:600;min-height:18px;margin-bottom:6px}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 
-/* PIN GATE */
-.pin-gate{position:fixed;inset:0;background:linear-gradient(145deg,#d6e4ff 0%,#e8f0ff 50%,#f0f5ff 100%);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px}
-.pin-box{background:#fff;border-radius:18px;padding:40px 36px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(13,31,60,0.18),0 0 0 1px rgba(26,58,107,0.08)}
-.pin-icon{font-size:44px;margin-bottom:14px;display:block}
-.pin-box h2{font-size:20px;font-weight:800;color:var(--brand);margin-bottom:6px}
-.pin-box p{font-size:13.5px;color:var(--text-sec);margin-bottom:24px;line-height:1.6}
-.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:20px}
-.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border-mid);background:transparent;transition:background .15s,border-color .15s}
-.pin-dot.filled{background:var(--brand-light);border-color:var(--brand-light)}
-.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto 16px}
-.pin-key{padding:14px;font-size:18px;font-weight:700;background:var(--surface-3);border:1.5px solid var(--border-mid);border-radius:12px;color:var(--text);transition:background var(--tr),transform var(--tr)}
-.pin-key:hover{background:var(--accent);border-color:var(--brand-light)}
-.pin-key:active{transform:scale(.94)}
-.pin-key.wide{grid-column:span 2}
-.pin-err{font-size:13px;color:var(--red);font-weight:600;min-height:20px;margin-bottom:8px}
-.pin-gate.hidden{display:none}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
+@media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
 </style>
 </head>
 <body>
 
-<div class="loader" id="loader"><div class="spin-ring"></div><p id="loader-msg">Connecting to database&hellip;</p></div>
-
-
+<div class="loader" id="loader"><div class="spin-ring"></div><p>Loading data&hellip;</p></div>
 
 <header>
   <div class="hdr-left">
     <h1>&#128202; Welfare Support &mdash; Admin</h1>
-    <div class="hdr-sub">
-      <span class="dot spin" id="syncDot"></span>
-      <span id="syncLabel">Connecting&hellip;</span>
-    </div>
+    <div class="hdr-sub"><span class="dot spin" id="syncDot"></span><span id="syncLabel">Connecting&hellip;</span></div>
   </div>
   <div class="hdr-right">
     <button class="btn btn-sec btn-sm" id="refreshBtn">&#8635; Refresh</button>
@@ -224,39 +253,116 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-5">&#9881; Setup</button>
 </nav>
 
-<!-- OVERVIEW -->
+<!-- ══════════════════ OVERVIEW ══════════════════ -->
 <div id="panel-0" class="panel active" role="tabpanel">
   <div class="panel-title">Overview</div>
-  <div class="panel-desc">Live data from Supabase &mdash; the same on every device and browser.</div>
+  <div class="panel-desc">Live snapshot — synced across all devices via Supabase.</div>
   <div id="setup-warn"></div>
+
+  <!-- Weekly summary card -->
+  <div class="card">
+    <div class="card-title">&#128197; This week at a glance <span id="ov-week-dates" style="font-weight:400;font-size:11px;color:var(--text-muted)"></span></div>
+    <div class="week-summary" id="ov-week"></div>
+  </div>
+
   <div class="sgrid" id="ov-stats"></div>
+
   <div class="g2">
     <div class="card"><div class="card-title">SMS breakdown</div><div id="ov-sms-chart"></div></div>
     <div class="card"><div class="card-title">Unresolved breakdown</div><div id="ov-ur-chart"></div></div>
   </div>
-  <div class="card"><div class="card-title">Recent activity</div><div id="ov-timeline"></div></div>
+  <div class="card"><div class="card-title">Recent activity (last 20 events)</div><div id="ov-timeline"></div></div>
 </div>
 
-<!-- ANALYTICS -->
+<!-- ══════════════════ ANALYTICS ══════════════════ -->
 <div id="panel-1" class="panel" role="tabpanel">
   <div class="panel-title">Analytics</div>
-  <div class="panel-desc">Full breakdown of all recorded data.</div>
+  <div class="panel-desc">Deep breakdown of all recorded data with trends and patterns.</div>
+
+  <!-- Resolution rate gauge + key metrics -->
+  <div class="g3">
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">&#9989; Resolution Rate</div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" id="an-gauge-svg" viewBox="0 0 180 100"></svg>
+        <div class="gauge-pct" id="an-gauge-pct">—</div>
+        <div class="gauge-label">queries answered without unresolved</div>
+        <div class="gauge-trend" id="an-gauge-trend"></div>
+      </div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">&#128172; Avg messages / session</div>
+      <div style="font-size:48px;font-weight:800;color:var(--brand-light);padding:18px 0;line-height:1" id="an-avg-msg">—</div>
+      <div style="font-size:12px;color:var(--text-muted)">messages per conversation</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">&#128101; Session depth</div>
+      <div style="padding:8px 0">
+        <div class="histogram" id="an-session-hist"></div>
+        <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px"><span>1 msg</span><span>5+</span><span>10+</span></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">message count distribution</div>
+      </div>
+    </div>
+  </div>
+
   <div class="g4" id="an-stats"></div>
+
+  <!-- FAQ bar chart with trend selector -->
+  <div class="card">
+    <div class="card-title">
+      &#127358; Most frequently asked topics (FAQ)
+      <select class="finput btn-sm" id="an-faq-range" style="margin-left:auto;font-size:11.5px;padding:3px 8px;border-radius:6px">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="0">All time</option>
+      </select>
+    </div>
+    <div id="an-faq-chart"></div>
+  </div>
+
+  <!-- FAQ trend over time (line chart) -->
+  <div class="card">
+    <div class="card-title">
+      &#128200; Topic trend over time (daily, last 14 days)
+      <select class="finput btn-sm" id="an-trend-topic" style="margin-left:auto;font-size:11.5px;padding:3px 8px;border-radius:6px">
+        <option value="pay">Pay queries</option>
+        <option value="deduction">Deduction queries</option>
+      </select>
+    </div>
+    <div class="trend-chart" id="an-trend-chart"></div>
+    <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:4px;padding:0 4px" id="an-trend-labels"></div>
+  </div>
+
+  <!-- Peak hours heatmap -->
+  <div class="card">
+    <div class="card-title">&#128293; Peak hours heatmap <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">darker = busier</span></div>
+    <div class="heatmap-wrap"><div class="heatmap" id="an-heatmap"></div></div>
+  </div>
+
   <div class="g2">
     <div class="card"><div class="card-title">SMS &mdash; Pay vs Deduction</div><div id="an-sms-split"></div></div>
-    <div class="card"><div class="card-title">Unresolved &mdash; breakdown</div><div id="an-ur-split"></div></div>
+    <div class="card"><div class="card-title">Unresolved &mdash; type breakdown</div><div id="an-ur-split"></div></div>
   </div>
+
+  <!-- Repeat contacts -->
+  <div class="card">
+    <div class="card-title">&#128260; Repeat contacts <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">people who contacted more than once</span></div>
+    <div id="an-repeat-contacts"></div>
+  </div>
+
   <div class="g2">
-    <div class="card"><div class="card-title">Top senders</div><div id="an-top-senders"></div></div>
+    <div class="card"><div class="card-title">Top senders by volume</div><div id="an-top-senders"></div></div>
     <div class="card"><div class="card-title">Most common unresolved phrases</div><div id="an-top-queries"></div></div>
   </div>
+
   <div class="card"><div class="card-title">All unique senders</div><div id="an-senders"></div></div>
 </div>
 
-<!-- SMS LOG -->
+<!-- ══════════════════ SMS LOG ══════════════════ -->
 <div id="panel-2" class="panel" role="tabpanel">
   <div class="panel-title">SMS Log</div>
-  <div class="panel-desc">Every pay and deduction query &mdash; from Supabase, visible on all devices.</div>
+  <div class="panel-desc">Every pay and deduction query — visible on all devices.</div>
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="sms-q" placeholder="Search name, phone or query&hellip;" autocomplete="off"/>
     <select class="finput" id="sms-t"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
@@ -274,13 +380,14 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   </tr></thead><tbody id="sms-body"></tbody></table></div>
 </div>
 
-<!-- UNRESOLVED -->
+<!-- ══════════════════ UNRESOLVED ══════════════════ -->
 <div id="panel-3" class="panel" role="tabpanel">
   <div class="panel-title">Unresolved Queries</div>
-  <div class="panel-desc">Unanswered messages and &#128078; unhelpful responses &mdash; from Supabase.</div>
+  <div class="panel-desc">Unanswered messages and &#128078; unhelpful responses — needs review.</div>
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="ur-q" placeholder="Search queries&hellip;" autocomplete="off"/>
     <select class="finput" id="ur-t"><option value="">All types</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
+    <select class="finput" id="ur-age"><option value="">Any age</option><option value="hot">Older than 7 days</option><option value="warm">3–7 days</option><option value="ok">Last 3 days</option></select>
     <button class="btn btn-green btn-sm" id="ur-export">&#11015; CSV</button>
     <button class="btn btn-red btn-sm" id="ur-clear">&#128465; Clear all</button>
   </div>
@@ -289,11 +396,12 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
     <th class="sort" data-col="ts">Date &amp; Time</th>
     <th>Query</th>
     <th class="sort" data-col="type">Type</th>
+    <th>Age</th>
     <th style="width:80px;text-align:right">Actions</th>
   </tr></thead><tbody id="ur-body"></tbody></table></div>
 </div>
 
-<!-- MANAGE -->
+<!-- ══════════════════ MANAGE ══════════════════ -->
 <div id="panel-4" class="panel" role="tabpanel">
   <div class="panel-title">Manage Data</div>
   <div class="panel-desc">Add records manually. All changes sync to Supabase instantly.</div>
@@ -316,7 +424,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   <div class="g2">
     <div class="card" style="border-color:#fca5a5">
       <div class="card-title" style="color:var(--red)">&#9888; Delete all SMS logs</div>
-      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all SMS records from Supabase. Cannot be undone.</p>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all SMS records from Supabase.</p>
       <button class="btn btn-red" id="mg-clear-sms">&#128465; Delete all SMS logs</button>
     </div>
     <div class="card" style="border-color:#fca5a5">
@@ -327,73 +435,58 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   </div>
 </div>
 
-<!-- SETUP -->
+<!-- ══════════════════ SETUP ══════════════════ -->
 <div id="panel-5" class="panel" role="tabpanel">
-  <div class="panel-title">&#9881; Supabase Setup</div>
-  <div class="panel-desc">One-time setup. Free forever. No credit card. Takes 3 minutes.</div>
-  <div class="card" style="max-width:400px">
-    <div class="card-title">&#128274; Change Admin PIN</div>
+  <div class="panel-title">&#9881; Setup</div>
+  <div class="panel-desc">Supabase connection and superadmin PIN management.</div>
+  <div class="card" style="max-width:420px">
+    <div class="card-title">&#128274; Change Superadmin PIN</div>
     <div class="form-row"><label>Current PIN</label><input type="password" id="pin-current" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
     <div class="form-row"><label>New PIN (4 digits)</label><input type="password" id="pin-new" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
     <div class="form-row"><label>Confirm new PIN</label><input type="password" id="pin-confirm" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
     <button class="btn btn-primary" id="pin-save">&#128274; Update PIN</button>
     <div class="setup-status" id="pin-status"></div>
   </div>
-
   <div class="setup-card">
-    <h3>&#128640; How to set up (free, 3 minutes)</h3>
+    <h3>&#128640; Supabase setup (free, 3 minutes)</h3>
     <ol>
-      <li>Go to <strong><a href="https://supabase.com" target="_blank" style="color:var(--brand-light)">supabase.com</a></strong> and click <strong>Start your project</strong> (sign in with GitHub)</li>
-      <li>Click <strong>New project</strong>, give it a name like <em>welfare-support</em>, choose a region close to you, set a database password</li>
-      <li>Wait ~2 minutes for it to build, then go to <strong>SQL Editor</strong> and run this SQL to create the tables:<br/>
-        <code style="display:block;margin:8px 0;padding:10px;border-radius:6px;background:#fef3c7;white-space:pre-wrap;font-size:12px">create table sms_log (
+      <li>Go to <strong><a href="https://supabase.com" target="_blank" style="color:var(--brand-light)">supabase.com</a></strong> → sign in with GitHub → <strong>New project</strong></li>
+      <li>Wait ~2 min, then open <strong>SQL Editor</strong> and run:
+        <code style="display:block;margin:8px 0;padding:10px;border-radius:6px;background:#fef3c7;white-space:pre-wrap;font-size:11.5px">create table sms_log (
   id bigint generated always as identity primary key,
-  ts bigint not null,
-  sender_name text default '',
-  phone text default '',
-  type text default '',
-  content text default ''
+  ts bigint not null, sender_name text default '',
+  phone text default '', type text default '', content text default ''
 );
 create table unresolved (
   id bigint generated always as identity primary key,
-  ts bigint not null,
-  query text default '',
-  type text default ''
+  ts bigint not null, query text default '', type text default ''
 );
 create table sessions (
   id bigint generated always as identity primary key,
-  ts bigint not null,
-  date text default '',
-  messages int default 0
+  ts bigint not null, date text default '', messages int default 0
 );
 alter table sms_log enable row level security;
 alter table unresolved enable row level security;
 alter table sessions enable row level security;
-create policy "public read" on sms_log for select using (true);
-create policy "public insert" on sms_log for insert with check (true);
-create policy "public delete" on sms_log for delete using (true);
-create policy "public read" on unresolved for select using (true);
-create policy "public insert" on unresolved for insert with check (true);
-create policy "public delete" on unresolved for delete using (true);
-create policy "public read" on sessions for select using (true);
-create policy "public insert" on sessions for insert with check (true);</code>
+create policy "pub read" on sms_log for select using (true);
+create policy "pub insert" on sms_log for insert with check (true);
+create policy "pub delete" on sms_log for delete using (true);
+create policy "pub read" on unresolved for select using (true);
+create policy "pub insert" on unresolved for insert with check (true);
+create policy "pub delete" on unresolved for delete using (true);
+create policy "pub read" on sessions for select using (true);
+create policy "pub insert" on sessions for insert with check (true);</code>
       </li>
-      <li>Go to <strong>Settings &rarr; API</strong>, copy your <strong>Project URL</strong> and <strong>anon/public key</strong></li>
-      <li>Paste both below and click <strong>Save &amp; Test</strong></li>
-      <li>Paste the same values into <strong>index.html</strong> in the two lines at the top of the Supabase Bridge script</li>
+      <li>Go to <strong>Settings → API</strong>, copy <strong>Project URL</strong> and <strong>anon key</strong></li>
+      <li>Paste below and click <strong>Save &amp; Test</strong></li>
+      <li>Paste the same into <strong>index.html</strong> in the Supabase Bridge section</li>
     </ol>
     <div class="setup-fields">
-      <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Supabase Project URL</label>
-        <input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxx.supabase.co"/>
-      </div>
-      <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Anon / Public Key</label>
-        <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."/>
-      </div>
+      <div><label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase">Project URL</label><input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxx.supabase.co"/></div>
+      <div><label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase">Anon / Public Key</label><input type="text" id="cfg-key" placeholder="eyJ..."/></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-green" id="cfg-save">&#9989; Save &amp; Test connection</button>
-        <button class="btn btn-red btn-sm" id="cfg-clear">Clear saved credentials</button>
+        <button class="btn btn-green" id="cfg-save">&#9989; Save &amp; Test</button>
+        <button class="btn btn-red btn-sm" id="cfg-clear">Clear credentials</button>
       </div>
       <div class="setup-status" id="cfg-status"></div>
     </div>
@@ -406,13 +499,10 @@ create policy "public insert" on sessions for insert with check (true);</code>
     <h3>&#128172; Quick-add SMS record</h3>
     <p>Manually log a pay or deduction query from a member.</p>
     <div class="form-row"><label>Full name</label><input type="text" id="qm-name" placeholder="e.g. Jane Smith"/></div>
-    <div class="form-row"><label>Phone number</label><input type="text" id="qm-phone" placeholder="e.g. +447712345678"/></div>
+    <div class="form-row"><label>Phone</label><input type="text" id="qm-phone" placeholder="e.g. +447712345678"/></div>
     <div class="form-row"><label>Type</label><select id="qm-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select></div>
     <div class="form-row"><label>Query</label><textarea id="qm-content" placeholder="What did they ask?"></textarea></div>
-    <div class="modal-btns">
-      <button class="btn btn-sec" id="qm-cancel">Cancel</button>
-      <button class="btn btn-primary" id="qm-save">Save record</button>
-    </div>
+    <div class="modal-btns"><button class="btn btn-sec" id="qm-cancel">Cancel</button><button class="btn btn-primary" id="qm-save">Save</button></div>
   </div>
 </div>
 
@@ -421,10 +511,7 @@ create policy "public insert" on sessions for insert with check (true);</code>
   <div class="modal">
     <h3 id="confirm-title">Are you sure?</h3>
     <p id="confirm-msg"></p>
-    <div class="modal-btns">
-      <button class="btn btn-sec" id="confirm-cancel">Cancel</button>
-      <button class="btn btn-red" id="confirm-ok">Yes, delete</button>
-    </div>
+    <div class="modal-btns"><button class="btn btn-sec" id="confirm-cancel">Cancel</button><button class="btn btn-red" id="confirm-ok">Yes, delete</button></div>
   </div>
 </div>
 
@@ -434,97 +521,65 @@ create policy "public insert" on sessions for insert with check (true);</code>
     <div style="font-size:40px;margin-bottom:12px">&#128272;</div>
     <h3>Superadmin Access</h3>
     <p>Enter your superadmin PIN to access Manage &amp; Setup</p>
-    <div class="sa-pin-dots" id="sa-pin-dots">
-      <div class="sa-pin-dot" id="sa-d0"></div>
-      <div class="sa-pin-dot" id="sa-d1"></div>
-      <div class="sa-pin-dot" id="sa-d2"></div>
-      <div class="sa-pin-dot" id="sa-d3"></div>
-    </div>
+    <div class="sa-pin-dots"><div class="sa-pin-dot" id="sa-d0"></div><div class="sa-pin-dot" id="sa-d1"></div><div class="sa-pin-dot" id="sa-d2"></div><div class="sa-pin-dot" id="sa-d3"></div></div>
     <div class="sa-pin-err" id="sa-pin-err"></div>
     <div class="sa-keypad">
-      <button class="sa-key" data-k="1">1</button>
-      <button class="sa-key" data-k="2">2</button>
-      <button class="sa-key" data-k="3">3</button>
-      <button class="sa-key" data-k="4">4</button>
-      <button class="sa-key" data-k="5">5</button>
-      <button class="sa-key" data-k="6">6</button>
-      <button class="sa-key" data-k="7">7</button>
-      <button class="sa-key" data-k="8">8</button>
-      <button class="sa-key" data-k="9">9</button>
-      <button class="sa-key" data-k="del">&#9003;</button>
-      <button class="sa-key" data-k="0">0</button>
+      <button class="sa-key" data-k="1">1</button><button class="sa-key" data-k="2">2</button><button class="sa-key" data-k="3">3</button>
+      <button class="sa-key" data-k="4">4</button><button class="sa-key" data-k="5">5</button><button class="sa-key" data-k="6">6</button>
+      <button class="sa-key" data-k="7">7</button><button class="sa-key" data-k="8">8</button><button class="sa-key" data-k="9">9</button>
+      <button class="sa-key" data-k="del">&#9003;</button><button class="sa-key" data-k="0">0</button>
       <button class="sa-key" data-k="cancel" style="font-size:12px;font-weight:600;color:var(--text-sec)">Cancel</button>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite">
-  <span id="toast-msg"></span><div class="toast-acts" id="toast-acts"></div>
-</div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-msg"></span><div class="toast-acts" id="toast-acts"></div></div>
 
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
 
-/* ═══════════════════════════════════════════════
+/* ══════════════════════════════════════════
    SUPABASE CLIENT
-   Credentials stored in localStorage so you only
-   enter them once. All reads/writes go to Supabase.
-═══════════════════════════════════════════════ */
+══════════════════════════════════════════ */
 const SB = (() => {
   const CFG_KEY = 'ws_sb_cfg';
   let url = '', key = '';
-
-  function load() {
-    try { const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}'); url=c.url||''; key=c.key||''; } catch {}
-  }
-  function save(u,k) { url=u; key=k; localStorage.setItem(CFG_KEY,JSON.stringify({url:u,key:k})); }
-  function clear() { url=''; key=''; localStorage.removeItem(CFG_KEY); }
-  function ready() { return !!(url && key && url.startsWith('http')); }
-
-  function headers(extra={}) {
-    return { 'apikey':key, 'Authorization':'Bearer '+key, 'Content-Type':'application/json', ...extra };
-  }
-
-  async function select(table, params='') {
-    const r = await fetch(`${url}/rest/v1/${table}?${params}&order=ts.desc`, { headers:headers() });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-  }
-  async function insert(table, row) {
-    const r = await fetch(`${url}/rest/v1/${table}`, { method:'POST', headers:headers({'Prefer':'return=minimal'}), body:JSON.stringify(row) });
-    if (!r.ok) throw new Error(await r.text());
-  }
-  async function del(table, id) {
-    const r = await fetch(`${url}/rest/v1/${table}?id=eq.${id}`, { method:'DELETE', headers:headers() });
-    if (!r.ok) throw new Error(await r.text());
-  }
-  async function delAll(table) {
-    const r = await fetch(`${url}/rest/v1/${table}?id=gt.0`, { method:'DELETE', headers:headers() });
-    if (!r.ok) throw new Error(await r.text());
-  }
-  async function test() {
-    const r = await fetch(`${url}/rest/v1/sms_log?limit=1`, { headers:headers() });
-    if (!r.ok) throw new Error('HTTP '+r.status+': '+await r.text());
-    return true;
-  }
-
+  function load(){ try{ const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}');url=c.url||'';key=c.key||''; }catch{} }
+  function save(u,k){ url=u;key=k;localStorage.setItem(CFG_KEY,JSON.stringify({url:u,key:k})); }
+  function clear(){ url='';key='';localStorage.removeItem(CFG_KEY); }
+  function ready(){ return !!(url&&key&&url.startsWith('http')); }
+  function hdrs(x={}){ return{'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json',...x}; }
+  async function select(table,params=''){ const r=await fetch(`${url}/rest/v1/${table}?${params}&order=ts.desc`,{headers:hdrs()});if(!r.ok)throw new Error(await r.text());return r.json(); }
+  async function insert(table,row){ const r=await fetch(`${url}/rest/v1/${table}`,{method:'POST',headers:hdrs({'Prefer':'return=minimal'}),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text()); }
+  async function del(table,id){ const r=await fetch(`${url}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
+  async function delAll(table){ const r=await fetch(`${url}/rest/v1/${table}?id=gt.0`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
+  async function test(){ const r=await fetch(`${url}/rest/v1/sms_log?limit=1`,{headers:hdrs()});if(!r.ok)throw new Error('HTTP '+r.status);return true; }
   load();
-  return { load, save, clear, ready, select, insert, del, delAll, test,
-    getUrl:()=>url, getKey:()=>key };
+  return{load,save,clear,ready,select,insert,del,delAll,test,getUrl:()=>url,getKey:()=>key};
 })();
 
-/* ═══════════════════════════════════════════════ UTILS ═══ */
-const $  = (s,r=document)=>r.querySelector(s);
-const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+/* ══════════════════════════════════════════ UTILS ══ */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const debounce=(fn,ms=220)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};};
-const fmtDT=ts=>new Date(typeof ts==='string'?Number(ts):ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const fmtDT=ts=>new Date(+ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const fmtDate=ts=>new Date(+ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
 const plural=(n,s)=>n+' '+(n===1?s:s+'s');
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const val=id=>$(id)?$(id).value.trim():'';
+const daysAgo=ts=>Math.floor((Date.now()-ts)/86400000);
+const isoDate=ts=>new Date(+ts).toISOString().slice(0,10);
+const daysBack=n=>Array.from({length:n},(_,i)=>{const d=new Date(Date.now()-(n-1-i)*86400000);return d.toISOString().slice(0,10);});
 
 function badge(t){
-  const m={'pay':'badge-pay','deduction':'badge-deduction','unanswered':'badge-unanswered','unhelpful':'badge-unhelpful','sms':'badge-sms','session':'badge-session'};
+  const m={pay:'badge-pay',deduction:'badge-deduction',unanswered:'badge-unanswered',unhelpful:'badge-unhelpful',sms:'badge-sms'};
   return `<span class="badge ${m[t]||''}">${esc(t||'—')}</span>`;
+}
+function ageBadge(ts){
+  const d=daysAgo(ts);
+  if(d>=7) return `<span class="badge badge-age-hot">&#128308; ${d}d ago</span>`;
+  if(d>=3) return `<span class="badge badge-age-warm">&#128993; ${d}d ago</span>`;
+  return `<span class="badge badge-age-ok">&#128994; ${d===0?'today':d+'d ago'}</span>`;
 }
 
 /* TOAST */
@@ -548,22 +603,116 @@ function confirm2(title,msg){
 }
 
 /* SYNC STATUS */
-function setSyncStatus(state,text){
-  $('#syncDot').className='dot '+state;
-  $('#syncLabel').textContent=text;
-}
+function setSyncStatus(state,text){$('#syncDot').className='dot '+state;$('#syncLabel').textContent=text;}
 
 /* BAR CHART */
-function barChart(el,items){
+function barChart(el,items,{labelWidth=130}={}){
   if(!el)return;
-  const tot=items.reduce((s,i)=>s+i.val,0);
-  if(!tot){el.innerHTML='<div class="empty" style="padding:16px 0"><p>No data yet</p></div>';return;}
+  if(!items.length||!items.reduce((s,i)=>s+i.val,0)){el.innerHTML='<div class="empty" style="padding:16px 0"><p>No data yet</p></div>';return;}
   const mx=Math.max(...items.map(x=>x.val),1);
   el.innerHTML=items.map(({label,val,color='var(--brand-light)'})=>`
     <div class="bar-row">
-      <div class="bar-label">${esc(label)}</div>
+      <div class="bar-label" style="width:${labelWidth}px" title="${esc(label)}">${esc(label)}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round(val/mx*100)}%;background:${color}"><span>${val||''}</span></div></div>
       <div class="bar-val">${val}</div>
+    </div>`).join('');
+}
+
+/* SPARKLINE */
+function sparkline(el,days,counts,color='var(--brand-light)'){
+  if(!el)return;
+  const mx=Math.max(...counts,1);
+  el.innerHTML=`<div class="sparkline-wrap">
+    <div class="sparkline">${days.map((d,i)=>`<div class="spark-bar" style="height:${Math.max(4,Math.round(counts[i]/mx*100))}%;background:${color};opacity:${counts[i]?0.8:0.2}" title="${d}: ${counts[i]}"></div>`).join('')}</div>
+    <div class="spark-labels">${days.map((d,i)=>`<div class="spark-lbl">${i===0||i===days.length-1||i%Math.ceil(days.length/6)===0?d.slice(5):''}</div>`).join('')}</div>
+  </div>`;
+}
+
+/* SVG LINE TREND CHART */
+function trendChart(el,labelsEl,days,datasets){
+  if(!el)return;
+  const W=el.offsetWidth||600,H=130,pad={t:10,r:10,b:4,l:30};
+  const allVals=datasets.flatMap(d=>d.values);
+  const mx=Math.max(...allVals,1);
+  const pts=(vals)=>vals.map((v,i)=>{
+    const x=pad.l+(i/(days.length-1||1))*(W-pad.l-pad.r);
+    const y=pad.t+(1-v/mx)*(H-pad.t-pad.b);
+    return[x,y];
+  });
+  const path=p=>p.map((pt,i)=>(i===0?`M${pt[0]},${pt[1]}`:`L${pt[0]},${pt[1]}`)).join(' ');
+  const colors=['var(--brand-light)','var(--purple)','var(--orange)','var(--red)'];
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;overflow:visible">
+    ${datasets.map((ds,di)=>{
+      const p=pts(ds.values);
+      return`<path d="${path(p)}" fill="none" stroke="${colors[di]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${p.map((pt,i)=>`<circle cx="${pt[0]}" cy="${pt[1]}" r="3" fill="${colors[di]}"><title>${days[i]}: ${ds.values[i]}</title></circle>`).join('')}`;
+    }).join('')}
+  </svg>`;
+  if(labelsEl) labelsEl.innerHTML=days.map((d,i)=>`<span style="flex:1;text-align:center">${i===0||i===days.length-1||i%Math.ceil(days.length/4)===0?d.slice(5):''}</span>`).join('');
+}
+
+/* GAUGE */
+function drawGauge(pct){
+  const el=$('#an-gauge-svg');if(!el)return;
+  const r=70,cx=90,cy=90,start=-Math.PI,sweep=Math.PI;
+  const ang=start+sweep*(pct/100);
+  const x1=cx+r*Math.cos(start),y1=cy+r*Math.sin(start);
+  const x2=cx+r*Math.cos(ang),  y2=cy+r*Math.sin(ang);
+  const large=pct>50?1:0;
+  const col=pct>=80?'var(--green)':pct>=50?'var(--orange)':'var(--red)';
+  el.innerHTML=`
+    <path d="M${cx+r*Math.cos(start)},${cy+r*Math.sin(start)} A${r},${r} 0 1,1 ${cx-r},${cy}" fill="none" stroke="var(--surface-3)" stroke-width="14" stroke-linecap="round"/>
+    ${pct>0?`<path d="M${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2}" fill="none" stroke="${col}" stroke-width="14" stroke-linecap="round"/>`:''}`;
+  $('#an-gauge-pct').textContent=pct+'%';
+  $('#an-gauge-pct').style.color=col;
+}
+
+/* HEATMAP */
+function drawHeatmap(sessions){
+  const el=$('#an-heatmap');if(!el)return;
+  const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const grid=Array.from({length:7},()=>Array(24).fill(0));
+  sessions.forEach(s=>{
+    const d=new Date(+s.ts||+s.start||0);
+    const dow=(d.getDay()+6)%7; // Mon=0
+    const hr=d.getHours();
+    grid[dow][hr]++;
+  });
+  const mx=Math.max(...grid.flat(),1);
+  const hex=v=>{const i=Math.round((v/mx)*220);const h=i.toString(16).padStart(2,'0');return`#${h}${h}ff`.replace(/(..)(..)ff/,(_,a)=>`#1e4d9b${Math.round(v/mx*180+30).toString(16).padStart(2,'0')}`);};
+  const intensity=v=>Math.round(v/mx*100);
+
+  let html='<div class="hmap-corner">↓ Day / Hour →</div>';
+  for(let h=0;h<24;h++) html+=`<div class="hmap-hour">${h}</div>`;
+  DAYS.forEach((day,di)=>{
+    html+=`<div class="hmap-day">${day}</div>`;
+    for(let h=0;h<24;h++){
+      const v=grid[di][h];
+      const op=v===0?0.07:0.12+0.88*(v/mx);
+      html+=`<div class="hmap-cell" style="background:rgba(30,77,155,${op.toFixed(2)})" data-tip="${day} ${h}:00 — ${v} session${v!==1?'s':''}"></div>`;
+    }
+  });
+  el.innerHTML=html;
+}
+
+/* SESSION HISTOGRAM */
+function drawHistogram(sessions){
+  const el=$('#an-session-hist');if(!el)return;
+  const buckets=[0,0,0,0,0]; // 1, 2-3, 4-5, 6-9, 10+
+  sessions.forEach(s=>{
+    const m=s.messages||1;
+    if(m<=1)buckets[0]++;
+    else if(m<=3)buckets[1]++;
+    else if(m<=5)buckets[2]++;
+    else if(m<=9)buckets[3]++;
+    else buckets[4]++;
+  });
+  const mx=Math.max(...buckets,1);
+  const labels=['1','2-3','4-5','6-9','10+'];
+  el.innerHTML=buckets.map((v,i)=>`
+    <div class="hist-bar-wrap">
+      <div class="hist-bar" style="height:${Math.max(4,Math.round(v/mx*100))}%;background:var(--brand-light);opacity:${0.4+0.6*(i/4)}" title="${labels[i]} msgs: ${v} sessions"></div>
+      <div class="hist-lbl">${labels[i]}</div>
     </div>`).join('');
 }
 
@@ -581,8 +730,10 @@ function dlCSV(rows,fn){
   tabs.forEach((t,i)=>{
     t.addEventListener('click',()=>go(i));
     t.addEventListener('keydown',e=>{
-      const m={ArrowRight:(i+1)%tabs.length,ArrowLeft:(i-1+tabs.length)%tabs.length,Home:0,End:tabs.length-1};
-      if(m[e.key]!==undefined){e.preventDefault();tabs[m[e.key]].focus();go(m[e.key]);}
+      const visible=tabs.filter(t=>t.style.display!=='none');
+      const vi=visible.indexOf(t);
+      const m={ArrowRight:visible[(vi+1)%visible.length],ArrowLeft:visible[(vi-1+visible.length)%visible.length],Home:visible[0],End:visible[visible.length-1]};
+      if(m[e.key]){e.preventDefault();m[e.key].focus();m[e.key].click();}
     });
   });
 })();
@@ -590,83 +741,108 @@ function dlCSV(rows,fn){
 /* FULLSCREEN */
 function updFs(){$('#fsBtn').textContent=document.fullscreenElement?'🗗 Exit':'⛶ Full screen';}
 $('#fsBtn').addEventListener('click',async()=>{
-  if(location.protocol==='file:'){toast('⚠ Full screen blocked on file:// — serve via http:// to enable',{dur:5000});return;}
+  if(location.protocol==='file:'){toast('⚠ Full screen blocked on file:// — open via http:// to enable',{dur:5000});return;}
   if(!document.fullscreenEnabled){toast('⚠ Browser does not allow full screen here');return;}
   try{document.fullscreenElement?await document.exitFullscreen():await document.documentElement.requestFullscreen();}
   catch{toast('⚠ Full screen blocked by browser');}
 });
-document.addEventListener('fullscreenchange',updFs);
-updFs();
+document.addEventListener('fullscreenchange',updFs);updFs();
 
-/* TAB BADGES */
+/* BADGES */
 function updateBadges(s,u){
   const sb=$('#badge-sms'),ub=$('#badge-ur');
   sb.textContent=s;sb.className='tab-badge'+(s===0?' zero':'');
   ub.textContent=u;ub.className='tab-badge'+(u===0?' zero':'');
 }
 
-/* ═══ SETUP PANEL ═══ */
+/* SETUP PANEL */
 function initSetup(){
-  if(SB.getUrl()) $('#cfg-url').value=SB.getUrl();
-  if(SB.getKey()) $('#cfg-key').value=SB.getKey();
-
+  if(SB.getUrl())$('#cfg-url').value=SB.getUrl();
+  if(SB.getKey())$('#cfg-key').value=SB.getKey();
   $('#cfg-save').addEventListener('click',async()=>{
     const u=val('#cfg-url'),k=val('#cfg-key');
     if(!u||!k){$('#cfg-status').textContent='⚠ Both fields required';$('#cfg-status').className='setup-status err';return;}
-    SB.save(u,k);
-    $('#cfg-status').textContent='Testing connection…';$('#cfg-status').className='setup-status';
-    try{
-      await SB.test();
-      $('#cfg-status').textContent='✅ Connected! Now also paste these values into index.html';
-      $('#cfg-status').className='setup-status ok';
-      await refreshAll();
-    }catch(e){
-      $('#cfg-status').textContent='❌ Failed: '+e.message;
-      $('#cfg-status').className='setup-status err';
-    }
+    SB.save(u,k);$('#cfg-status').textContent='Testing…';$('#cfg-status').className='setup-status';
+    try{await SB.test();$('#cfg-status').textContent='✅ Connected! Also paste these into index.html';$('#cfg-status').className='setup-status ok';await refreshAll();}
+    catch(e){$('#cfg-status').textContent='❌ Failed: '+e.message;$('#cfg-status').className='setup-status err';}
   });
-  $('#cfg-clear').addEventListener('click',()=>{SB.clear();$('#cfg-url').value='';$('#cfg-key').value='';$('#cfg-status').textContent='Credentials cleared';$('#cfg-status').className='setup-status';});
+  $('#cfg-clear').addEventListener('click',()=>{SB.clear();$('#cfg-url').value='';$('#cfg-key').value='';$('#cfg-status').textContent='Cleared';$('#cfg-status').className='setup-status';});
 }
 
-/* ═══ SETUP WARNING BANNER ═══ */
+/* SETUP WARN */
 function renderSetupWarn(){
-  const el=$('#setup-warn');
-  if(!el)return;
+  const el=$('#setup-warn');if(!el)return;
   if(!SB.ready()){
-    el.innerHTML=`<div class="setup-card" style="margin-bottom:20px">
-      <h3>&#9888; Supabase not configured yet</h3>
-      <p>Data will only be visible on <em>this browser</em> until you connect Supabase. Go to the <strong>&#9881; Setup</strong> tab to get everything syncing across all devices in 3 minutes &mdash; completely free.</p>
-      <button class="btn btn-primary btn-sm" id="goto-setup">Go to Setup &#8594;</button>
-    </div>`;
+    el.innerHTML=`<div class="setup-card" style="margin-bottom:20px"><h3>&#9888; Supabase not configured yet</h3><p>Data will only be on <em>this browser</em> until you connect Supabase. Go to the <strong>&#9881; Setup</strong> tab — free, 3 minutes.</p><button class="btn btn-primary btn-sm" id="goto-setup">Go to Setup &#8594;</button></div>`;
     $('#goto-setup')?.addEventListener('click',()=>$$('.tab-bar .tab').at(-1).click());
   } else { el.innerHTML=''; }
 }
 
-/* ═══ DATA LAYER ═══ */
-// Falls back to localStorage if Supabase not configured
+/* DATA LAYER */
 async function fetchSMS(){
   if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_sms_log_v1')||'[]').map(x=>({id:x.ts,ts:x.ts,sender_name:x.name||'',phone:x.phone||'',type:x.type||'',content:x.description||''}));
-  return SB.select('sms_log','limit=500');
+  return SB.select('sms_log','limit=2000');
 }
 async function fetchUR(){
   if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_unresolved_v1')||'[]').map(x=>({id:x.ts,ts:x.ts,query:x.text?.replace(' [marked unhelpful]','')||'',type:x.text?.includes('[marked unhelpful]')?'unhelpful':'unanswered'}));
-  return SB.select('unresolved','limit=500');
+  return SB.select('unresolved','limit=2000');
 }
 async function fetchSessions(){
-  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_sessions_v1')||'[]');
-  return SB.select('sessions','limit=1000');
+  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_sessions_v1')||'[]').map(x=>({...x,ts:x.start||x.ts||0}));
+  return SB.select('sessions','limit=5000');
+}
+async function fetchIntents(){
+  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_intents_v1')||'[]');
+  return [];
 }
 
-/* ═══ OVERVIEW ═══ */
+/* ══════════════════════════════════════════
+   OVERVIEW
+══════════════════════════════════════════ */
 async function renderOverview(){
-  const [sms,ur]=await Promise.all([fetchSMS(),fetchUR()]);
+  const [sms,ur,sess]=await Promise.all([fetchSMS(),fetchUR(),fetchSessions()]);
   updateBadges(sms.length,ur.length);
   renderSetupWarn();
 
-  const todayTs=new Date();todayTs.setHours(0,0,0,0);const tt=todayTs.getTime();
-  const smsToday=sms.filter(x=>x.ts>=tt).length;
-  const uniquePeople=new Set(sms.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
+  const now=Date.now();
+  const todayStart=new Date();todayStart.setHours(0,0,0,0);const tt=todayStart.getTime();
+  const weekStart=tt-6*86400000;
+  const prevWeekStart=weekStart-7*86400000;
 
+  // Weekly summary
+  const thisWeekSMS=sms.filter(x=>x.ts>=weekStart).length;
+  const lastWeekSMS=sms.filter(x=>x.ts>=prevWeekStart&&x.ts<weekStart).length;
+  const thisWeekUR=ur.filter(x=>x.ts>=weekStart).length;
+  const lastWeekUR=ur.filter(x=>x.ts>=prevWeekStart&&x.ts<weekStart).length;
+  const thisWeekSess=sess.filter(x=>x.ts>=weekStart).length;
+  const lastWeekSess=sess.filter(x=>x.ts>=prevWeekStart&&x.ts<weekStart).length;
+  const thisTotal=sms.filter(x=>x.ts>=weekStart).length+sess.filter(x=>x.ts>=weekStart).length;
+  const resRate=()=>{
+    const intents=JSON.parse(localStorage.getItem('ws_intents_v1')||'[]').length;
+    const total=intents+ur.length;return total?Math.round(intents/total*100):null;
+  };
+  const rr=resRate();
+
+  const d7=new Date(weekStart);const d7s=d7.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+  const dNow=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+  $('#ov-week-dates').textContent=`${d7s} – ${dNow}`;
+
+  function delta(cur,prev){
+    if(prev===0&&cur===0)return`<div class="ws-delta eq">no change</div>`;
+    if(prev===0)return`<div class="ws-delta up">▲ new this week</div>`;
+    const d=cur-prev,p=Math.round(Math.abs(d)/prev*100);
+    return d>0?`<div class="ws-delta up">▲ ${d} vs last week (+${p}%)</div>`:d<0?`<div class="ws-delta dn">▼ ${Math.abs(d)} vs last week (-${p}%)</div>`:`<div class="ws-delta eq">same as last week</div>`;
+  }
+  $('#ov-week').innerHTML=[
+    [thisWeekSMS,'SMS queries',delta(thisWeekSMS,lastWeekSMS)],
+    [thisWeekSess,'Sessions',delta(thisWeekSess,lastWeekSess)],
+    [thisWeekUR,'Unresolved',delta(thisWeekUR,lastWeekUR)],
+    [rr!==null?rr+'%':'—','Resolution rate','<div class="ws-delta eq">answered vs unresolved</div>'],
+  ].map(([v,l,d])=>`<div class="ws-item"><div class="ws-val">${v}</div><div class="ws-lbl">${l}</div>${d}</div>`).join('');
+
+  // Stat cards
+  const uniquePeople=new Set(sms.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
+  const smsToday=sms.filter(x=>x.ts>=tt).length;
   const grid=$('#ov-stats');grid.innerHTML='';
   [[sms.length,'Total SMS','all time','cp'],[ur.length,'Unresolved','need review',ur.length?'cr':'cg'],[uniquePeople,'Unique people','distinct senders','co'],[smsToday,'SMS today','since midnight','']].forEach(([n,l,s,c])=>{
     const d=document.createElement('div');d.className='sc '+c;
@@ -683,31 +859,107 @@ async function renderOverview(){
   else events.forEach(e=>{tl.innerHTML+=`<div class="tl-item"><div class="tl-dot" style="background:${e.color}"></div><div class="tl-body"><div class="tl-main">${esc(e.label)}</div><div class="tl-time">${fmtDT(e.ts)}</div></div>${badge(e.type==='sms'?'sms':'unanswered')}</div>`;});
 }
 
-/* ═══ ANALYTICS ═══ */
+/* ══════════════════════════════════════════
+   ANALYTICS
+══════════════════════════════════════════ */
+const INTENT_LABELS={greeting:'Greeting',smalltalk:'Small talk',thanks:'Thanks',bye:'Goodbye',pay_query:'Pay query',deduction_query:'Deduction query',sms_sent:'SMS submitted',work_allocation:'Work allocation',manager_dispute:'Manager dispute',equipment:'Equipment',contract:'Contract',dept_contacts:'Dept contacts',btor_ntf:'BTOR NTF',cityfibre_ntf:'CF NTF',fleet:'Fleet',accident:'Accident',parking:'Parking',recruitment:'Recruitment',street_works:'Street works',smart_awards:'Smart awards',id_cards:'ID cards',opening_times:'Opening times',available_now:'Availability',location:'Location',contact_support:'Welfare contact'};
+const intentLabel=k=>INTENT_LABELS[k]||k;
+
 async function renderAnalytics(){
-  const [sms,ur]=await Promise.all([fetchSMS(),fetchUR()]);
+  const [sms,ur,sess,intents]=await Promise.all([fetchSMS(),fetchUR(),fetchSessions(),fetchIntents()]);
   const payC=sms.filter(x=>x.type==='pay').length,dedC=sms.filter(x=>x.type==='deduction').length;
   const uniquePeople=new Set(sms.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
+  const totMsg=sess.reduce((a,s)=>a+(s.messages||0),0);
+  const avgMsg=sess.length?(totMsg/sess.length).toFixed(1):'—';
 
+  // Resolution rate
+  const resTotal=intents.length+ur.length;
+  const resPct=resTotal?Math.round(intents.length/resTotal*100):0;
+  drawGauge(resTotal?resPct:0);
+  $('#an-gauge-trend').textContent=resTotal?`${intents.length} resolved of ${resTotal} total`:'No session data yet';
+  $('#an-avg-msg').textContent=avgMsg;
+
+  // Session histogram
+  drawHistogram(sess);
+
+  // Stat cards
   const grid=$('#an-stats');grid.innerHTML='';
-  [[sms.length,'Total SMS','cp'],[ur.length,'Unresolved',ur.length?'cr':'cg'],[uniquePeople,'Unique people','co'],[payC+dedC>0?Math.round(payC/(payC+dedC)*100)+'%':'—','Pay ratio','']].forEach(([n,l,c])=>{
+  [[sms.length,'Total SMS','cp'],[ur.length,'Unresolved',ur.length?'cr':'cg'],[uniquePeople,'Unique people','co'],[sess.length,'Sessions','']].forEach(([n,l,c])=>{
     const d=document.createElement('div');d.className='sc '+c;d.innerHTML=`<div class="lbl">${l}</div><div class="num">${n}</div>`;grid.appendChild(d);
   });
 
+  // FAQ chart
+  function renderFAQ(){
+    const days=parseInt($('#an-faq-range').value)||0;
+    const since=days?Date.now()-days*86400000:0;
+    // Build from intents + SMS types
+    const ic={};
+    intents.filter(i=>!since||i.ts>=since).forEach(i=>ic[intentLabel(i.intent)]=(ic[intentLabel(i.intent)]||0)+1);
+    // Also count SMS types directly
+    sms.filter(x=>!since||x.ts>=since).forEach(x=>{
+      const k=x.type==='pay'?'Pay query':x.type==='deduction'?'Deduction query':null;
+      if(k)ic[k]=(ic[k]||0)+1;
+    });
+    barChart($('#an-faq-chart'),Object.entries(ic).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([label,val])=>({label,val,color:'var(--brand-light)'})),{labelWidth:160});
+  }
+  renderFAQ();
+  $('#an-faq-range').addEventListener('change',renderFAQ);
+
+  // Topic trend line chart
+  function renderTrend(){
+    const topic=$('#an-trend-topic').value;
+    const days14=daysBack(14);
+    const vals=days14.map(d=>sms.filter(x=>x.type===topic&&isoDate(x.ts)===d).length);
+    trendChart($('#an-trend-chart'),$('#an-trend-labels'),days14,[{values:vals,label:topic}]);
+  }
+  renderTrend();
+  $('#an-trend-topic').addEventListener('change',renderTrend);
+
+  // Heatmap
+  drawHeatmap(sess.length?sess:sms); // fallback to SMS timestamps if no sessions
+
+  // SMS split
   barChart($('#an-sms-split'),[{label:'Pay',val:payC,color:'var(--brand-light)'},{label:'Deduction',val:dedC,color:'var(--purple)'}]);
   barChart($('#an-ur-split'),[{label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},{label:'Unhelpful',val:ur.filter(x=>x.type==='unhelpful').length,color:'var(--red)'}]);
 
+  // Repeat contacts
+  const phoneMap={};
+  sms.forEach(x=>{
+    const key=(x.phone||'').trim()||('name:'+((x.sender_name||'').trim().toLowerCase()));
+    if(!key||key==='name:')return;
+    if(!phoneMap[key])phoneMap[key]={name:x.sender_name||'Unknown',phone:x.phone||'—',count:0,lastTs:0};
+    phoneMap[key].count++;
+    if(x.ts>phoneMap[key].lastTs)phoneMap[key].lastTs=x.ts;
+  });
+  const repeats=Object.values(phoneMap).filter(x=>x.count>1).sort((a,b)=>b.count-a.count);
+  const repeatEl=$('#an-repeat-contacts');
+  if(!repeats.length){repeatEl.innerHTML='<div class="empty" style="padding:20px 0"><p>No repeat contacts yet — everyone has only contacted once.</p></div>';}
+  else repeatEl.innerHTML=repeats.slice(0,15).map(r=>`
+    <div class="repeat-row">
+      <div>
+        <div class="repeat-name">${esc(r.name)}</div>
+        <div class="repeat-phone">${esc(r.phone)}</div>
+      </div>
+      <div class="repeat-last">${fmtDate(r.lastTs)}</div>
+      <div class="repeat-count">${r.count}×</div>
+    </div>`).join('');
+
+  // Top senders
   const sm={};sms.forEach(x=>{const n=(x.sender_name||'Unknown').trim();sm[n]=(sm[n]||0)+1;});
-  barChart($('#an-top-senders'),Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,val])=>({label:l,val,color:'var(--brand-light)'})));
+  barChart($('#an-top-senders'),Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,v])=>({label:l,val:v,color:'var(--brand-light)'})));
 
-  const pm={};ur.forEach(x=>{const k=(x.query||'').trim().split(/\s+/).slice(0,5).join(' ').toLowerCase();if(k)pm[k]=(pm[k]||0)+1;});
-  barChart($('#an-top-queries'),Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,val])=>({label:l,val,color:'var(--orange)'})));
+  // Top unresolved
+  const pm={};ur.forEach(x=>{const k=(x.query||'').trim().split(/\s+/).slice(0,6).join(' ').toLowerCase();if(k)pm[k]=(pm[k]||0)+1;});
+  barChart($('#an-top-queries'),Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([l,v])=>({label:l,val:v,color:'var(--orange)'})),{labelWidth:180});
 
+  // All senders
   const names=[...new Set(sms.map(x=>(x.sender_name||'').trim()).filter(Boolean))].sort();
   $('#an-senders').innerHTML=names.length?names.map(n=>`<span style="display:inline-block;background:var(--surface-3);border:1px solid var(--border-mid);border-radius:99px;padding:4px 13px;font-size:12px;font-weight:600;margin:3px">${esc(n)}</span>`).join(''):'<div class="empty"><p>No senders yet</p></div>';
 }
 
-/* ═══ SMS TABLE ═══ */
+/* ══════════════════════════════════════════
+   SMS TABLE
+══════════════════════════════════════════ */
 const SMSTbl={
   data:[],q:'',type:'',sortField:'ts',sortDir:'desc',
   fil(){
@@ -728,8 +980,7 @@ const SMSTbl={
       tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td><strong>${esc(x.sender_name||'—')}</strong></td><td style="white-space:nowrap">${esc(x.phone||'—')}</td><td>${badge(x.type)}</td><td class="clip" title="${esc(x.content)}">${esc(x.content||'—')}</td><td><div class="row-actions"></div></td>`;
       const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.textContent='🗑';
       del.addEventListener('click',()=>this.remove(x.id));
-      tr.querySelector('.row-actions').appendChild(del);
-      body.appendChild(tr);
+      tr.querySelector('.row-actions').appendChild(del);body.appendChild(tr);
     });
   },
   async remove(id){
@@ -737,9 +988,9 @@ const SMSTbl={
     await SB.del('sms_log',id);await refreshAll();toast('Record deleted');
   },
   async clearAll(){
-    if(!await confirm2('Delete all SMS logs?','This will remove all '+this.data.length+' records from Supabase permanently.'))return;
-    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
-    await SB.delAll('sms_log');await refreshAll();toast('All SMS logs deleted');
+    if(!await confirm2('Delete all SMS logs?','This will permanently remove all '+this.data.length+' records.'))return;
+    if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
+    await SB.delAll('sms_log');await refreshAll();toast('All SMS deleted');
   },
   exportCSV(){dlCSV([['Date','Name','Phone','Type','Query'],...this.fil().map(x=>[fmtDT(x.ts),x.sender_name||'',x.phone||'',x.type||'',x.content||''])],`sms_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
   bind(){
@@ -751,57 +1002,73 @@ const SMSTbl={
   }
 };
 
-/* ═══ UNRESOLVED TABLE ═══ */
+/* ══════════════════════════════════════════
+   UNRESOLVED TABLE — with age column
+══════════════════════════════════════════ */
 const URTbl={
-  data:[],q:'',type:'',sortDir:'desc',
-  fil(){let o=[...this.data];if(this.type)o=o.filter(x=>x.type===this.type);if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.query||'').toLowerCase().includes(q));}return o.sort((a,b)=>this.sortDir==='asc'?a.ts-b.ts:b.ts-a.ts);},
+  data:[],q:'',type:'',age:'',sortDir:'desc',
+  fil(){
+    let o=[...this.data];
+    if(this.type)o=o.filter(x=>x.type===this.type);
+    if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.query||'').toLowerCase().includes(q));}
+    if(this.age==='hot')o=o.filter(x=>daysAgo(x.ts)>=7);
+    else if(this.age==='warm')o=o.filter(x=>daysAgo(x.ts)>=3&&daysAgo(x.ts)<7);
+    else if(this.age==='ok')o=o.filter(x=>daysAgo(x.ts)<3);
+    return o.sort((a,b)=>this.sortDir==='asc'?a.ts-b.ts:b.ts-a.ts);
+  },
   async load(){this.data=await fetchUR();this.render();},
   render(){
     const rows=this.fil();
-    $('#ur-cnt').textContent=plural(rows.length,'record')+(this.data.length!==rows.length?` (${this.data.length} total)`:'');
+    // Highlight if there are overdue items
+    const hotCount=this.data.filter(x=>daysAgo(x.ts)>=7).length;
+    $('#ur-cnt').innerHTML=plural(rows.length,'record')+(this.data.length!==rows.length?` (${this.data.length} total)`:'')+
+      (hotCount?` <span style="color:var(--red);font-weight:700;margin-left:8px">⚠ ${hotCount} overdue (7+ days)</span>`:'');
     const body=$('#ur-body');body.innerHTML='';
-    if(!rows.length){body.innerHTML=`<tr><td colspan="4"><div class="empty"><span class="empty-icon">${this.data.length?'🔍':'✅'}</span><p>${this.data.length?'No records match.':'No unresolved queries — great!'}</p></div></td></tr>`;return;}
+    if(!rows.length){body.innerHTML=`<tr><td colspan="5"><div class="empty"><span class="empty-icon">${this.data.length?'🔍':'✅'}</span><p>${this.data.length?'No records match your filter.':'No unresolved queries — great!'}</p></div></td></tr>`;return;}
     rows.forEach(x=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td class="clip" title="${esc(x.query)}">${esc(x.query||'—')}</td><td>${badge(x.type)}</td><td><div class="row-actions"></div></td>`;
+      if(daysAgo(x.ts)>=7)tr.style.background='#fff5f5';
+      tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td class="clip" title="${esc(x.query)}">${esc(x.query||'—')}</td><td>${badge(x.type)}</td><td>${ageBadge(x.ts)}</td><td><div class="row-actions"></div></td>`;
       const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.textContent='🗑';
       del.addEventListener('click',()=>this.remove(x.id));
-      tr.querySelector('.row-actions').appendChild(del);
-      body.appendChild(tr);
+      tr.querySelector('.row-actions').appendChild(del);body.appendChild(tr);
     });
   },
   async remove(id){
-    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab to delete records');return;}
+    if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
     await SB.del('unresolved',id);await refreshAll();toast('Record deleted');
   },
   async clearAll(){
     if(!await confirm2('Delete all unresolved logs?','This will remove all '+this.data.length+' records permanently.'))return;
-    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
-    await SB.delAll('unresolved');await refreshAll();toast('All unresolved logs deleted');
+    if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
+    await SB.delAll('unresolved');await refreshAll();toast('All unresolved deleted');
   },
-  exportCSV(){dlCSV([['Date','Query','Type'],...this.fil().map(x=>[fmtDT(x.ts),x.query||'',x.type||''])],`unresolved_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
+  exportCSV(){dlCSV([['Date','Query','Type','Days Old'],...this.fil().map(x=>[fmtDT(x.ts),x.query||'',x.type||'',daysAgo(x.ts)])],`unresolved_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
   bind(){
     $('#ur-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
     $('#ur-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
+    $('#ur-age').addEventListener('change',e=>{this.age=e.target.value;this.render();});
     $('#ur-export').addEventListener('click',()=>this.exportCSV());
     $('#ur-clear').addEventListener('click',()=>this.clearAll());
   }
 };
 
-/* ═══ MANAGE PANEL ═══ */
+/* ══════════════════════════════════════════
+   MANAGE PANEL
+══════════════════════════════════════════ */
 function bindManage(){
   $('#m-add-sms').addEventListener('click',async()=>{
     const sender=val('#m-name'),phone=val('#m-phone'),type=$('#m-type').value,content=val('#m-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
-    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup first');return;}
     await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
-    ['#m-name','#m-phone','#m-content'].forEach(id=>$(id).value='');
+    ['#m-name','#m-phone','#m-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
     await refreshAll();toast('SMS record added ✓');
   });
   $('#m-add-ur').addEventListener('click',async()=>{
     const query=val('#m-ur-query'),type=$('#m-ur-type').value;
     if(!query){toast('⚠ Query text is required');return;}
-    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup first');return;}
     await SB.insert('unresolved',{ts:Date.now(),query,type});
     $('#m-ur-query').value='';
     await refreshAll();toast('Unresolved record added ✓');
@@ -810,7 +1077,9 @@ function bindManage(){
   $('#mg-clear-ur').addEventListener('click',()=>URTbl.clearAll());
 }
 
-/* ═══ QUICK-ADD MODAL ═══ */
+/* ══════════════════════════════════════════
+   QUICK-ADD MODAL
+══════════════════════════════════════════ */
 function bindModal(){
   $('#addSmsBtn').addEventListener('click',()=>$('#modal-sms').classList.remove('hidden'));
   $('#qm-cancel').addEventListener('click',()=>$('#modal-sms').classList.add('hidden'));
@@ -818,154 +1087,96 @@ function bindModal(){
   $('#qm-save').addEventListener('click',async()=>{
     const sender=val('#qm-name'),phone=val('#qm-phone'),type=$('#qm-type').value,content=val('#qm-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
-    if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab first');return;}
+    if(!SB.ready()){toast('⚠ Connect Supabase in Setup first');return;}
     await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
-    ['#qm-name','#qm-phone','#qm-content'].forEach(id=>$(id).value='');
+    ['#qm-name','#qm-phone','#qm-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
     $('#modal-sms').classList.add('hidden');
     await refreshAll();toast('SMS record added ✓');
   });
 }
 
-/* ═══ REFRESH ALL ═══ */
+/* ══════════════════════════════════════════
+   SUPERADMIN PIN
+══════════════════════════════════════════ */
+const SA_KEY='ws_sa_pin',SA_DEFAULT='9999';
+const getSaPin=()=>localStorage.getItem(SA_KEY)||SA_DEFAULT;
+const saveSaPin=p=>localStorage.setItem(SA_KEY,p);
+let saUnlocked=false,saBuffer='';
+
+function initSuperadminPin(){
+  const modal=$('#sa-pin-modal'),errEl=$('#sa-pin-err'),lockBtn=$('#lockBtn');
+  const updateDots=()=>{for(let i=0;i<4;i++)$('#sa-d'+i).classList.toggle('filled',i<saBuffer.length);};
+  const resetBuffer=()=>{saBuffer='';updateDots();errEl.textContent='';};
+  const shakeBox=()=>{const b=modal.querySelector('.sa-pin-box');b.style.animation='shake 0.4s ease';setTimeout(()=>{b.style.animation='';},400);};
+  function checkPin(){
+    if(saBuffer===getSaPin()){
+      saUnlocked=true;modal.classList.add('hidden');
+      lockBtn.textContent='🔓';lockBtn.classList.add('unlocked');lockBtn.title='Lock superadmin';
+      $$('.superadmin-tab').forEach(t=>t.classList.add('unlocked'));
+      toast('🔓 Superadmin tabs unlocked');resetBuffer();
+    } else { shakeBox();errEl.textContent='Incorrect PIN';saBuffer='';updateDots(); }
+  }
+  function lockSuperadmin(){
+    saUnlocked=false;lockBtn.textContent='🔒';lockBtn.classList.remove('unlocked');lockBtn.title='Superadmin access';
+    $$('.superadmin-tab').forEach(t=>{
+      t.classList.remove('unlocked');
+      if(t.getAttribute('aria-selected')==='true') $$('.tab-bar .tab')[0].click();
+    });
+    toast('🔒 Superadmin tabs locked');
+  }
+  lockBtn.addEventListener('click',()=>{if(saUnlocked){lockSuperadmin();return;}resetBuffer();modal.classList.remove('hidden');});
+  $$('.sa-key').forEach(k=>k.addEventListener('click',()=>{
+    const v=k.dataset.k;
+    if(v==='cancel'){modal.classList.add('hidden');resetBuffer();return;}
+    if(v==='del'){saBuffer=saBuffer.slice(0,-1);updateDots();errEl.textContent='';return;}
+    if(saBuffer.length>=4)return;
+    saBuffer+=v;updateDots();
+    if(saBuffer.length===4)setTimeout(checkPin,120);
+  }));
+  document.addEventListener('keydown',e=>{
+    if(modal.classList.contains('hidden'))return;
+    if(e.key>='0'&&e.key<='9'&&saBuffer.length<4){saBuffer+=e.key;updateDots();if(saBuffer.length===4)setTimeout(checkPin,120);}
+    if(e.key==='Backspace'){saBuffer=saBuffer.slice(0,-1);updateDots();errEl.textContent='';}
+    if(e.key==='Escape'){modal.classList.add('hidden');resetBuffer();}
+  });
+  modal.addEventListener('click',e=>{if(e.target===modal){modal.classList.add('hidden');resetBuffer();}});
+}
+
+function initChangePinSection(){
+  const el=$('#pin-save');if(!el)return;
+  el.addEventListener('click',()=>{
+    const cur=val('#pin-current'),nw=val('#pin-new'),cf=val('#pin-confirm'),st=$('#pin-status');
+    if(cur!==getSaPin()){st.textContent='❌ Current PIN incorrect';st.className='setup-status err';return;}
+    if(!/^\d{4}$/.test(nw)){st.textContent='❌ Must be exactly 4 digits';st.className='setup-status err';return;}
+    if(nw!==cf){st.textContent='❌ PINs do not match';st.className='setup-status err';return;}
+    saveSaPin(nw);st.textContent='✅ PIN updated';st.className='setup-status ok';
+    ['#pin-current','#pin-new','#pin-confirm'].forEach(id=>{const e=$(id);if(e)e.value='';});
+    setTimeout(()=>{st.textContent='';},3000);
+  });
+}
+
+/* ══════════════════════════════════════════
+   REFRESH ALL
+══════════════════════════════════════════ */
 async function refreshAll(){
   setSyncStatus('spin','Refreshing…');
   try{
     await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load()]);
-    setSyncStatus('ok', SB.ready() ? '✅ Supabase connected — syncing all devices' : '⚠ Not connected — Setup tab');
+    setSyncStatus('ok',SB.ready()?'✅ Supabase connected — all devices synced':'⚠ Local only — go to Setup tab');
   }catch(e){
     setSyncStatus('err','Error: '+e.message);
     toast('⚠ '+e.message,{dur:5000});
   }
 }
 
-/* ═══════════════════════════════════════════════
-   SUPERADMIN PIN SYSTEM
-   The Manage & Setup tabs are hidden until the
-   correct superadmin PIN is entered via the 🔒
-   icon in the header. PIN stored in localStorage
-   so you can change it any time from Setup tab.
-   Default PIN: 9999  ← change this below
-═══════════════════════════════════════════════ */
-const SA_PIN_KEY = 'ws_sa_pin';
-const SA_DEFAULT = '9999'; // ← Change this to your preferred superadmin PIN
-function getSaPin(){ return localStorage.getItem(SA_PIN_KEY) || SA_DEFAULT; }
-function saveSaPin(p){ localStorage.setItem(SA_PIN_KEY, p); }
-
-let saUnlocked = false;
-let saBuffer   = '';
-
-function initSuperadminPin(){
-  const modal   = $('#sa-pin-modal');
-  const errEl   = $('#sa-pin-err');
-  const lockBtn = $('#lockBtn');
-
-  function updateDots(){
-    for(let i=0;i<4;i++) $('#sa-d'+i).classList.toggle('filled', i < saBuffer.length);
-  }
-
-  function resetBuffer(){ saBuffer=''; updateDots(); errEl.textContent=''; }
-
-  function shakeBox(){
-    const box = modal.querySelector('.sa-pin-box');
-    box.style.animation='shake 0.4s ease';
-    setTimeout(()=>{ box.style.animation=''; },400);
-  }
-
-  function checkPin(){
-    if(saBuffer === getSaPin()){
-      // Correct — unlock
-      saUnlocked = true;
-      modal.classList.add('hidden');
-      lockBtn.textContent = '🔓';
-      lockBtn.classList.add('unlocked');
-      lockBtn.title = 'Lock superadmin tabs';
-      // Show the hidden tabs
-      $$('.superadmin-tab').forEach(t=>t.classList.add('unlocked'));
-      toast('🔓 Superadmin tabs unlocked');
-      resetBuffer();
-    } else {
-      shakeBox();
-      errEl.textContent = 'Incorrect PIN — try again';
-      saBuffer = '';
-      updateDots();
-    }
-  }
-
-  function lockSuperadmin(){
-    saUnlocked = false;
-    lockBtn.textContent = '🔒';
-    lockBtn.classList.remove('unlocked');
-    lockBtn.title = 'Superadmin access';
-    $$('.superadmin-tab').forEach(t=>{
-      t.classList.remove('unlocked');
-      // If currently on a locked tab, switch to overview
-      if(t.getAttribute('aria-selected')==='true'){
-        $$('.tab-bar .tab')[0].click();
-      }
-    });
-    toast('🔒 Superadmin tabs locked');
-  }
-
-  // Lock button in header — toggle
-  lockBtn.addEventListener('click',()=>{
-    if(saUnlocked){ lockSuperadmin(); return; }
-    resetBuffer();
-    modal.classList.remove('hidden');
-  });
-
-  // Keypad
-  $$('.sa-key').forEach(k=>{
-    k.addEventListener('click',()=>{
-      const v = k.dataset.k;
-      if(v==='cancel'){ modal.classList.add('hidden'); resetBuffer(); return; }
-      if(v==='del'){ saBuffer=saBuffer.slice(0,-1); updateDots(); errEl.textContent=''; return; }
-      if(saBuffer.length>=4) return;
-      saBuffer+=v;
-      updateDots();
-      if(saBuffer.length===4) setTimeout(checkPin,120);
-    });
-  });
-
-  // Physical keyboard support
-  document.addEventListener('keydown',e=>{
-    if(modal.classList.contains('hidden')) return;
-    if(e.key>='0'&&e.key<='9'&&saBuffer.length<4){ saBuffer+=e.key; updateDots(); if(saBuffer.length===4)setTimeout(checkPin,120); }
-    if(e.key==='Backspace'){ saBuffer=saBuffer.slice(0,-1); updateDots(); errEl.textContent=''; }
-    if(e.key==='Escape'){ modal.classList.add('hidden'); resetBuffer(); }
-  });
-
-  // Close on backdrop click
-  modal.addEventListener('click',e=>{ if(e.target===modal){ modal.classList.add('hidden'); resetBuffer(); } });
-}
-
-/* ═══ CHANGE SUPERADMIN PIN (in Setup tab) ═══ */
-function initChangePinSection(){
-  const el = $('#pin-save');
-  if(!el) return;
-  el.addEventListener('click', () => {
-    const cur = val('#pin-current');
-    const nw  = val('#pin-new');
-    const cf  = val('#pin-confirm');
-    const st  = $('#pin-status');
-    if(cur !== getSaPin()){ st.textContent='❌ Current PIN is incorrect'; st.className='setup-status err'; return; }
-    if(!/^\d{4}$/.test(nw)){ st.textContent='❌ New PIN must be exactly 4 digits'; st.className='setup-status err'; return; }
-    if(nw !== cf){ st.textContent='❌ PINs do not match'; st.className='setup-status err'; return; }
-    saveSaPin(nw);
-    st.textContent='✅ Superadmin PIN updated';
-    st.className='setup-status ok';
-    ['#pin-current','#pin-new','#pin-confirm'].forEach(id=>{ const el=$(id); if(el)el.value=''; });
-    setTimeout(()=>{ st.textContent=''; }, 3000);
-  });
-}
-
-/* ═══ BOOT ═══ */
+/* ══════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════ */
 (async function boot(){
-  SMSTbl.bind(); URTbl.bind(); bindManage(); bindModal(); initSetup();
-  initSuperadminPin();
-  initChangePinSection();
+  SMSTbl.bind();URTbl.bind();bindManage();bindModal();initSetup();
+  initSuperadminPin();initChangePinSection();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
-
   await refreshAll();
   $('#loader').style.display='none';
 })();
