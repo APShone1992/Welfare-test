@@ -225,6 +225,77 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 @media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
 @media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
 
+
+/* DARK MODE */
+body.dark{--brand:#2563d4;--brand-mid:#3b82f6;--brand-light:#60a5fa;--accent:#1e3a5f;--surface:#1a1f2e;--surface-2:#141824;--surface-3:#1e2538;--border:rgba(255,255,255,0.08);--border-mid:rgba(255,255,255,0.15);--text:#e2e8f0;--text-sec:#94a3b8;--text-muted:#64748b}
+body.dark .tab-bar,body.dark .card,body.dark .modal,body.dark .sa-pin-box,body.dark .emp-upload-zone{background:var(--surface)}
+body.dark header{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%)}
+body.dark .setup-card{background:#2d1f00;border-color:#78350f}
+body.dark .setup-card h3,body.dark .setup-card p,body.dark .setup-card ol{color:#fde68a}
+body.dark .setup-card code{background:#3d2800}
+body.dark .finput,body.dark .form-row input,body.dark .form-row select,body.dark .form-row textarea{background:var(--surface-3);color:var(--text);border-color:var(--border-mid)}
+body.dark table.dt thead th{background:var(--surface-3)}
+body.dark .sa-key,.dark .sa-pin-box{background:var(--surface-3)}
+body.dark .btn-sec{background:var(--surface-3);color:var(--brand-light)}
+body.dark .sc{background:var(--surface-3)}
+body.dark .ws-item{background:var(--surface-3)}
+.dark-btn{background:none;border:none;color:rgba(255,255,255,0.6);font-size:17px;padding:4px 7px;border-radius:6px;transition:color var(--tr),background var(--tr);line-height:1;cursor:pointer}
+.dark-btn:hover{color:#fff;background:rgba(255,255,255,0.15)}
+
+/* GLOBAL SEARCH OVERLAY */
+.gsearch-overlay{position:fixed;inset:0;background:rgba(13,31,60,0.6);z-index:600;display:flex;align-items:flex-start;justify-content:center;padding:80px 20px 20px;backdrop-filter:blur(3px)}
+.gsearch-overlay.hidden{display:none}
+.gsearch-box{background:var(--surface);border-radius:16px;width:100%;max-width:620px;box-shadow:0 24px 60px rgba(13,31,60,0.25);overflow:hidden;animation:popIn .18s cubic-bezier(.22,1,.36,1)}
+.gsearch-input-wrap{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.gsearch-input-wrap input{flex:1;border:none;outline:none;font-size:16px;font-family:var(--font);background:transparent;color:var(--text)}
+.gsearch-input-wrap input::placeholder{color:var(--text-muted)}
+.gsearch-close{background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;padding:4px}
+.gsearch-results{max-height:400px;overflow-y:auto;padding:8px 0}
+.gsearch-section{padding:6px 18px 2px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.gsearch-item{display:flex;align-items:center;gap:12px;padding:10px 18px;cursor:pointer;transition:background var(--tr)}
+.gsearch-item:hover{background:var(--surface-2)}
+.gsearch-item-icon{font-size:15px;flex-shrink:0;width:20px;text-align:center}
+.gsearch-item-main{flex:1;font-size:13.5px;color:var(--text);min-width:0}
+.gsearch-item-sub{font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsearch-item-tag{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;flex-shrink:0}
+.gsearch-empty{text-align:center;padding:32px 20px;color:var(--text-muted);font-size:13.5px}
+
+/* NOTES on unresolved */
+.ur-note{font-size:12px;color:var(--text-sec);font-style:italic;margin-top:4px;padding:4px 8px;background:var(--surface-2);border-radius:6px;border-left:3px solid var(--brand-light)}
+.ur-note-empty{color:var(--text-muted)}
+.note-edit-btn{background:none;border:1px solid var(--border-mid);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;color:var(--text-muted);transition:background var(--tr)}
+.note-edit-btn:hover{background:var(--accent);color:var(--brand)}
+
+/* NOTE MODAL */
+.note-modal-ta{width:100%;padding:10px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13.5px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;resize:vertical;min-height:90px;transition:border-color var(--tr)}
+.note-modal-ta:focus{border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,212,0.1)}
+
+/* BOT TRAINING SUGGESTIONS */
+.train-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.train-row:last-child{border-bottom:none}
+.train-phrase{flex:1;font-size:13.5px;color:var(--text);min-width:0}
+.train-count{font-size:11.5px;font-weight:700;color:var(--text-muted);flex-shrink:0}
+.train-add-btn{background:var(--green);color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background var(--tr)}
+.train-add-btn:hover{background:#15803d}
+.train-add-btn.done{background:var(--text-muted);cursor:default}
+
+/* ACTIVITY LOG */
+.act-row{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.act-row:last-child{border-bottom:none}
+.act-time{color:var(--text-muted);font-size:11.5px;white-space:nowrap;flex-shrink:0;padding-top:1px}
+.act-icon{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.act-text{flex:1;color:var(--text)}
+
+/* PRINT BUTTON */
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff!important}
+  .panel{display:block!important;padding:16px!important}
+  .panel:not(.active){display:none!important}
+  .card{box-shadow:none!important;border:1px solid #ddd!important;page-break-inside:avoid}
+  .tw{max-height:none!important;overflow:visible!important}
+}
+
 /* EMP UPLOAD ZONE */
 .emp-upload-zone{position:relative;border:2.5px dashed var(--border-mid);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color var(--tr),background var(--tr);background:var(--surface-2)}
 .emp-upload-zone:hover,.emp-upload-zone.drag-over{border-color:var(--brand-light);background:var(--accent)}
@@ -245,6 +316,9 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
     <button class="btn btn-sec btn-sm" id="fsBtn">&#x26F6; Full screen</button>
     <button class="btn btn-green btn-sm" id="addSmsBtn">+ Add SMS</button>
     <a href="index.html" class="btn btn-sec btn-sm">&#8592; Chat</a>
+    <button class="btn btn-sec btn-sm no-print" id="printBtn" title="Print / save as PDF">&#128438;</button>
+    <button class="dark-btn no-print" id="darkBtn" title="Toggle dark mode">&#127765;</button>
+    <button class="dark-btn no-print" id="searchBtn" title="Search everything (Ctrl+K)">&#128269;</button>
     <button class="lock-btn" id="lockBtn" title="Superadmin access">&#128274;</button>
   </div>
 </header>
@@ -279,6 +353,8 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   </div>
   <div class="card"><div class="card-title">Recent activity (last 20 events)</div><div id="ov-timeline"></div></div>
 </div>
+
+<!-- ══════════════════ ACTIVITY LOG (hidden panel, rendered in Overview) ══════════════════ -->
 
 <!-- ══════════════════ ANALYTICS ══════════════════ -->
 <div id="panel-1" class="panel" role="tabpanel">
@@ -362,7 +438,19 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
     <div class="card"><div class="card-title">Most common unresolved phrases</div><div id="an-top-queries"></div></div>
   </div>
 
+  <!-- Department breakdown -->
+  <div class="card">
+    <div class="card-title">&#127970; Queries by department</div>
+    <div id="an-dept-chart"></div>
+  </div>
+
   <div class="card"><div class="card-title">All unique senders</div><div id="an-senders"></div></div>
+
+  <!-- Bot training suggestions -->
+  <div class="card">
+    <div class="card-title">&#129504; Bot training suggestions <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">most repeated unresolved phrases — consider adding these to your FAQ</span></div>
+    <div id="an-training"></div>
+  </div>
 </div>
 
 <!-- ══════════════════ SMS LOG ══════════════════ -->
@@ -403,7 +491,8 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
     <th>Query</th>
     <th class="sort" data-col="type">Type</th>
     <th>Age</th>
-    <th style="width:80px;text-align:right">Actions</th>
+    <th>Note</th>
+    <th style="width:100px;text-align:right">Actions</th>
   </tr></thead><tbody id="ur-body"></tbody></table></div>
 </div>
 
@@ -593,6 +682,35 @@ create policy "pub insert" on sessions for insert with check (true);</code>
       <button class="sa-key" data-k="7">7</button><button class="sa-key" data-k="8">8</button><button class="sa-key" data-k="9">9</button>
       <button class="sa-key" data-k="del">&#9003;</button><button class="sa-key" data-k="0">0</button>
       <button class="sa-key" data-k="cancel" style="font-size:12px;font-weight:600;color:var(--text-sec)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- GLOBAL SEARCH OVERLAY -->
+<div class="gsearch-overlay hidden" id="gsearch">
+  <div class="gsearch-box">
+    <div class="gsearch-input-wrap">
+      <span style="font-size:16px;color:var(--text-muted)">&#128269;</span>
+      <input type="text" id="gsearch-input" placeholder="Search employees, SMS, unresolved queries&hellip;" autocomplete="off"/>
+      <button class="gsearch-close" id="gsearch-close">&#10005;</button>
+    </div>
+    <div class="gsearch-results" id="gsearch-results">
+      <div class="gsearch-empty">Start typing to search across everything&hellip;</div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTE MODAL -->
+<div class="modal-bg hidden" id="modal-note">
+  <div class="modal">
+    <h3>&#128221; Add / edit note</h3>
+    <p>Add a short note to this unresolved record — e.g. "Called back", "Added to FAQ", "Referred to manager".</p>
+    <textarea class="note-modal-ta" id="note-textarea" placeholder="Type your note here&hellip;" maxlength="300"></textarea>
+    <div style="font-size:11.5px;color:var(--text-muted);text-align:right;margin-top:4px" id="note-char-count">0 / 300</div>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn btn-red btn-sm" id="note-delete">&#128465; Remove note</button>
+      <button class="btn btn-sec" id="note-cancel">Cancel</button>
+      <button class="btn btn-primary" id="note-save">Save note</button>
     </div>
   </div>
 </div>
@@ -1049,12 +1167,12 @@ const SMSTbl={
   },
   async remove(id){
     if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab to delete records');return;}
-    await SB.del('sms_log',id);await refreshAll();toast('Record deleted');
+    await SB.del('sms_log',id);logActivity('🗑️','Deleted SMS record');await refreshAll();toast('Record deleted');
   },
   async clearAll(){
     if(!await confirm2('Delete all SMS logs?','This will permanently remove all '+this.data.length+' records.'))return;
     if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
-    await SB.delAll('sms_log');await refreshAll();toast('All SMS deleted');
+    await SB.delAll('sms_log');logActivity('🗑️','Cleared all SMS logs');await refreshAll();toast('All SMS deleted');
   },
   exportCSV(){dlCSV([['Date','Name','Phone','Type','Query'],...this.fil().map(x=>[fmtDT(x.ts),x.sender_name||'',x.phone||'',x.type||'',x.content||''])],`sms_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
   bind(){
@@ -1100,12 +1218,12 @@ const URTbl={
   },
   async remove(id){
     if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
-    await SB.del('unresolved',id);await refreshAll();toast('Record deleted');
+    await SB.del('unresolved',id);logActivity('🗑️','Deleted unresolved record');await refreshAll();toast('Record deleted');
   },
   async clearAll(){
     if(!await confirm2('Delete all unresolved logs?','This will remove all '+this.data.length+' records permanently.'))return;
     if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
-    await SB.delAll('unresolved');await refreshAll();toast('All unresolved deleted');
+    await SB.delAll('unresolved');logActivity('🗑️','Cleared all unresolved logs');await refreshAll();toast('All unresolved deleted');
   },
   exportCSV(){dlCSV([['Date','Query','Type','Days Old'],...this.fil().map(x=>[fmtDT(x.ts),x.query||'',x.type||'',daysAgo(x.ts)])],`unresolved_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
   bind(){
@@ -1481,7 +1599,7 @@ function bindEmpUpload() {
     updateEmpListBadge(pendingList);
     setStatus(`✅ Saved ${Object.keys(pendingList).length.toLocaleString()} employees. The chat bot will now validate against this list.`, 'ok');
     saveBtn.textContent = '✅ Saved!';
-    toast(`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees loaded ✓`);
+    logActivity('📋',`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees`);toast(`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees loaded ✓`);
     pendingList = null;
     setTimeout(() => { if (saveBtn) { saveBtn.disabled = false; saveBtn.style.display = 'none'; saveBtn.innerHTML = '&#9989; Save &amp; activate list'; } }, 2000);
   });
@@ -1511,10 +1629,316 @@ async function refreshAll(){
   try{
     await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load(),EmpTbl.load()]);
     setSyncStatus('ok',SB.ready()?'✅ Supabase connected — all devices synced':'⚠ Local only — go to Setup tab');
+    // Update tab notification badge
+    updateTabBadge(URTbl.data);
+    // Update global search cache
+    _searchCache.sms = SMSTbl.data;
+    _searchCache.ur  = URTbl.data;
+    _searchCache.emp = EmpTbl.data;
+    // Render dept chart and training suggestions
+    renderDeptChart(SMSTbl.data);
+    renderTrainingSuggestions(URTbl.data);
+    renderActivityLog();
   }catch(e){
     setSyncStatus('err','Error: '+e.message);
     toast('⚠ '+e.message,{dur:5000});
   }
+}
+
+
+/* ══════════════════════════════════════════
+   ACTIVITY LOG — stores admin actions in localStorage
+══════════════════════════════════════════ */
+const ACT_LOG_KEY = 'ws_admin_activity';
+function logActivity(icon, text) {
+  try {
+    const log = JSON.parse(localStorage.getItem(ACT_LOG_KEY) || '[]');
+    log.unshift({ ts: Date.now(), icon, text });
+    if (log.length > 200) log.length = 200;
+    localStorage.setItem(ACT_LOG_KEY, JSON.stringify(log));
+  } catch {}
+}
+function getActivityLog() {
+  try { return JSON.parse(localStorage.getItem(ACT_LOG_KEY) || '[]'); } catch { return []; }
+}
+
+/* ══════════════════════════════════════════
+   NOTES on Unresolved — stored in localStorage
+   Key: ws_ur_notes  { [id]: "note text" }
+══════════════════════════════════════════ */
+const UR_NOTES_KEY = 'ws_ur_notes';
+function getNotes() { try { return JSON.parse(localStorage.getItem(UR_NOTES_KEY) || '{}'); } catch { return {}; } }
+function saveNote(id, text) {
+  const notes = getNotes();
+  if (text) notes[String(id)] = text; else delete notes[String(id)];
+  localStorage.setItem(UR_NOTES_KEY, JSON.stringify(notes));
+}
+
+let noteTargetId = null;
+function openNoteModal(id, existing) {
+  noteTargetId = id;
+  const ta = $('#note-textarea');
+  const cc = $('#note-char-count');
+  ta.value = existing || '';
+  if (cc) cc.textContent = `${ta.value.length} / 300`;
+  $('#modal-note').classList.remove('hidden');
+  setTimeout(() => ta.focus(), 50);
+}
+function bindNoteModal() {
+  const ta = $('#note-textarea');
+  ta?.addEventListener('input', () => {
+    const cc = $('#note-char-count');
+    if (cc) cc.textContent = `${ta.value.length} / 300`;
+  });
+  $('#note-save')?.addEventListener('click', () => {
+    if (noteTargetId === null) return;
+    const text = $('#note-textarea').value.trim();
+    saveNote(noteTargetId, text);
+    logActivity('📝', `Note ${text ? 'added' : 'updated'} on unresolved record`);
+    $('#modal-note').classList.add('hidden');
+    URTbl.render();
+    toast('Note saved ✓');
+  });
+  $('#note-delete')?.addEventListener('click', () => {
+    if (noteTargetId === null) return;
+    saveNote(noteTargetId, '');
+    $('#modal-note').classList.add('hidden');
+    URTbl.render();
+    toast('Note removed');
+  });
+  $('#note-cancel')?.addEventListener('click', () => $('#modal-note').classList.add('hidden'));
+  $('#modal-note')?.addEventListener('click', e => { if (e.target === $('#modal-note')) $('#modal-note').classList.add('hidden'); });
+}
+
+/* ══════════════════════════════════════════
+   DARK MODE
+══════════════════════════════════════════ */
+const DARK_KEY = 'ws_admin_dark';
+let darkMode = localStorage.getItem(DARK_KEY) === '1';
+function applyDark() {
+  document.body.classList.toggle('dark', darkMode);
+  const btn = $('#darkBtn');
+  if (btn) btn.textContent = darkMode ? '☀️' : '🌙';
+}
+function bindDarkMode() {
+  applyDark();
+  $('#darkBtn')?.addEventListener('click', () => {
+    darkMode = !darkMode;
+    localStorage.setItem(DARK_KEY, darkMode ? '1' : '0');
+    applyDark();
+  });
+}
+
+/* ══════════════════════════════════════════
+   PRINT / PDF
+══════════════════════════════════════════ */
+function bindPrint() {
+  $('#printBtn')?.addEventListener('click', () => {
+    logActivity('🖨️', 'Report printed / saved as PDF');
+    window.print();
+  });
+}
+
+/* ══════════════════════════════════════════
+   BROWSER TAB NOTIFICATION BADGE
+   Shows count of overdue unresolved (7+ days)
+   in the page title so admins notice without
+   opening the page.
+══════════════════════════════════════════ */
+function updateTabBadge(urData) {
+  const overdue = (urData || []).filter(x => {
+    const days = Math.floor((Date.now() - x.ts) / 86400000);
+    return days >= 7;
+  }).length;
+  document.title = overdue > 0
+    ? `(${overdue} overdue) Welfare Admin`
+    : 'Welfare Support — Admin';
+}
+
+/* ══════════════════════════════════════════
+   GLOBAL SEARCH
+══════════════════════════════════════════ */
+let _searchCache = { sms: [], ur: [], emp: [] };
+
+function openGlobalSearch() {
+  $('#gsearch')?.classList.remove('hidden');
+  setTimeout(() => $('#gsearch-input')?.focus(), 50);
+}
+function closeGlobalSearch() {
+  $('#gsearch')?.classList.add('hidden');
+  if ($('#gsearch-input')) $('#gsearch-input').value = '';
+  if ($('#gsearch-results')) $('#gsearch-results').innerHTML = '<div class="gsearch-empty">Start typing to search across everything&hellip;</div>';
+}
+
+function runGlobalSearch(q) {
+  const el = $('#gsearch-results');
+  if (!el) return;
+  if (!q || q.length < 2) { el.innerHTML = '<div class="gsearch-empty">Start typing to search across everything&hellip;</div>'; return; }
+  const ql = q.toLowerCase();
+  const smsHits = _searchCache.sms.filter(x =>
+    (x.sender_name||'').toLowerCase().includes(ql) ||
+    (x.phone||'').includes(ql) ||
+    (x.content||'').toLowerCase().includes(ql) ||
+    (x.emp||'').includes(ql)
+  ).slice(0, 5);
+  const urHits = _searchCache.ur.filter(x =>
+    (x.query||'').toLowerCase().includes(ql)
+  ).slice(0, 5);
+  const empHits = _searchCache.emp.filter(x =>
+    (x.emp||'').includes(ql) ||
+    (x.name||'').toLowerCase().includes(ql) ||
+    (x.dept||'').toLowerCase().includes(ql)
+  ).slice(0, 5);
+
+  if (!smsHits.length && !urHits.length && !empHits.length) {
+    el.innerHTML = `<div class="gsearch-empty">No results for "<strong>${esc(q)}</strong>"</div>`;
+    return;
+  }
+  let html = '';
+  if (empHits.length) {
+    html += `<div class="gsearch-section">Employees</div>`;
+    empHits.forEach(x => {
+      html += `<div class="gsearch-item" data-goto="emp">
+        <div class="gsearch-item-icon">👤</div>
+        <div class="gsearch-item-main"><strong>${esc(x.emp||'—')}</strong> — ${esc(x.name||'—')}
+          <div class="gsearch-item-sub">${esc(x.dept||'No department')} · ${x.sessions||0} session${x.sessions!==1?'s':''}</div>
+        </div>
+        <div class="gsearch-item-tag badge-sms" style="background:#ede9fe;color:#5b21b6">EMP</div>
+      </div>`;
+    });
+  }
+  if (smsHits.length) {
+    html += `<div class="gsearch-section">SMS Log</div>`;
+    smsHits.forEach(x => {
+      html += `<div class="gsearch-item" data-goto="sms">
+        <div class="gsearch-item-icon">💬</div>
+        <div class="gsearch-item-main">${esc(x.sender_name||'Unknown')}
+          <div class="gsearch-item-sub">${esc((x.content||'').slice(0,80))}</div>
+        </div>
+        <div class="gsearch-item-tag" style="background:#dbeafe;color:#1e40af">${esc(x.type||'—')}</div>
+      </div>`;
+    });
+  }
+  if (urHits.length) {
+    html += `<div class="gsearch-section">Unresolved</div>`;
+    urHits.forEach(x => {
+      html += `<div class="gsearch-item" data-goto="ur">
+        <div class="gsearch-item-icon">❓</div>
+        <div class="gsearch-item-main">${esc((x.query||'').slice(0,100))}
+          <div class="gsearch-item-sub">${ageBadge(x.ts).replace(/<[^>]+>/g,'')} · ${esc(x.type||'')}</div>
+        </div>
+        <div class="gsearch-item-tag" style="background:#fef3c7;color:#92400e">${esc(x.type||'—')}</div>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+  // clicking a result navigates to that tab and closes search
+  el.querySelectorAll('.gsearch-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const goto = item.dataset.goto;
+      const tabMap = { sms: 2, ur: 3, emp: 4 };
+      const idx = tabMap[goto];
+      if (idx !== undefined) $$('.tab-bar [role=tab]')[idx]?.click();
+      closeGlobalSearch();
+    });
+  });
+}
+
+function bindGlobalSearch() {
+  $('#searchBtn')?.addEventListener('click', openGlobalSearch);
+  $('#gsearch-close')?.addEventListener('click', closeGlobalSearch);
+  $('#gsearch')?.addEventListener('click', e => { if (e.target === $('#gsearch')) closeGlobalSearch(); });
+  $('#gsearch-input')?.addEventListener('input', e => runGlobalSearch(e.target.value.trim()));
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openGlobalSearch(); }
+    if (e.key === 'Escape' && !$('#gsearch')?.classList.contains('hidden')) closeGlobalSearch();
+  });
+}
+
+/* ══════════════════════════════════════════
+   BOT TRAINING SUGGESTIONS
+══════════════════════════════════════════ */
+function renderTrainingSuggestions(ur) {
+  const el = $('#an-training');
+  if (!el) return;
+  const DONE_KEY = 'ws_training_done';
+  let done = new Set();
+  try { done = new Set(JSON.parse(localStorage.getItem(DONE_KEY) || '[]')); } catch {}
+
+  // Count phrase frequency (normalised first 6 words)
+  const counts = {};
+  ur.forEach(x => {
+    const phrase = (x.query || '').trim().replace(' [marked unhelpful]','').toLowerCase().split(/\s+/).slice(0,6).join(' ');
+    if (phrase.length > 10) counts[phrase] = (counts[phrase] || 0) + 1;
+  });
+  const top = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+
+  if (!top.length) { el.innerHTML = '<div class="empty" style="padding:20px 0"><p>No unresolved patterns found yet.</p></div>'; return; }
+
+  el.innerHTML = top.map(([phrase, count]) => {
+    const isDone = done.has(phrase);
+    return `<div class="train-row">
+      <div class="train-phrase">${esc(phrase)}</div>
+      <div class="train-count">${count}× unresolved</div>
+      <button class="train-add-btn${isDone?' done':''}" data-phrase="${esc(phrase)}">${isDone ? '✓ Noted' : '+ Mark as reviewed'}</button>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.train-add-btn:not(.done)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const phrase = btn.dataset.phrase;
+      done.add(phrase);
+      localStorage.setItem(DONE_KEY, JSON.stringify([...done]));
+      btn.className = 'train-add-btn done'; btn.textContent = '✓ Noted';
+      logActivity('🧠', `Training suggestion marked reviewed: "${phrase}"`);
+      toast('Marked as reviewed — consider adding this to your FAQ');
+    });
+  });
+}
+
+/* ══════════════════════════════════════════
+   DEPT BREAKDOWN CHART
+══════════════════════════════════════════ */
+function renderDeptChart(sms) {
+  const el = $('#an-dept-chart');
+  if (!el) return;
+  // Try to match SMS records to dept via employee list
+  const empData = (() => { try { return JSON.parse(localStorage.getItem('ws_employees_v1') || '{}'); } catch { return {}; } })();
+  const deptCounts = {};
+  sms.forEach(x => {
+    const emp = empData[x.emp];
+    const dept = (emp?.dept) || 'Unknown';
+    deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+  });
+  const items = Object.entries(deptCounts).sort((a,b)=>b[1]-a[1]).slice(0,12)
+    .map(([label,val]) => ({label,val,color:'var(--purple)'}));
+  barChart(el, items, {labelWidth: 140});
+}
+
+/* ══════════════════════════════════════════
+   ACTIVITY LOG RENDER (Overview)
+══════════════════════════════════════════ */
+function renderActivityLog() {
+  // Add activity log card to overview if not present
+  let card = $('#act-log-card');
+  if (!card) {
+    const panel0 = $('#panel-0');
+    if (!panel0) return;
+    card = document.createElement('div');
+    card.className = 'card'; card.id = 'act-log-card';
+    card.innerHTML = '<div class="card-title">&#128218; Admin activity log <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">actions taken in this admin panel</span></div><div id="act-log-body"></div>';
+    panel0.appendChild(card);
+  }
+  const body = $('#act-log-body');
+  if (!body) return;
+  const log = getActivityLog().slice(0, 30);
+  if (!log.length) { body.innerHTML = '<div class="empty" style="padding:16px 0"><p>No admin actions logged yet.</p></div>'; return; }
+  body.innerHTML = log.map(e => `
+    <div class="act-row">
+      <div class="act-time">${fmtDT(e.ts)}</div>
+      <div class="act-icon">${e.icon}</div>
+      <div class="act-text">${esc(e.text)}</div>
+    </div>`).join('');
 }
 
 /* ══════════════════════════════════════════
@@ -1523,6 +1947,7 @@ async function refreshAll(){
 (async function boot(){
   SMSTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();bindEmpUpload();
   initSuperadminPin();initChangePinSection();
+  bindDarkMode();bindPrint();bindGlobalSearch();bindNoteModal();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
   await refreshAll();
