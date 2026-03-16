@@ -1110,54 +1110,48 @@ function init() {
 // ─────────────────────────────────────────────────────────────────────────────
 const EMP_LIST_KEY = 'ws_emp_list';
 
+// ── Supabase config — must match index.html ──────────────────────────────
+// These are read by lookupEMP to fetch the EMP list directly.
+// Update these if you ever change your Supabase project.
+const _SB_URL  = 'https://jlhtcwsbigznojwfxmox.supabase.co';
+const _SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaHRjd3NiaWd6bm9qd2Z4bW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTkzNjcsImV4cCI6MjA4ODk3NTM2N30.u9hOH97ASyyVaLgBKHdrdBo1F8W1BIqwGrm06vcvasU';
+
 async function lookupEMP(emp) {
   let list = null;
+  let fetchedFromSupabase = false;
 
-  // admin.html KV helper stores under 'kv:' + key in localStorage
-  // and also syncs to Supabase kv_store table.
-  // We read from localStorage first (fast, works offline).
-  // Key used by KV.set() is 'kv:ws_emp_list'
-  const KV_PREFIX = 'kv:';
+  // ── Step 1: Try Supabase directly (always works cross-device) ──────────
   try {
-    const raw = localStorage.getItem(KV_PREFIX + EMP_LIST_KEY);
-    if (raw) list = JSON.parse(raw);
+    const resp = await fetch(
+      `${_SB_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(EMP_LIST_KEY)}&limit=1&select=value`,
+      { headers: { apikey: _SB_ANON, Authorization: 'Bearer ' + _SB_ANON } }
+    );
+    if (resp.ok) {
+      const rows = await resp.json();
+      if (rows && rows.length && rows[0].value) {
+        list = JSON.parse(rows[0].value);
+        fetchedFromSupabase = true;
+        // Cache locally so it works if Supabase is temporarily down
+        try { localStorage.setItem('kv:' + EMP_LIST_KEY, rows[0].value); } catch {}
+      }
+    }
   } catch {}
 
-  // Also try the bare key (legacy — before KV prefix was added)
+  // ── Step 2: Fall back to localStorage cache (set by admin or above) ────
   if (!list) {
     try {
-      const raw = localStorage.getItem(EMP_LIST_KEY);
+      const raw = localStorage.getItem('kv:' + EMP_LIST_KEY) || localStorage.getItem(EMP_LIST_KEY);
       if (raw) list = JSON.parse(raw);
     } catch {}
   }
 
-  // Also try fetching direct from Supabase kv_store if credentials stored
-  if (!list) {
-    try {
-      const cfg = JSON.parse(localStorage.getItem('ws_sb_cfg') || '{}');
-      if (cfg.url && cfg.key) {
-        const resp = await fetch(
-          `${cfg.url}/rest/v1/kv_store?key=eq.${encodeURIComponent(EMP_LIST_KEY)}&limit=1`,
-          { headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key } }
-        );
-        if (resp.ok) {
-          const rows = await resp.json();
-          if (rows && rows.length) {
-            list = JSON.parse(rows[0].value);
-            // Cache locally for next time
-            try { localStorage.setItem(KV_PREFIX + EMP_LIST_KEY, rows[0].value); } catch {}
-          }
-        }
-      }
-    } catch {}
-  }
-
-  // No list uploaded yet — allow any valid 6-digit EMP
+  // ── Step 3: Decide ──────────────────────────────────────────────────────
+  // If we genuinely have no list anywhere — no list has been uploaded yet
   if (!list) return { valid: true, name: null, dept: null, listLoaded: false };
 
   const rec = list[emp];
   if (rec === undefined) return { valid: false, name: null, dept: null, listLoaded: true };
-  // Support both string format and {name, dept} object format
+
   const name = typeof rec === 'object' ? rec.name : rec;
   const dept = typeof rec === 'object' ? rec.dept : null;
   return { valid: true, name: name || null, dept: dept || null, listLoaded: true };
@@ -1174,6 +1168,7 @@ function showEmpGate() {
       <div style="font-size:44px;margin-bottom:12px">🔐</div>
       <h2 id="gTitle" style="font-size:20px;font-weight:800;color:#1a3a6b;margin-bottom:6px">Employee Login</h2>
       <p id="gDesc"  style="font-size:13.5px;color:#4a5878;margin-bottom:24px;line-height:1.6">Enter your <strong>6-digit EMP number</strong> to continue.</p>
+      <div id="gListStatus" style="font-size:11px;color:#8a94a8;margin-bottom:8px;margin-top:-16px;display:none"></div>
       <input id="gEmp" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 123456" autocomplete="off" spellcheck="false"
         style="width:100%;padding:14px 16px;font-size:22px;letter-spacing:6px;text-align:center;border:2px solid rgba(26,58,107,0.18);border-radius:12px;outline:none;font-family:monospace;color:#0d1f3c;background:#f7f9ff;margin-bottom:12px;transition:border-color 0.15s,box-shadow 0.15s"/>
       <div id="gErr" style="font-size:13px;color:#dc2626;font-weight:600;min-height:18px;margin-bottom:12px;display:none"></div>
@@ -1210,6 +1205,17 @@ function showEmpGate() {
     gNext.disabled = true; gNext.textContent = 'Checking…';
     const result = await lookupEMP(raw);
     gNext.disabled = false; gNext.textContent = 'Continue →';
+    // Show list status for transparency
+    const statusEl = gate.querySelector("#gListStatus");
+    if (statusEl) {
+      if (!result.listLoaded) {
+        statusEl.textContent = "ℹ️ No EMP list loaded — open access mode";
+        statusEl.style.display = "block";
+        statusEl.style.color = "#d97706";
+      } else {
+        statusEl.style.display = "none";
+      }
+    }
 
     if (!result.valid) {
       if (++attempts >= 3) { lockout('EMP number not recognised. Please contact your manager or HR to verify your EMP number.'); return; }
