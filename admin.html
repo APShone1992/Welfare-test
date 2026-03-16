@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <title>Welfare Support — Admin</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a3a6b'/><rect x='6' y='18' width='5' height='8' rx='1' fill='%234ade80'/><rect x='13' y='12' width='5' height='14' rx='1' fill='%2360a5fa'/><rect x='20' y='7' width='5' height='19' rx='1' fill='%23fff' opacity='.9'/></svg>"/>
 <style>
 :root{
   --brand:#1a3a6b;--brand-mid:#1e4d9b;--brand-light:#2563d4;
@@ -225,7 +225,54 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .sa-pin-err{font-size:12.5px;color:var(--red);font-weight:600;min-height:18px;margin-bottom:6px}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
 
-@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
+@media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 12px;font-size:12px}}
+
+/* ── ICON POLISH ─────────────────────────────────────────────────────── */
+/* All inline SVGs in tabs, buttons, card titles get consistent sizing */
+.tab svg { width:14px; height:14px; opacity:0.85; flex-shrink:0 }
+.tab[aria-selected="true"] svg { opacity:1 }
+.btn svg { width:13px; height:13px; flex-shrink:0 }
+.btn-icon svg { width:15px; height:15px }
+.card-title svg { width:13px; height:13px; opacity:0.7; flex-shrink:0 }
+.card-title { gap:7px }
+.panel-title { display:flex; align-items:center; gap:9px }
+.panel-title svg { width:18px; height:18px; color:var(--brand-light); flex-shrink:0 }
+.dark-btn svg { width:16px; height:16px }
+.lock-btn svg { width:15px; height:15px }
+.empty-icon svg { width:36px; height:36px; opacity:0.35 }
+.gsearch-item-icon svg { width:15px; height:15px }
+
+/* Header polish — tighter, more refined */
+header { padding:12px 22px }
+.hdr-left h1 { font-size:16px; letter-spacing:-0.01em }
+.hdr-left h1 svg { width:18px; height:18px; opacity:0.9 }
+
+/* Tab bar — refined pill active indicator */
+.tab-bar { padding:0 16px; gap:2px }
+.tab { padding:11px 16px; font-size:13px; letter-spacing:0.01em; gap:7px; border-radius:6px 6px 0 0 }
+
+/* Card titles more subdued */
+.card-title { font-size:11px; letter-spacing:0.6px }
+
+/* Buttons — slightly more refined */
+.btn { letter-spacing:0.01em; font-size:12.5px }
+.btn-sm { font-size:11.5px }
+
+/* Cleaner table */
+table.dt { font-size:12.5px }
+table.dt thead th { font-size:11px; letter-spacing:0.5px }
+table.dt td { padding:9px 14px }
+
+/* Stat cards — cleaner */
+.sc .lbl { font-size:10.5px; letter-spacing:0.6px }
+.sc .num { font-size:28px }
+
+/* Form rows */
+.form-row label { font-size:10.5px; letter-spacing:0.6px }
+
+/* Smoother animations */
+.panel { animation-duration:0.12s }
+
 @media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
 
 
@@ -365,34 +412,34 @@ body.dark .ws-item{background:var(--surface-3)}
 
 <header>
   <div class="hdr-left">
-    <h1>&#128202; Welfare Support &mdash; Admin</h1>
+    <h1><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Welfare Support &mdash; Admin</h1>
     <div class="hdr-sub"><span class="dot spin" id="syncDot"></span><span id="syncLabel">Connecting&hellip;</span></div>
   </div>
   <div class="hdr-right">
-    <button class="btn btn-sec btn-sm" id="refreshBtn">&#8635; Refresh</button>
-    <button class="btn btn-sec btn-sm" id="fsBtn">&#x26F6; Full screen</button>
-    <button class="btn btn-green btn-sm" id="addSmsBtn">+ Add SMS</button>
+    <button class="btn btn-sec btn-sm" id="refreshBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg> Refresh</button>
+    <button class="btn btn-sec btn-sm" id="fsBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Full screen</button>
+    <button class="btn btn-green btn-sm" id="addSmsBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Add SMS</button>
     <a href="index.html" class="btn btn-sec btn-sm">&#8592; Chat</a>
-    <button class="btn btn-sec btn-sm no-print" id="printBtn" title="Print / save as PDF">&#128438;</button>
-    <button class="dark-btn no-print" id="darkBtn" title="Toggle dark mode">&#127765;</button>
-    <button class="dark-btn no-print" id="searchBtn" title="Search everything (Ctrl+K)">&#128269;</button>
-    <button class="lock-btn" id="lockBtn" title="Superadmin access">&#128274;</button>
+    <button class="btn btn-sec btn-sm no-print" id="printBtn" title="Print / save as PDF"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+    <button class="dark-btn no-print" id="darkBtn" title="Toggle dark mode"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    <button class="dark-btn no-print" id="searchBtn" title="Search everything (Ctrl+K)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+    <button class="lock-btn" id="lockBtn" title="Superadmin access"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
   </div>
 </header>
 
 <nav class="tab-bar" role="tablist" aria-label="Admin sections">
-  <button class="tab" role="tab" aria-selected="true"  id="tab-0">&#128202; Overview</button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-1">&#128200; Analytics</button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-2">&#128172; SMS Log <span class="tab-badge zero" id="badge-sms">0</span></button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-3">&#10071; Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-4">&#128101; Employees <span class="tab-badge zero" id="badge-emp">0</span></button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-5">&#128295; Manage</button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-6">&#128218; FAQ Editor</button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-7">&#128101; EMP Manager</button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-8">&#129302; Bot Tester</button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-9">&#128274; Security</button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-10">&#128190; Export</button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-11">&#9881; Setup</button>
+  <button class="tab" role="tab" aria-selected="true"  id="tab-0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Overview</button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Analytics</button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> SMS Log <span class="tab-badge zero" id="badge-sms">0</span></button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-4"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Employees <span class="tab-badge zero" id="badge-emp">0</span></button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Manage</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> FAQ Editor</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-7"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> EMP Manager</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg> Bot Tester</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-9"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Security</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-10"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-11"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Setup</button>
 </nav>
 
 <!-- ══════════════════ OVERVIEW ══════════════════ -->
@@ -403,7 +450,7 @@ body.dark .ws-item{background:var(--surface-3)}
 
   <!-- Weekly summary card -->
   <div class="card">
-    <div class="card-title">&#128197; This week at a glance <span id="ov-week-dates" style="font-weight:400;font-size:11px;color:var(--text-muted)"></span></div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> This week at a glance <span id="ov-week-dates" style="font-weight:400;font-size:11px;color:var(--text-muted)"></span></div>
     <div class="week-summary" id="ov-week"></div>
   </div>
 
@@ -426,7 +473,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <!-- Resolution rate gauge + key metrics -->
   <div class="g3">
     <div class="card" style="text-align:center">
-      <div class="card-title" style="justify-content:center">&#9989; Resolution Rate</div>
+      <div class="card-title" style="justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Resolution Rate</div>
       <div class="gauge-wrap">
         <svg class="gauge-svg" id="an-gauge-svg" viewBox="0 0 180 100"></svg>
         <div class="gauge-pct" id="an-gauge-pct">—</div>
@@ -435,12 +482,12 @@ body.dark .ws-item{background:var(--surface-3)}
       </div>
     </div>
     <div class="card" style="text-align:center">
-      <div class="card-title" style="justify-content:center">&#128172; Avg messages / session</div>
+      <div class="card-title" style="justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Avg messages / session</div>
       <div style="font-size:48px;font-weight:800;color:var(--brand-light);padding:18px 0;line-height:1" id="an-avg-msg">—</div>
       <div style="font-size:12px;color:var(--text-muted)">messages per conversation</div>
     </div>
     <div class="card" style="text-align:center">
-      <div class="card-title" style="justify-content:center">&#128101; Session depth</div>
+      <div class="card-title" style="justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Session depth</div>
       <div style="padding:8px 0">
         <div class="histogram" id="an-session-hist"></div>
         <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px"><span>1 msg</span><span>5+</span><span>10+</span></div>
@@ -454,7 +501,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <!-- FAQ bar chart with trend selector -->
   <div class="card">
     <div class="card-title">
-      &#127358; Most frequently asked topics (FAQ)
+      ✓ Most frequently asked topics (FAQ)
       <select class="finput btn-sm" id="an-faq-range" style="margin-left:auto;font-size:11.5px;padding:3px 8px;border-radius:6px">
         <option value="7">Last 7 days</option>
         <option value="30" selected>Last 30 days</option>
@@ -468,7 +515,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <!-- FAQ trend over time (line chart) -->
   <div class="card">
     <div class="card-title">
-      &#128200; Topic trend over time (daily, last 14 days)
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Topic trend over time (daily, last 14 days)
       <select class="finput btn-sm" id="an-trend-topic" style="margin-left:auto;font-size:11.5px;padding:3px 8px;border-radius:6px">
         <option value="pay">Pay queries</option>
         <option value="deduction">Deduction queries</option>
@@ -480,7 +527,7 @@ body.dark .ws-item{background:var(--surface-3)}
 
   <!-- Peak hours heatmap -->
   <div class="card">
-    <div class="card-title">&#128293; Peak hours heatmap <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">darker = busier</span></div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Peak hours heatmap <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">darker = busier</span></div>
     <div class="heatmap-wrap"><div class="heatmap" id="an-heatmap"></div></div>
   </div>
 
@@ -491,7 +538,7 @@ body.dark .ws-item{background:var(--surface-3)}
 
   <!-- Repeat contacts -->
   <div class="card">
-    <div class="card-title">&#128260; Repeat contacts <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">people who contacted more than once</span></div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Repeat contacts <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">people who contacted more than once</span></div>
     <div id="an-repeat-contacts"></div>
   </div>
 
@@ -502,7 +549,7 @@ body.dark .ws-item{background:var(--surface-3)}
 
   <!-- Department breakdown -->
   <div class="card">
-    <div class="card-title">&#127970; Queries by department</div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Queries by department</div>
     <div id="an-dept-chart"></div>
   </div>
 
@@ -510,7 +557,7 @@ body.dark .ws-item{background:var(--surface-3)}
 
   <!-- Bot training suggestions -->
   <div class="card">
-    <div class="card-title">&#129504; Bot training suggestions <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">most repeated unresolved phrases — consider adding these to your FAQ</span></div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Bot training suggestions <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">most repeated unresolved phrases — consider adding these to your FAQ</span></div>
     <div id="an-training"></div>
   </div>
 </div>
@@ -522,8 +569,8 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="sms-q" placeholder="Search name, phone or query&hellip;" autocomplete="off"/>
     <select class="finput" id="sms-t"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
-    <button class="btn btn-green btn-sm" id="sms-export">&#11015; CSV</button>
-    <button class="btn btn-red btn-sm" id="sms-clear">&#128465; Clear all</button>
+    <button class="btn btn-green btn-sm" id="sms-export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
+    <button class="btn btn-red btn-sm" id="sms-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear all</button>
   </div>
   <div id="sms-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px"></div>
   <div class="tw"><table class="dt"><thead><tr>
@@ -540,13 +587,13 @@ body.dark .ws-item{background:var(--surface-3)}
 <!-- ══════════════════ UNRESOLVED ══════════════════ -->
 <div id="panel-3" class="panel" role="tabpanel">
   <div class="panel-title">Unresolved Queries</div>
-  <div class="panel-desc">Unanswered messages and &#128078; unhelpful responses — needs review.</div>
+  <div class="panel-desc">Unanswered messages and unhelpful responses — needs review.</div>
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="ur-q" placeholder="Search queries&hellip;" autocomplete="off"/>
     <select class="finput" id="ur-t"><option value="">All types</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
     <select class="finput" id="ur-age"><option value="">Any age</option><option value="hot">Older than 7 days</option><option value="warm">3–7 days</option><option value="ok">Last 3 days</option></select>
-    <button class="btn btn-green btn-sm" id="ur-export">&#11015; CSV</button>
-    <button class="btn btn-red btn-sm" id="ur-clear">&#128465; Clear all</button>
+    <button class="btn btn-green btn-sm" id="ur-export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
+    <button class="btn btn-red btn-sm" id="ur-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear all</button>
   </div>
   <div id="ur-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px"></div>
   <div class="tw"><table class="dt"><thead><tr>
@@ -573,7 +620,7 @@ body.dark .ws-item{background:var(--surface-3)}
       <option value="name">Sort: Name</option>
       <option value="dept">Sort: Department</option>
     </select>
-    <button class="btn btn-green btn-sm" id="emp-export">&#11015; CSV</button>
+    <button class="btn btn-green btn-sm" id="emp-export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
     <div id="emp-cnt" style="font-size:12.5px;color:var(--text-muted)"></div>
@@ -602,30 +649,30 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="panel-desc">Add records manually. All changes sync to Supabase instantly.</div>
   <div class="g2">
     <div class="card">
-      <div class="card-title">&#128172; Add SMS record</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Add SMS record</div>
       <div class="form-row"><label>Full name</label><input type="text" id="m-name" placeholder="e.g. John Doe"/></div>
       <div class="form-row"><label>Phone number</label><input type="text" id="m-phone" placeholder="e.g. +447712345678"/></div>
       <div class="form-row"><label>Type</label><select id="m-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select></div>
       <div class="form-row"><label>Query</label><textarea id="m-content" placeholder="What did they ask?"></textarea></div>
-      <button class="btn btn-primary" id="m-add-sms">&#43; Save SMS record</button>
+      <button class="btn btn-primary" id="m-add-sms"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Save SMS record</button>
     </div>
     <div class="card">
-      <div class="card-title">&#10071; Add unresolved record</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Add unresolved record</div>
       <div class="form-row"><label>Query / phrase</label><textarea id="m-ur-query" placeholder="What did the bot fail to answer?"></textarea></div>
       <div class="form-row"><label>Reason</label><select id="m-ur-type"><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select></div>
-      <button class="btn btn-primary" id="m-add-ur">&#43; Save unresolved record</button>
+      <button class="btn btn-primary" id="m-add-ur"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Save unresolved record</button>
     </div>
   </div>
   <div class="g2">
     <div class="card" style="border-color:#fca5a5">
-      <div class="card-title" style="color:var(--red)">&#9888; Delete all SMS logs</div>
+      <div class="card-title" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all SMS logs</div>
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all SMS records from Supabase.</p>
-      <button class="btn btn-red" id="mg-clear-sms">&#128465; Delete all SMS logs</button>
+      <button class="btn btn-red" id="mg-clear-sms"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all SMS logs</button>
     </div>
     <div class="card" style="border-color:#fca5a5">
-      <div class="card-title" style="color:var(--red)">&#9888; Delete all unresolved logs</div>
+      <div class="card-title" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all unresolved logs</div>
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all unresolved query records from Supabase.</p>
-      <button class="btn btn-red" id="mg-clear-ur">&#128465; Delete all unresolved logs</button>
+      <button class="btn btn-red" id="mg-clear-ur"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all unresolvedolved logs</button>
     </div>
   </div>
 </div>
@@ -633,7 +680,7 @@ body.dark .ws-item{background:var(--surface-3)}
 
 <!-- ══════════════════ FAQ EDITOR ══════════════════ -->
 <div id="panel-6" class="panel" role="tabpanel">
-  <div class="panel-title">&#128218; FAQ Editor</div>
+  <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> FAQ Editor</div>
   <div class="panel-desc">Add, edit and delete FAQ entries. Changes are saved to your browser and can be exported as a <code>faqs.json</code> file to replace <code>public/config/faqs.json</code>.</div>
   <div class="faq-toolbar">
     <input class="finput faq-search" type="text" id="faq-search" placeholder="Search FAQs&hellip;" autocomplete="off"/>
@@ -649,35 +696,35 @@ body.dark .ws-item{background:var(--surface-3)}
       <option value="support">Support</option>
     </select>
     <span class="faq-unsaved-badge" id="faq-unsaved">&#9888; Unsaved changes</span>
-    <button class="btn btn-primary btn-sm" id="faq-save-json">&#11015; Export faqs.json</button>
-    <button class="btn btn-sec btn-sm" id="faq-import-btn">&#128196; Import JSON</button>
+    <button class="btn btn-primary btn-sm" id="faq-save-json"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export faqs.json</button>
+    <button class="btn btn-sec btn-sm" id="faq-import-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> Import JSON</button>
     <input type="file" id="faq-import-file" accept=".json" style="display:none"/>
   </div>
   <div id="faq-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px"></div>
   <div id="faq-list"></div>
-  <button class="faq-new-btn" id="faq-add-new">&#43; Add new FAQ entry</button>
+  <button class="faq-new-btn" id="faq-add-new"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Add new FAQ entry</button>
 </div>
 
 <!-- ══════════════════ EMP MANAGER ══════════════════ -->
 <div id="panel-7" class="panel" role="tabpanel">
-  <div class="panel-title">&#128101; EMP Manager</div>
+  <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> EMP Manager</div>
   <div class="panel-desc">Add or remove individual employees from the EMP validation list without re-uploading the whole spreadsheet.</div>
   <div class="g2">
     <div class="card">
-      <div class="card-title">&#43; Add employee</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Add employee</div>
       <div class="form-row"><label>EMP Number (6 digits)</label><input type="text" id="emp-mgr-emp" maxlength="6" inputmode="numeric" placeholder="e.g. 123456" autocomplete="off"/></div>
       <div class="form-row"><label>Full name</label><input type="text" id="emp-mgr-name" placeholder="e.g. John Smith"/></div>
       <div class="form-row"><label>Department</label><input type="text" id="emp-mgr-dept" placeholder="e.g. Telecoms"/></div>
-      <button class="btn btn-green" id="emp-mgr-add">&#43; Add to list</button>
+      <button class="btn btn-green" id="emp-mgr-add"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Add to list</button>
       <div class="setup-status" id="emp-mgr-status"></div>
     </div>
     <div class="card">
-      <div class="card-title">&#128202; List status</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> List status</div>
       <div id="emp-mgr-stats" style="font-size:13.5px;color:var(--text-sec);line-height:2"></div>
     </div>
   </div>
   <div class="card">
-    <div class="card-title">&#128101; Current EMP list <span id="emp-mgr-cnt" style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px"></span></div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Current EMP list <span id="emp-mgr-cnt" style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px"></span></div>
     <div class="fbar">
       <input class="finput finput-stretch" type="text" id="emp-mgr-search" placeholder="Search EMP or name&hellip;" autocomplete="off"/>
     </div>
@@ -691,11 +738,11 @@ body.dark .ws-item{background:var(--surface-3)}
 
 <!-- ══════════════════ BOT TESTER ══════════════════ -->
 <div id="panel-8" class="panel" role="tabpanel">
-  <div class="panel-title">&#129302; Bot Tester</div>
+  <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg> Bot Tester</div>
   <div class="panel-desc">Test how the bot responds to any phrase without leaving the admin page. Uses the same intent detection and FAQ matching as the real chat.</div>
   <div class="g2">
     <div class="card" style="display:flex;flex-direction:column">
-      <div class="card-title">&#128172; Test chat</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Test chat</div>
       <div class="bot-test-window" id="bt-window"></div>
       <div class="bt-input-row">
         <input class="bt-input" type="text" id="bt-input" placeholder="Type a message to test&hellip;" autocomplete="off"/>
@@ -704,12 +751,12 @@ body.dark .ws-item{background:var(--surface-3)}
       </div>
     </div>
     <div class="card">
-      <div class="card-title">&#9889; Quick test phrases</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Quick test phrases</div>
       <p style="font-size:12.5px;color:var(--text-sec);margin-bottom:10px">Click to test common inputs:</p>
       <div id="bt-chips"></div>
-      <div class="card-title" style="margin-top:16px">&#128269; Intent detected</div>
+      <div class="card-title" style="margin-top:16px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Intent detected</div>
       <div id="bt-intent" style="font-size:13px;color:var(--text-sec);margin-top:4px">—</div>
-      <div class="card-title" style="margin-top:16px">&#128218; FAQ matched</div>
+      <div class="card-title" style="margin-top:16px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> FAQ matched</div>
       <div id="bt-faq" style="font-size:13px;color:var(--text-sec);margin-top:4px">—</div>
     </div>
   </div>
@@ -717,15 +764,15 @@ body.dark .ws-item{background:var(--surface-3)}
 
 <!-- ══════════════════ SECURITY ══════════════════ -->
 <div id="panel-9" class="panel" role="tabpanel">
-  <div class="panel-title">&#128274; Security</div>
+  <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Security</div>
   <div class="panel-desc">Monitor PIN access attempts and manage session timeout.</div>
   <div class="g2">
     <div class="card">
-      <div class="card-title">&#9888; Failed PIN attempts</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Failed PIN attempts</div>
       <div id="pin-attempts-list"></div>
     </div>
     <div class="card">
-      <div class="card-title">&#9201; Session timeout</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Session timeout</div>
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Automatically lock the superadmin tabs after a period of inactivity. The page stays open but the tabs hide and require the PIN again.</p>
       <div class="form-row">
         <label>Lock after</label>
@@ -737,54 +784,54 @@ body.dark .ws-item{background:var(--surface-3)}
           <option value="60">1 hour</option>
         </select>
       </div>
-      <button class="btn btn-primary" id="timeout-save">&#9989; Save timeout setting</button>
+      <button class="btn btn-primary" id="timeout-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Save timeout setting</button>
       <div class="setup-status" id="timeout-status"></div>
     </div>
   </div>
   <div class="card">
-    <div class="card-title">&#128218; PIN change history</div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> PIN change history</div>
     <div id="pin-history-list"></div>
   </div>
 </div>
 
 <!-- ══════════════════ EXPORT ══════════════════ -->
 <div id="panel-10" class="panel" role="tabpanel">
-  <div class="panel-title">&#128190; Export &amp; Backup</div>
+  <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export &amp; Backup</div>
   <div class="panel-desc">Download a full backup of all data as individual CSV files or a combined report.</div>
   <div class="g2">
     <div class="card">
-      <div class="card-title">&#128230; Export all data</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Export all data</div>
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px;line-height:1.6">Downloads all data as separate CSV files — SMS log, unresolved queries, employee list and activity log. Each file is named with today&apos;s date.</p>
-      <button class="btn btn-primary" id="export-all-btn">&#11015; Export all as CSV files</button>
+      <button class="btn btn-primary" id="export-all-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export all as CSV files</button>
       <div class="export-progress" id="export-progress"><div class="export-progress-fill" id="export-progress-fill" style="width:0%"></div></div>
       <div class="setup-status" id="export-status"></div>
     </div>
     <div class="card">
-      <div class="card-title">&#128196; Export FAQ</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Export FAQ</div>
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px;line-height:1.6">Download your current FAQ entries as a <code>faqs.json</code> file ready to drop into <code>public/config/faqs.json</code>.</p>
-      <button class="btn btn-green" id="export-faq-btn">&#11015; Download faqs.json</button>
+      <button class="btn btn-green" id="export-faq-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download faqs.json</button>
     </div>
   </div>
   <div class="card">
-    <div class="card-title">&#128202; Export summary</div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Export summary</div>
     <div id="export-summary" style="font-size:13.5px;color:var(--text-sec);line-height:2"></div>
   </div>
 </div>
 
 <!-- ══════════════════ SETUP ══════════════════ -->
 <div id="panel-11" class="panel" role="tabpanel">
-  <div class="panel-title">&#9881; Setup</div>
+  <div class="panel-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Setup</div>
   <div class="panel-desc">Employee list, Supabase connection and superadmin PIN management.</div>
 
   <!-- EMP LIST UPLOAD -->
   <div class="card">
-    <div class="card-title">&#128101; Employee EMP List <span id="emp-list-badge" style="font-weight:400;font-size:11px;color:var(--text-muted)">not loaded</span></div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Employee EMP List <span id="emp-list-badge" style="font-weight:400;font-size:11px;color:var(--text-muted)">not loaded</span></div>
     <p style="font-size:13.5px;color:var(--text-sec);margin-bottom:16px;line-height:1.7">
       Upload your employee spreadsheet (<strong>.xlsx</strong> or <strong>.csv</strong>). Column A: <strong>EMP number</strong>, Column B: <strong>Full name</strong>, Column C: <strong>Department</strong>. A header row is fine — it will be skipped automatically.<br>
       Once uploaded, the list is saved in shared storage and the chat bot will <strong>block anyone whose EMP number is not on the list</strong>. Upload a new file at any time to update the list.
     </p>
     <div class="emp-upload-zone" id="empUploadZone">
-      <div style="font-size:32px;margin-bottom:8px">&#128196;</div>
+      <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 12 12 18"/><polyline points="9 15 12 12 15 15"/></svg></div>
       <div style="font-size:14px;font-weight:600;color:var(--brand)">Drop your Excel or CSV file here</div>
       <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px">or click to browse</div>
       <input type="file" id="empFileInput" accept=".xlsx,.xls,.csv" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
@@ -797,37 +844,37 @@ body.dark .ws-item{background:var(--surface-3)}
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn btn-green" id="emp-upload-save" style="display:none">&#9989; Save &amp; activate list</button>
-      <button class="btn btn-red btn-sm" id="emp-list-clear">&#128465; Clear EMP list (disable validation)</button>
+      <button class="btn btn-green" id="emp-upload-save" style="display:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Save &amp; activate list</button>
+      <button class="btn btn-red btn-sm" id="emp-list-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear EMP list (disable validation)</button>
     </div>
   </div>
 
   <!-- Broadcast message -->
   <div class="card">
-    <div class="card-title">📢 Broadcast message to all users</div>
+    <div class="card-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg> Broadcast message to all users</div>
     <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">
       Set a message that appears at the top of the chat bot for every user when they open it.
       Useful for outages, bank holidays, or important notices. Leave blank to clear.
     </p>
     <div class="form-row"><label>Message</label><input type="text" id="broadcast-input" placeholder="e.g. System maintenance today 12–2pm — limited availability" maxlength="200"/></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-primary" id="broadcast-save">📢 Publish message</button>
-      <button class="btn btn-red btn-sm" id="broadcast-clear">✕ Clear message</button>
+      <button class="btn btn-primary" id="broadcast-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg> Publish message</button>
+      <button class="btn btn-red btn-sm" id="broadcast-clear"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Clear</button>
     </div>
     <div class="setup-status" id="broadcast-status"></div>
     <div id="broadcast-preview" style="display:none;margin-top:12px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;color:#92400e"></div>
   </div>
 
   <div class="card" style="max-width:420px">
-    <div class="card-title">&#128274; Change Superadmin PIN</div>
+    <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Change Superadmin PIN</div>
     <div class="form-row"><label>Current PIN</label><input type="password" id="pin-current" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
     <div class="form-row"><label>New PIN (4 digits)</label><input type="password" id="pin-new" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
     <div class="form-row"><label>Confirm new PIN</label><input type="password" id="pin-confirm" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
-    <button class="btn btn-primary" id="pin-save">&#128274; Update PIN</button>
+    <button class="btn btn-primary" id="pin-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Update PIN</button>
     <div class="setup-status" id="pin-status"></div>
   </div>
   <div class="setup-card">
-    <h3>&#128640; Supabase setup (free, 3 minutes)</h3>
+    <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> Supabase setup (free, 3 minutes)</h3>
     <ol>
       <li>Go to <strong><a href="https://supabase.com" target="_blank" style="color:var(--brand-light)">supabase.com</a></strong> → sign in with GitHub → <strong>New project</strong></li>
       <li>Wait ~2 min, then open <strong>SQL Editor</strong> and run:
@@ -842,10 +889,15 @@ create table unresolved (
 );
 create table sessions (
   id bigint generated always as identity primary key,
-  ts bigint not null, date text default '', messages int default 0
+  ts bigint not null, date text default '', messages int default 0,
+  emp text default '', name text default '', dept text default ''
 );
 alter table sms_log enable row level security;
 alter table unresolved enable row level security;
+-- If sessions table already exists, run these to add the missing columns:
+-- alter table sessions add column if not exists emp text default '';
+-- alter table sessions add column if not exists name text default '';
+-- alter table sessions add column if not exists dept text default '';
 alter table sessions enable row level security;
 create policy "pub read" on sms_log for select using (true);
 create policy "pub insert" on sms_log for insert with check (true);
@@ -875,7 +927,7 @@ create policy "pub delete" on kv_store for delete using (true);</code>
       <div><label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase">Project URL</label><input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxx.supabase.co"/></div>
       <div><label style="font-size:12px;font-weight:700;color:var(--text-sec);display:block;margin-bottom:4px;text-transform:uppercase">Anon / Public Key</label><input type="text" id="cfg-key" placeholder="eyJ..."/></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-green" id="cfg-save">&#9989; Save &amp; Test</button>
+        <button class="btn btn-green" id="cfg-save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Save &amp; Test</button>
         <button class="btn btn-red btn-sm" id="cfg-clear">Clear credentials</button>
       </div>
       <div class="setup-status" id="cfg-status"></div>
@@ -886,7 +938,7 @@ create policy "pub delete" on kv_store for delete using (true);</code>
 <!-- ADD SMS MODAL -->
 <div class="modal-bg hidden" id="modal-sms">
   <div class="modal">
-    <h3>&#128172; Quick-add SMS record</h3>
+    <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Quick-add SMS record</h3>
     <p>Manually log a pay or deduction query from a member.</p>
     <div class="form-row"><label>Full name</label><input type="text" id="qm-name" placeholder="e.g. Jane Smith"/></div>
     <div class="form-row"><label>Phone</label><input type="text" id="qm-phone" placeholder="e.g. +447712345678"/></div>
@@ -908,7 +960,7 @@ create policy "pub delete" on kv_store for delete using (true);</code>
 <!-- SUPERADMIN PIN MODAL -->
 <div class="sa-pin-modal hidden" id="sa-pin-modal">
   <div class="sa-pin-box">
-    <div style="font-size:40px;margin-bottom:12px">&#128272;</div>
+    <div style="font-size:40px;margin-bottom:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
     <h3>Superadmin Access</h3>
     <p>Enter your superadmin PIN to access Manage &amp; Setup</p>
     <div class="sa-pin-dots"><div class="sa-pin-dot" id="sa-d0"></div><div class="sa-pin-dot" id="sa-d1"></div><div class="sa-pin-dot" id="sa-d2"></div><div class="sa-pin-dot" id="sa-d3"></div></div>
@@ -927,7 +979,7 @@ create policy "pub delete" on kv_store for delete using (true);</code>
 <div class="gsearch-overlay hidden" id="gsearch">
   <div class="gsearch-box">
     <div class="gsearch-input-wrap">
-      <span style="font-size:16px;color:var(--text-muted)">&#128269;</span>
+      <span style="font-size:16px;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       <input type="text" id="gsearch-input" placeholder="Search employees, SMS, unresolved queries&hellip;" autocomplete="off"/>
       <button class="gsearch-close" id="gsearch-close">&#10005;</button>
     </div>
@@ -940,12 +992,12 @@ create policy "pub delete" on kv_store for delete using (true);</code>
 <!-- NOTE MODAL -->
 <div class="modal-bg hidden" id="modal-note">
   <div class="modal">
-    <h3>&#128221; Add / edit note</h3>
+    <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Add / edit note</h3>
     <p>Add a short note to this unresolved record — e.g. "Called back", "Added to FAQ", "Referred to manager".</p>
     <textarea class="note-modal-ta" id="note-textarea" placeholder="Type your note here&hellip;" maxlength="300"></textarea>
     <div style="font-size:11.5px;color:var(--text-muted);text-align:right;margin-top:4px" id="note-char-count">0 / 300</div>
     <div class="modal-btns" style="margin-top:16px">
-      <button class="btn btn-red btn-sm" id="note-delete">&#128465; Remove note</button>
+      <button class="btn btn-red btn-sm" id="note-delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Remove note</button>
       <button class="btn btn-sec" id="note-cancel">Cancel</button>
       <button class="btn btn-primary" id="note-save">Save note</button>
     </div>
@@ -1252,7 +1304,7 @@ function initSetup(){
 function renderSetupWarn(){
   const el=$('#setup-warn');if(!el)return;
   if(!SB.ready()){
-    el.innerHTML=`<div class="setup-card" style="margin-bottom:20px"><h3>&#9888; Supabase not configured yet</h3><p>Data will only be on <em>this browser</em> until you connect Supabase. Go to the <strong>&#9881; Setup</strong> tab — free, 3 minutes.</p><button class="btn btn-primary btn-sm" id="goto-setup">Go to Setup &#8594;</button></div>`;
+    el.innerHTML=`<div class="setup-card" style="margin-bottom:20px"><h3>&#9888; Supabase not configured yet</h3><p>Data will only be on <em>this browser</em> until you connect Supabase. Go to the <strong><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Setup</strong> tab — free, 3 minutes.</p><button class="btn btn-primary btn-sm" id="goto-setup">Go to Setup &#8594;</button></div>`;
     $('#goto-setup')?.addEventListener('click',()=>$$('.tab-bar .tab').at(-1).click());
   } else { el.innerHTML=''; }
 }
@@ -1334,7 +1386,7 @@ async function renderOverview(){
 
   const tl=$('#ov-timeline');tl.innerHTML='';
   const events=[...sms.map(x=>({ts:x.ts,type:'sms',label:`${x.sender_name||'Unknown'} — ${x.type||'?'} query`,color:'var(--brand-light)'})),...ur.map(x=>({ts:x.ts,type:'ur',label:`Unresolved: ${(x.query||'').slice(0,60)}`,color:'var(--orange)'}))].sort((a,b)=>b.ts-a.ts).slice(0,20);
-  if(!events.length){tl.innerHTML='<div class="empty"><span class="empty-icon">📋</span><p>No events yet.</p></div>';}
+  if(!events.length){tl.innerHTML='<div class="empty"><span class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span><p>No events yet.</p></div>';}
   else events.forEach(e=>{tl.innerHTML+=`<div class="tl-item"><div class="tl-dot" style="background:${e.color}"></div><div class="tl-body"><div class="tl-main">${esc(e.label)}</div><div class="tl-time">${fmtDT(e.ts)}</div></div>${badge(e.type==='sms'?'sms':'unanswered')}</div>`;});
 }
 
@@ -1457,7 +1509,7 @@ const SMSTbl={
     rows.forEach(x=>{
       const tr=document.createElement('tr');
       tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td><strong>${esc(x.sender_name||'—')}</strong></td><td style="white-space:nowrap">${esc(x.phone||'—')}</td><td>${badge(x.type)}</td><td class="clip" title="${esc(x.content)}">${esc(x.content||'—')}</td><td><div class="row-actions"></div></td>`;
-      const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.textContent='🗑';
+      const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
       del.addEventListener('click',()=>this.remove(x.id));
       tr.querySelector('.row-actions').appendChild(del);body.appendChild(tr);
     });
@@ -1503,12 +1555,12 @@ const URTbl={
     $('#ur-cnt').innerHTML=plural(rows.length,'record')+(this.data.length!==rows.length?` (${this.data.length} total)`:'')+
       (hotCount?` <span style="color:var(--red);font-weight:700;margin-left:8px">⚠ ${hotCount} overdue (7+ days)</span>`:'');
     const body=$('#ur-body');body.innerHTML='';
-    if(!rows.length){body.innerHTML=`<tr><td colspan="5"><div class="empty"><span class="empty-icon">${this.data.length?'🔍':'✅'}</span><p>${this.data.length?'No records match your filter.':'No unresolved queries — great!'}</p></div></td></tr>`;return;}
+    if(!rows.length){body.innerHTML=`<tr><td colspan="5"><div class="empty"><span class="empty-icon">${this.data.length?'&#x2315;':'&#x2713;'}</span><p>${this.data.length?'No records match your filter.':'No unresolved queries — great!'}</p></div></td></tr>`;return;}
     rows.forEach(x=>{
       const tr=document.createElement('tr');
       if(daysAgo(x.ts)>=7)tr.style.background='#fff5f5';
       tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td class="clip" title="${esc(x.query)}">${esc(x.query||'—')}</td><td>${badge(x.type)}</td><td>${ageBadge(x.ts)}</td><td><div class="row-actions"></div></td>`;
-      const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.textContent='🗑';
+      const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
       del.addEventListener('click',()=>this.remove(x.id));
       tr.querySelector('.row-actions').appendChild(del);body.appendChild(tr);
     });
@@ -1590,14 +1642,14 @@ function initSuperadminPin(){
   function checkPin(){
     if(saBuffer===getSaPin()){
       saUnlocked=true;modal.classList.add('hidden');
-      lockBtn.textContent='🔓';lockBtn.classList.add('unlocked');lockBtn.title='Lock superadmin';
+      lockBtn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;lockBtn.classList.add('unlocked');lockBtn.title='Lock superadmin';
       $$('.superadmin-tab').forEach(t=>t.classList.add('unlocked'));
       toast('🔓 Superadmin tabs unlocked');resetBuffer();
       loadFaqEditData().then(()=>renderFaqEditor());renderEmpManager();renderExportSummary();resetInactivityTimer();
     } else { shakeBox();errEl.textContent='Incorrect PIN';saBuffer='';updateDots();logFailedPinAttempt();logActivity('❌','Failed superadmin PIN attempt');renderSecurityPanel(); }
   }
   function lockSuperadmin(){
-    saUnlocked=false;lockBtn.textContent='🔒';lockBtn.classList.remove('unlocked');lockBtn.title='Superadmin access';
+    saUnlocked=false;lockBtn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;lockBtn.classList.remove('unlocked');lockBtn.title='Superadmin access';
     $$('.superadmin-tab').forEach(t=>{
       t.classList.remove('unlocked');
       if(t.getAttribute('aria-selected')==='true') $$('.tab-bar .tab')[0].click();
@@ -1643,37 +1695,51 @@ function initChangePinSection(){
    available. Fallback works without Supabase.
 ══════════════════════════════════════════ */
 async function fetchEmployees() {
-  // Always read localStorage (chat.js writes here)
+  // Read localStorage employee records (chat.js writes here on every login)
   let local = {};
   try { local = JSON.parse(localStorage.getItem('ws_employees_v1') || '{}'); } catch {}
-  const arr = Object.values(local);
+  const localArr = Object.values(local);
 
-  // If Supabase configured, try to merge with Supabase sessions data
-  // (sessions table has emp field since we updated chat.js)
   if (SB.ready()) {
     try {
+      // Fetch sessions from Supabase — includes emp, name, dept columns
       const sessions = await SB.select('sessions', 'limit=5000');
       const empMap = {};
+
       sessions.forEach(s => {
         if (!s.emp) return;
-        const e = empMap[s.emp] || { emp: s.emp, firstSeen: s.ts, lastSeen: s.ts, sessions: 0 };
-        e.sessions++;
-        if (s.ts < e.firstSeen) e.firstSeen = s.ts;
-        if (s.ts > e.lastSeen)  e.lastSeen  = s.ts;
-        empMap[s.emp] = e;
+        const existing = empMap[s.emp] || {
+          emp: s.emp, name: s.name || '', dept: s.dept || '',
+          firstSeen: s.ts, lastSeen: s.ts, sessions: 0
+        };
+        existing.sessions++;
+        if (s.ts < existing.firstSeen) existing.firstSeen = s.ts;
+        if (s.ts > existing.lastSeen)  existing.lastSeen  = s.ts;
+        if (s.name && !existing.name)  existing.name = s.name;
+        if (s.dept && !existing.dept)  existing.dept = s.dept;
+        empMap[s.emp] = existing;
       });
-      // Merge: Supabase gives session counts; localStorage gives name/dept (set in browser)
+
+      // Merge localStorage — has richer name/dept; use it to fill gaps
       Object.values(empMap).forEach(sb => {
         const loc = local[sb.emp];
-        if (loc) { sb.name = loc.name || ''; sb.dept = loc.dept || ''; }
-        empMap[sb.emp] = sb;
+        if (loc) {
+          if (loc.name && !sb.name) sb.name = loc.name;
+          if (loc.dept && !sb.dept) sb.dept = loc.dept;
+          if (loc.firstSeen && loc.firstSeen < sb.firstSeen) sb.firstSeen = loc.firstSeen;
+        }
       });
-      // Add any localStorage-only entries not in Supabase
-      arr.forEach(loc => { if (!empMap[loc.emp]) empMap[loc.emp] = loc; });
-      return Object.values(empMap);
-    } catch {}
+
+      // Add localStorage-only employees not yet in Supabase
+      localArr.forEach(loc => { if (loc.emp && !empMap[loc.emp]) empMap[loc.emp] = loc; });
+
+      const result = Object.values(empMap);
+      if (result.length > 0) return result;
+      // Fall through to localStorage if Supabase returned nothing
+    } catch(e) { console.warn('fetchEmployees Supabase error:', e); }
   }
-  return arr;
+
+  return localArr;
 }
 
 const EmpTbl = {
@@ -1704,7 +1770,7 @@ const EmpTbl = {
 
     const body = $('#emp-body'); body.innerHTML = '';
     if (!rows.length) {
-      body.innerHTML = `<tr><td colspan="6"><div class="empty"><span class="empty-icon">&#128101;</span><p>${this.data.length ? 'No employees match your search.' : 'No employees yet — they will appear here once someone logs in with their EMP number.'}</p></div></td></tr>`;
+      body.innerHTML = `<tr><td colspan="6"><div class="empty"><span class="empty-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><p>${this.data.length ? 'No employees match your search.' : 'No employees yet — they will appear here once someone logs in with their EMP number.'}</p></div></td></tr>`;
       return;
     }
     rows.forEach(x => {
@@ -1905,7 +1971,7 @@ function bindEmpUpload() {
     saveBtn.textContent = '✅ Saved!';
     logActivity('📋',`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees`);toast(`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees loaded ✓`);
     pendingList = null;
-    setTimeout(async () => { if (saveBtn) { saveBtn.disabled = false; saveBtn.style.display = 'none'; saveBtn.innerHTML = '&#9989; Save &amp; activate list'; } }, 2000);
+    setTimeout(async () => { if (saveBtn) { saveBtn.disabled = false; saveBtn.style.display = 'none'; saveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Save &amp; activate list'; } }, 2000);
   });
 
   // Clear
@@ -2042,7 +2108,7 @@ let darkMode = localStorage.getItem(DARK_KEY) === '1';
 function applyDark() {
   document.body.classList.toggle('dark', darkMode);
   const btn = $('#darkBtn');
-  if (btn) btn.textContent = darkMode ? '☀️' : '🌙';
+  if (btn) btn.innerHTML = darkMode ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>` : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 }
 function bindDarkMode() {
   applyDark();
@@ -2123,7 +2189,7 @@ function runGlobalSearch(q) {
     html += `<div class="gsearch-section">Employees</div>`;
     empHits.forEach(x => {
       html += `<div class="gsearch-item" data-goto="emp">
-        <div class="gsearch-item-icon">👤</div>
+        <div class="gsearch-item-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
         <div class="gsearch-item-main"><strong>${esc(x.emp||'—')}</strong> — ${esc(x.name||'—')}
           <div class="gsearch-item-sub">${esc(x.dept||'No department')} · ${x.sessions||0} session${x.sessions!==1?'s':''}</div>
         </div>
@@ -2135,7 +2201,7 @@ function runGlobalSearch(q) {
     html += `<div class="gsearch-section">SMS Log</div>`;
     smsHits.forEach(x => {
       html += `<div class="gsearch-item" data-goto="sms">
-        <div class="gsearch-item-icon">💬</div>
+        <div class="gsearch-item-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <div class="gsearch-item-main">${esc(x.sender_name||'Unknown')}
           <div class="gsearch-item-sub">${esc((x.content||'').slice(0,80))}</div>
         </div>
@@ -2147,7 +2213,7 @@ function runGlobalSearch(q) {
     html += `<div class="gsearch-section">Unresolved</div>`;
     urHits.forEach(x => {
       html += `<div class="gsearch-item" data-goto="ur">
-        <div class="gsearch-item-icon">❓</div>
+        <div class="gsearch-item-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
         <div class="gsearch-item-main">${esc((x.query||'').slice(0,100))}
           <div class="gsearch-item-sub">${ageBadge(x.ts).replace(/<[^>]+>/g,'')} · ${esc(x.type||'')}</div>
         </div>
@@ -2250,7 +2316,7 @@ async function renderActivityLog() {
     if (!panel0) return;
     card = document.createElement('div');
     card.className = 'card'; card.id = 'act-log-card';
-    card.innerHTML = '<div class="card-title">&#128218; Admin activity log <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">actions taken in this admin panel — shared across all admins</span></div><div id="act-log-body"></div>';
+    card.innerHTML = '<div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Admin activity log <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">actions taken in this admin panel — shared across all admins</span></div><div id="act-log-body"></div>';
     panel0.appendChild(card);
   }
   const body = $('#act-log-body');
@@ -2468,8 +2534,8 @@ function renderFaqEditor() {
         </div>
         <div class="faq-field"><label>Synonyms / alternate phrasings (comma-separated)</label><input type="text" class="faq-s-input" value="${esc((f.synonyms||[]).join(', '))}" placeholder="e.g. what time do you open, when are you open"/></div>
         <div class="faq-item-actions">
-          <button class="btn btn-primary btn-sm faq-save-btn">&#9989; Save changes</button>
-          <button class="btn btn-red btn-sm faq-del-btn">&#128465; Delete</button>
+          <button class="btn btn-primary btn-sm faq-save-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Save changes</button>
+          <button class="btn btn-red btn-sm faq-del-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete</button>
         </div>
       </div>`;
 
@@ -2562,7 +2628,7 @@ function renderEmpManager() {
     if (!list) {
       if (statsEl) statsEl.innerHTML = '⚠️ No EMP list loaded yet.<br>Upload one in the Setup tab first.';
       if (cntEl) cntEl.textContent = '';
-      $('#emp-mgr-body').innerHTML = '<tr><td colspan="4" class="empty"><span class="empty-icon">📋</span><p>No EMP list loaded. Upload a spreadsheet in the Setup tab.</p></td></tr>';
+      $('#emp-mgr-body').innerHTML = '<tr><td colspan="4" class="empty"><span class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span><p>No EMP list loaded. Upload a spreadsheet in the Setup tab.</p></td></tr>';
       return;
     }
     const count = Object.keys(list).length;
