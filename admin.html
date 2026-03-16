@@ -960,7 +960,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 /* ══════════════════════════════════════════
    SUPABASE CLIENT
 ══════════════════════════════════════════ */
-const SB = (async () => {
+const SB = (() => {
   const CFG_KEY = 'ws_sb_cfg';
   let url = '', key = '';
   function load(){ try{ const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}');url=c.url||'';key=c.key||''; }catch{} }
