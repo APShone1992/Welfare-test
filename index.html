@@ -255,8 +255,11 @@
           if (latest && Date.now() - latest.start < 5000) {
             sbInsert('sessions', {
               ts:       latest.start,
-              date:     latest.date || new Date(latest.start).toISOString().slice(0,10),
-              messages: latest.messages || 0
+              date:     latest.date     || new Date(latest.start).toISOString().slice(0,10),
+              messages: latest.messages || 0,
+              emp:      latest.emp      || '',
+              name:     latest.name     || '',
+              dept:     latest.dept     || ''
             });
           }
         } catch(e) {}
