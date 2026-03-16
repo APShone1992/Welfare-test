@@ -1882,7 +1882,7 @@ async function refreshAll(){
     // Render dept chart and training suggestions
     renderDeptChart(SMSTbl.data);
     renderTrainingSuggestions(URTbl.data);
-    renderActivityLog();
+    await renderActivityLog();
     renderSecurityPanel();
     renderExportSummary();
   }catch(e){
@@ -2647,7 +2647,7 @@ function bindBotTester() {
 /* ══════════════════════════════════════════
    EXPORT & BACKUP
 ══════════════════════════════════════════ */
-function renderExportSummary() {
+async function renderExportSummary() {
   const el = $('#export-summary');
   if (!el) return;
   Promise.all([fetchSMS(), fetchUR(), fetchEmployees(), fetchSessions()]).then(([sms,ur,emp,sess]) => {
@@ -2678,7 +2678,7 @@ function bindExport() {
       setProgress(10); const sms = await fetchSMS();
       setProgress(25); const ur  = await fetchUR();
       setProgress(40); const emp = await fetchEmployees();
-      setProgress(55); const act = getActivityLog();
+      setProgress(55); const act = await getActivityLog();
       setProgress(70);
 
       dlCSV([['Date','EMP','Name','Phone','Type','Query'],...sms.map(x=>[fmtDT(x.ts),x.emp||'',x.sender_name||'',x.phone||'',x.type||'',x.content||''])], `sms_log_${today}.csv`);
