@@ -1189,15 +1189,19 @@ function showEmpGate() {
   const gName  = gate.querySelector("#gName");
   const gStart = gate.querySelector("#gStart");
   let attempts = 0;
+  let validating = false; // prevents double-fire from auto-submit + button click
 
   function shake(el) { el.animate([{transform:"translateX(0)"},{transform:"translateX(-8px)"},{transform:"translateX(8px)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:360,easing:"ease"}); }
   function setErr(msg) { gErr.textContent = msg; gErr.style.display = "block"; gEmp.style.cssText += ";border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,0.15)"; shake(gEmp); }
   function clrErr() { gErr.style.display = "none"; gEmp.style.borderColor = "rgba(26,58,107,0.18)"; gEmp.style.boxShadow = ""; }
 
   async function validateEMP() {
+    if (validating) return;
+    validating = true;
     const raw = gEmp.value.trim();
     if (!/^\d{6}$/.test(raw)) {
       if (++attempts >= 3) { lockout('Too many attempts — please refresh the page to try again.'); return; }
+      validating = false;
       setErr(`Please enter exactly 6 digits. ${3 - attempts} attempt${3 - attempts !== 1 ? "s" : ""} remaining.`);
       gEmp.value = ""; gEmp.focus(); return;
     }
@@ -1219,6 +1223,7 @@ function showEmpGate() {
 
     if (!result.valid) {
       if (++attempts >= 3) { lockout('EMP number not recognised. Please contact your manager or HR to verify your EMP number.'); return; }
+      validating = false;
       setErr(`EMP number not found on our system. ${3 - attempts} attempt${3 - attempts !== 1 ? "s" : ""} remaining.`);
       gEmp.value = ""; gEmp.focus(); return;
     }
