@@ -1137,7 +1137,6 @@ function init() {
       `${namePrefix}I'm <b>Welfare Support</b>, please let me know what your query is regarding using the <b>Topics</b> button or type below.`,
       "bot", { html: true, speak: false, noFeedback: true }
     );
-    addChips(["Pay / Payroll","Deductions","Work Allocation","Manager Disputes","Department Contacts","Contract Change","Equipment Query","Street Works","Smart Awards","ID Cards"]);
   } else {
     addBubble(namePrefix + getGreeting(), "bot", { html: true, speak: false, noFeedback: true });
   }
