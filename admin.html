@@ -1037,39 +1037,77 @@ const SB = (() => {
    Falls back to localStorage when not.
    All admins read/write the same values.
 ══════════════════════════════════════════ */
+// Supabase credentials — must match chat.js and index.html
+const _KV_SB_URL  = 'https://jlhtcwsbigznojwfxmox.supabase.co';
+const _KV_SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaHRjd3NiaWd6bm9qd2Z4bW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTkzNjcsImV4cCI6MjA4ODk3NTM2N30.u9hOH97ASyyVaLgBKHdrdBo1F8W1BIqwGrm06vcvasU';
+
+function _kvHdrs() {
+  return {
+    'apikey': _KV_SB_ANON,
+    'Authorization': 'Bearer ' + _KV_SB_ANON,
+    'Content-Type': 'application/json'
+  };
+}
+
 const KV = {
   async get(key) {
-    if (SB.ready()) {
-      try {
-        const rows = await SB.select('kv_store', `key=eq.${encodeURIComponent(key)}&limit=1`);
-        if (rows && rows.length) return JSON.parse(rows[0].value);
-      } catch {}
-    }
+    // Always try Supabase first (works on any device)
+    try {
+      const r = await fetch(
+        `${_KV_SB_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}&limit=1&select=value`,
+        { headers: _kvHdrs() }
+      );
+      if (r.ok) {
+        const rows = await r.json();
+        if (rows && rows.length && rows[0].value) {
+          const parsed = JSON.parse(rows[0].value);
+          // Cache locally
+          try { localStorage.setItem('kv:' + key, rows[0].value); } catch {}
+          return parsed;
+        }
+      }
+    } catch {}
+    // Fallback: localStorage cache
     try { const v = localStorage.getItem('kv:' + key); return v ? JSON.parse(v) : null; } catch { return null; }
   },
+
   async set(key, value) {
     const json = JSON.stringify(value);
-    if (SB.ready()) {
-      try {
-        // Upsert: delete then insert (Supabase REST upsert)
-        await fetch(`${SB.getUrl()}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`, {
-          method: 'DELETE',
-          headers: { 'apikey': SB.getKey(), 'Authorization': 'Bearer ' + SB.getKey() }
-        });
-        await SB.insert('kv_store', { key, value: json, updated_at: Date.now() });
-      } catch {}
-    }
+    // Always write to Supabase (upsert via PATCH on existing or POST for new)
+    try {
+      // First try PATCH (update if exists)
+      const patch = await fetch(
+        `${_KV_SB_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`,
+        { method: 'PATCH', headers: _kvHdrs(), body: JSON.stringify({ value: json, updated_at: Date.now() }) }
+      );
+      if (patch.ok) {
+        // Check if any row was updated
+        const checkR = await fetch(
+          `${_KV_SB_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}&select=key`,
+          { headers: _kvHdrs() }
+        );
+        const rows = checkR.ok ? await checkR.json() : [];
+        if (!rows || !rows.length) {
+          // Row didn't exist — INSERT instead
+          await fetch(`${_KV_SB_URL}/rest/v1/kv_store`, {
+            method: 'POST',
+            headers: { ..._kvHdrs(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ key, value: json, updated_at: Date.now() })
+          });
+        }
+      }
+    } catch {}
+    // Always write to localStorage as cache/fallback
     try { localStorage.setItem('kv:' + key, json); } catch {}
   },
+
   async del(key) {
-    if (SB.ready()) {
-      try {
-        await fetch(`${SB.getUrl()}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`, {
-          method: 'DELETE',
-          headers: { 'apikey': SB.getKey(), 'Authorization': 'Bearer ' + SB.getKey() }
-        });
-      } catch {}
-    }
+    try {
+      await fetch(
+        `${_KV_SB_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`,
+        { method: 'DELETE', headers: _kvHdrs() }
+      );
+    } catch {}
     try { localStorage.removeItem('kv:' + key); } catch {}
   }
 };
