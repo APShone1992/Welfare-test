@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <title>Welfare Support — Admin</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>"/>
 <style>
 :root{
   --brand:#1a3a6b;--brand-mid:#1e4d9b;--brand-light:#2563d4;
@@ -90,6 +91,8 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .badge-pay{background:#dbeafe;color:#1e40af}.badge-deduction{background:#fce7f3;color:#9d174d}
 .badge-unanswered{background:#fef3c7;color:#92400e}.badge-unhelpful{background:#fee2e2;color:#991b1b}
 .badge-sms{background:#ede9fe;color:#5b21b6}
+.badge-resolved{background:#dcfce7;color:#14532d}
+.badge-pending{background:#fef3c7;color:#92400e}
 .badge-age-hot{background:#fee2e2;color:#991b1b}
 .badge-age-warm{background:#fef3c7;color:#92400e}
 .badge-age-ok{background:#dcfce7;color:#14532d}
@@ -529,7 +532,8 @@ body.dark .ws-item{background:var(--surface-3)}
     <th>Phone</th>
     <th class="sort" data-col="type">Type</th>
     <th>Query</th>
-    <th style="width:80px;text-align:right">Actions</th>
+    <th>Status</th>
+    <th style="width:100px;text-align:right">Actions</th>
   </tr></thead><tbody id="sms-body"></tbody></table></div>
 </div>
 
@@ -571,7 +575,13 @@ body.dark .ws-item{background:var(--surface-3)}
     </select>
     <button class="btn btn-green btn-sm" id="emp-export">&#11015; CSV</button>
   </div>
-  <div id="emp-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div id="emp-cnt" style="font-size:12.5px;color:var(--text-muted)"></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-sec);cursor:pointer">
+      <input type="checkbox" id="emp-show-all" style="cursor:pointer"/>
+      Show all from EMP list (including not yet logged in)
+    </label>
+  </div>
   <div class="tw">
     <table class="dt">
       <thead><tr>
@@ -790,6 +800,22 @@ body.dark .ws-item{background:var(--surface-3)}
       <button class="btn btn-green" id="emp-upload-save" style="display:none">&#9989; Save &amp; activate list</button>
       <button class="btn btn-red btn-sm" id="emp-list-clear">&#128465; Clear EMP list (disable validation)</button>
     </div>
+  </div>
+
+  <!-- Broadcast message -->
+  <div class="card">
+    <div class="card-title">📢 Broadcast message to all users</div>
+    <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">
+      Set a message that appears at the top of the chat bot for every user when they open it.
+      Useful for outages, bank holidays, or important notices. Leave blank to clear.
+    </p>
+    <div class="form-row"><label>Message</label><input type="text" id="broadcast-input" placeholder="e.g. System maintenance today 12–2pm — limited availability" maxlength="200"/></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary" id="broadcast-save">📢 Publish message</button>
+      <button class="btn btn-red btn-sm" id="broadcast-clear">✕ Clear message</button>
+    </div>
+    <div class="setup-status" id="broadcast-status"></div>
+    <div id="broadcast-preview" style="display:none;margin-top:12px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;color:#92400e"></div>
   </div>
 
   <div class="card" style="max-width:420px">
@@ -1040,7 +1066,23 @@ function confirm2(title,msg){
 }
 
 /* SYNC STATUS */
-function setSyncStatus(state,text){$('#syncDot').className='dot '+state;$('#syncLabel').textContent=text;}
+function setSyncStatus(state,text){
+  const dot=$('#syncDot'),lbl=$('#syncLabel');
+  if(dot) dot.className='dot '+state;
+  if(lbl) lbl.textContent=text;
+  let rb=$('#retryBtn');
+  if(state==='err'){
+    if(!rb){
+      rb=document.createElement('button');rb.id='retryBtn';
+      rb.className='btn btn-sec btn-sm no-print';
+      rb.style.cssText='font-size:11px;padding:3px 8px;margin-left:8px';
+      rb.textContent='↻ Retry';
+      rb.addEventListener('click',async()=>{rb.textContent='…';rb.disabled=true;await refreshAll();rb.textContent='↻ Retry';rb.disabled=false;});
+      if(lbl) lbl.insertAdjacentElement('afterend',rb);
+    }
+    rb.style.display='inline-flex';
+  } else { if(rb) rb.style.display='none'; }
+}
 
 /* BAR CHART */
 function barChart(el,items,{labelWidth=130}={}){
@@ -1688,6 +1730,26 @@ const EmpTbl = {
   bind() {
     $('#emp-q').addEventListener('input', debounce(e => { this.q = e.target.value; this.render(); }));
     $('#emp-sort').addEventListener('change', e => { this.sortField = e.target.value; this.render(); });
+    $('#emp-show-all')?.addEventListener('change', async e => {
+      if (!e.target.checked) { this.render(); return; }
+      // Merge EMP list employees with seen employees
+      const empList = await getEmpList();
+      if (!empList) { toast('No EMP list loaded — upload one in Setup first'); e.target.checked=false; return; }
+      const seen = new Set(this.data.map(x=>x.emp));
+      const notSeen = Object.entries(empList)
+        .filter(([emp]) => !seen.has(emp))
+        .map(([emp, rec]) => ({ emp, name: typeof rec==='object'?rec.name:rec, dept: typeof rec==='object'?rec.dept:'', firstSeen:null, lastSeen:null, sessions:0, _notSeen:true }));
+      const combined = [...this.data, ...notSeen];
+      const body = $('#emp-body'); body.innerHTML='';
+      combined.forEach(x => {
+        const tr=document.createElement('tr');
+        if(x._notSeen) tr.style.opacity='0.55';
+        tr.innerHTML=`<td><code style="font-size:13px;font-weight:700;color:var(--brand);background:var(--surface-3);padding:2px 8px;border-radius:5px">${esc(x.emp||'—')}</code></td><td><strong>${esc(x.name||'—')}</strong></td><td style="color:var(--text-sec)">${esc(x.dept||'—')}</td><td style="white-space:nowrap;color:var(--text-sec)">${x.firstSeen?fmtDT(x.firstSeen):'<span style="color:var(--orange)">Never logged in</span>'}</td><td style="white-space:nowrap">${x.lastSeen?fmtDT(x.lastSeen):'—'}</td><td><span style="background:${x.sessions?'var(--brand-light)':'var(--border-mid)'};color:${x.sessions?'#fff':'var(--text-muted)'};font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:99px">${x.sessions||0}</span></td>`;
+        body.appendChild(tr);
+      });
+      if(body.children.length===0) body.innerHTML='<tr><td colspan="6"><div class="empty"><p>No employees found.</p></div></td></tr>';
+      $('#emp-cnt').textContent=`${combined.length} employees (${notSeen.length} not yet logged in)`;
+    });
     $('#emp-export').addEventListener('click', () => this.exportCSV());
     $$('#panel-4 th.sort').forEach(th => th.addEventListener('click', async () => {
       const c = th.dataset.col;
@@ -2203,6 +2265,52 @@ async function renderActivityLog() {
     </div>`).join('');
 }
 
+
+
+/* ══════════════════════════════════════════
+   BROADCAST MESSAGE
+══════════════════════════════════════════ */
+const BROADCAST_KEY = 'ws_broadcast';
+
+async function getBroadcast() { return KV.get(BROADCAST_KEY); }
+async function setBroadcast(msg) { if (msg) await KV.set(BROADCAST_KEY, { msg, ts: Date.now() }); else await KV.del(BROADCAST_KEY); }
+
+function bindBroadcast() {
+  const input  = $('#broadcast-input');
+  const status = $('#broadcast-status');
+  const preview = $('#broadcast-preview');
+
+  // Load current broadcast
+  getBroadcast().then(data => {
+    if (data?.msg) {
+      if (input) input.value = data.msg;
+      if (preview) { preview.textContent = '📢 Current: ' + data.msg; preview.style.display='block'; }
+    }
+  });
+
+  input?.addEventListener('input', () => {
+    const v = input.value.trim();
+    if (preview) { if (v) { preview.textContent = '📢 Preview: ' + v; preview.style.display='block'; } else preview.style.display='none'; }
+  });
+
+  $('#broadcast-save')?.addEventListener('click', async () => {
+    const msg = input?.value.trim();
+    if (!msg) { toast('Please enter a message first'); return; }
+    await setBroadcast(msg);
+    logActivity('📢', `Broadcast set: "${msg}"`);
+    if (status) { status.textContent='✅ Message published — users will see it next time they open the chat'; status.className='setup-status ok'; setTimeout(()=>{status.textContent='';},4000); }
+    toast('Broadcast published ✓');
+  });
+
+  $('#broadcast-clear')?.addEventListener('click', async () => {
+    await setBroadcast(null);
+    if (input) input.value = '';
+    if (preview) preview.style.display = 'none';
+    logActivity('📢', 'Broadcast cleared');
+    if (status) { status.textContent='Broadcast cleared'; status.className='setup-status'; setTimeout(()=>{status.textContent='';},3000); }
+    toast('Broadcast cleared');
+  });
+}
 
 /* ══════════════════════════════════════════
    SECURITY — failed PIN tracking, session timeout, PIN history
