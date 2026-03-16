@@ -366,6 +366,39 @@ function handleFlow(text){
   if(flowCtx.type==="workAllocation"){if(flowCtx.stage==="askRaised"){if(q==="yes"){flowCtx=null;return{html:`Please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}else{flowCtx=null;return{html:`Please raise this to your <b>Field and Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}}}
   if(flowCtx.type==="managerDispute"){if(flowCtx.stage==="askFieldManager"){if(q==="yes"){flowCtx={type:"managerDispute",stage:"askAreaManager"};return{html:"Have you contacted your <b>Area Manager</b>?",chips:["Yes","No"]};}else{flowCtx=null;return{html:`Please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}}if(flowCtx.stage==="askAreaManager"){if(q==="yes"){flowCtx=null;return{html:`Please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}else{flowCtx=null;return{html:`Please contact your <b>Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}}}
   if(flowCtx.type==="equipment"){if(flowCtx.stage==="askType"){if(q==="stock"){flowCtx={type:"equipment",stage:"stockFormSubmitted"};return{html:"Have you submitted a <b>Stock Form</b> with your Field Manager?",chips:["Yes","No"]};}else if(q==="tooling"){flowCtx={type:"equipment",stage:"byboxSubmitted"};return{html:"Has your <b>Field Manager submitted an order through ByBox</b>?",chips:["Yes","No"]};}else if(q==="van"){flowCtx={type:"equipment",stage:"vanRaised"};return{html:"Have you raised the query of receiving a van to your <b>Field Manager and Area Manager</b>?",chips:["Yes","No"]};}}if(flowCtx.stage==="stockFormSubmitted"){if(q==="yes"){flowCtx=null;return{html:`Please contact your <b>Field Manager</b> regarding the update of your stock. Any further concerns, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}else{flowCtx=null;return{html:"Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>."}; }}if(flowCtx.stage==="byboxSubmitted"){if(q==="yes"){flowCtx=null;return{html:`Please follow up with your <b>Field Manager</b> regarding your order. Any further concerns, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}else{flowCtx=null;return{html:"Please contact your <b>Field Manager</b> and request them to submit an order to <b>ByBox</b>."}; }}if(flowCtx.stage==="vanRaised"){if(q==="yes"){flowCtx=null;return{html:`As you have raised this to your Field and Area Manager, please contact Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> and hold the line.`};}else{flowCtx=null;return{html:"Please contact your <b>Field Manager</b> and query this through."};} }}
+
+  // ── BTOR NTF area picker ──
+  if(flowCtx.type==="btorNtf" && flowCtx.stage==="pickArea"){
+    flowCtx=null;
+    if(q.includes("wales")&&q.includes("midland")||text==="Wales & Midlands")
+      return{html:`For NTF Wales &amp; Midlands, please contact <a href="tel:07484034863"><b>07484034863</b></a> or <a href="tel:07483932673"><b>07483932673</b></a>.`,_intent:"btor_ntf"};
+    if(q.includes("london")||q.includes("south east")||q.includes("se")||text==="London & SE")
+      return{html:`For NTF London &amp; SE, please contact <a href="tel:07814089467"><b>07814089467</b></a> or <a href="tel:07814470466"><b>07814470466</b></a>.`,_intent:"btor_ntf"};
+    if(q.includes("wessex")||text==="Wessex")
+      return{html:`For NTF Support Wessex, please contact <a href="tel:07977670841"><b>07977670841</b></a> or <a href="tel:07483555754"><b>07483555754</b></a>.`,_intent:"btor_ntf"};
+    if(q.includes("north")||q.includes("scotland")||text==="North England & Scotland")
+      return{html:`For NTF Support North England &amp; Scotland, please contact <a href="tel:07814089601"><b>07814089601</b></a> or <a href="tel:07484082993"><b>07484082993</b></a>.`,_intent:"btor_ntf"};
+    // unrecognised — re-prompt
+    flowCtx={type:"btorNtf",stage:"pickArea"};
+    return{html:"Sorry, I didn't catch that. Please select your area:",chips:["Wales & Midlands","London & SE","Wessex","North England & Scotland"]};
+  }
+
+  // ── City Fibre NTF area picker ──
+  if(flowCtx.type==="cfNtf" && flowCtx.stage==="pickArea"){
+    flowCtx=null;
+    if(q.includes("scotland")||text==="Scotland")
+      return{html:`For NTF Support in Scotland, please contact <a href="tel:07866950516"><b>07866950516</b></a> or <a href="tel:07773652734"><b>07773652734</b></a>.`,_intent:"cityfibre_ntf"};
+    if(q.includes("midland")||text==="Midlands")
+      return{html:`For NTF Support in Midlands, please contact <a href="tel:07773651968"><b>07773651968</b></a>.`,_intent:"cityfibre_ntf"};
+    if(q.includes("south")||text==="South")
+      return{html:`For NTF Support in South, please contact <a href="tel:07773651950"><b>07773651950</b></a>.`,_intent:"cityfibre_ntf"};
+    if(q.includes("north")||text==="North")
+      return{html:`For NTF Support in North, please contact <a href="tel:07773652146"><b>07773652146</b></a>, <a href="tel:07977330563"><b>07977330563</b></a> or <a href="tel:07773652702"><b>07773652702</b></a>.`,_intent:"cityfibre_ntf"};
+    // unrecognised — re-prompt
+    flowCtx={type:"cfNtf",stage:"pickArea"};
+    return{html:"Sorry, I didn't catch that. Please select your area:",chips:["Scotland","Midlands","South","North"]};
+  }
+
   return null;
 }
 
@@ -402,6 +435,38 @@ function specialCases(text){
   if(intent==="contact_support")return{html:`You can reach Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> — please hold the line when prompted.`,chips:["Department Contacts","What are your opening times?"],_intent:"contact_support"};
   if(intent==="opening_times")return{html:"We're open <b>Monday–Friday, 8:30am–5:00pm</b> (UK time). We're closed on weekends and bank holidays.",chips:["Is anyone available now?","Are you open on bank holidays?"],_intent:"opening_times"};
   if(intent==="bank_holiday")return{html:"❌ <b>No, we are not open on bank holidays.</b>",chips:["What are your opening times?"],_intent:"opening_times"};
+
+  if(intent==="available_now"){
+    if(isOpenNow()){
+      return{html:`✅ Yes, we're <b>open right now</b>.<br>Office hours are <b>Mon–Fri 8:30am–5:00pm</b>.<br><br>You can reach Welfare directly on <a href="tel:02087583060"><b>02087583060</b></a> — please hold the line when prompted.`,chips:["Department Contacts"],_intent:"available_now"};
+    } else {
+      const bh=isBankHolidayToday();
+      return{html:`❌ We're currently <b>closed</b>${bh?" (bank holiday)":""}, but I can still help answer questions.<br><br>Office hours are <b>Mon–Fri 8:30am–5:00pm</b>. For urgent out-of-hours queries:<br><b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br><b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`,chips:["What are your opening times?","BTOR NTF Support","City Fibre NTF Support"],_intent:"available_now"};
+    }
+  }
+
+  if(intent==="dept_contacts"){
+    return{html:`Here are the main department contacts:<br><br>`+
+      `<b>Welfare:</b> <a href="tel:02087583060">02087583060</a><br>`+
+      `<b>Fleet:</b> <a href="tel:01582841291">01582841291</a> / <a href="tel:07940766377">07940766377</a> (OOH)<br>`+
+      `<b>Accident &amp; Injury:</b> <a href="tel:07940792355">07940792355</a><br>`+
+      `<b>Parking:</b> <a href="tel:07940792355">07940792355</a><br>`+
+      `<b>Recruitment:</b> <a href="tel:02037583058">02037583058</a><br>`+
+      `<b>Street Works:</b> <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a><br>`+
+      `<b>Smart Awards:</b> <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a><br>`+
+      `<b>ID Cards:</b> <a href="mailto:nuneaton.admin@kelly.co.uk">nuneaton.admin@kelly.co.uk</a>`,
+      chips:["BTOR NTF Support","City Fibre NTF Support","Is anyone available now?"],_intent:"dept_contacts"};
+  }
+
+  if(intent==="btor_ntf"){
+    flowCtx={type:"btorNtf",stage:"pickArea"};
+    return{html:"Please select which area you are based in:",chips:["Wales & Midlands","London & SE","Wessex","North England & Scotland"],_intent:"btor_ntf"};
+  }
+
+  if(intent==="cityfibre_ntf"){
+    flowCtx={type:"cfNtf",stage:"pickArea"};
+    return{html:"Please select which area you are based in:",chips:["Scotland","Midlands","South","North"],_intent:"cityfibre_ntf"};
+  }
   if(distanceCtx?.stage==="needOrigin"){const cityKey=Object.keys(PLACES).find(k=>q===k||q.includes(k));if(cityKey){const closest=findClosestDepot(PLACES[cityKey]);const depot=DEPOTS[closest.depotKey];distanceCtx={stage:"haveClosest",originKey:cityKey,depotKey:closest.depotKey,miles:closest.miles};return{html:`Thanks, your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>How are you travelling?`,chips:["By car","By train","By bus","Walking"]};}}
   if(distanceCtx?.stage==="haveClosest"){if(q==="by car"||q==="by train"||q==="by bus"||q==="walking"){const mode=q==="walking"?"walk":q.replace("by ","");const depot=DEPOTS[distanceCtx.depotKey];const originLabel=distanceCtx.originKey==="your location"?"your location":distanceCtx.originKey;const url=googleDirectionsURL(originLabel,depot,mode);const tile=osmTileURL(depot.lat,depot.lon,13);distanceCtx=null;return{html:`Your closest depot is <b>${escapeHTML(depot.label)}</b>.<br>${linkTag(url,"Get directions in Google Maps")}<br>${imgTag(tile,"OpenStreetMap preview")}`};}}
   return null;
