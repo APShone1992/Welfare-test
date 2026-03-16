@@ -828,7 +828,18 @@ create policy "pub read" on unresolved for select using (true);
 create policy "pub insert" on unresolved for insert with check (true);
 create policy "pub delete" on unresolved for delete using (true);
 create policy "pub read" on sessions for select using (true);
-create policy "pub insert" on sessions for insert with check (true);</code>
+create policy "pub insert" on sessions for insert with check (true);
+-- Shared key-value store (EMP list, notes, activity log, FAQ edits)
+create table kv_store (
+  key text primary key,
+  value text not null,
+  updated_at bigint default 0
+);
+alter table kv_store enable row level security;
+create policy "pub read" on kv_store for select using (true);
+create policy "pub insert" on kv_store for insert with check (true);
+create policy "pub update" on kv_store for update using (true);
+create policy "pub delete" on kv_store for delete using (true);</code>
       </li>
       <li>Go to <strong>Settings → API</strong>, copy <strong>Project URL</strong> and <strong>anon key</strong></li>
       <li>Paste below and click <strong>Save &amp; Test</strong></li>
@@ -931,7 +942,7 @@ const SB = (() => {
   function clear(){ url='';key='';localStorage.removeItem(CFG_KEY); }
   function ready(){ return !!(url&&key&&url.startsWith('http')); }
   function hdrs(x={}){ return{'apikey':key,'Authorization':'Bearer '+key,'Content-Type':'application/json',...x}; }
-  async function select(table,params=''){ const r=await fetch(`${url}/rest/v1/${table}?${params}&order=ts.desc`,{headers:hdrs()});if(!r.ok)throw new Error(await r.text());return r.json(); }
+  async function select(table,params=''){ const r=await fetch(`${url}/rest/v1/${table}?${params}${table!=='kv_store'?'&order=ts.desc':''}`,{headers:hdrs()});if(!r.ok)throw new Error(await r.text());return r.json(); }
   async function insert(table,row){ const r=await fetch(`${url}/rest/v1/${table}`,{method:'POST',headers:hdrs({'Prefer':'return=minimal'}),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text()); }
   async function del(table,id){ const r=await fetch(`${url}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
   async function delAll(table){ const r=await fetch(`${url}/rest/v1/${table}?id=gt.0`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
@@ -939,6 +950,50 @@ const SB = (() => {
   load();
   return{load,save,clear,ready,select,insert,del,delAll,test,getUrl:()=>url,getKey:()=>key};
 })();
+
+
+/* ══════════════════════════════════════════
+   SHARED KEY-VALUE STORE
+   Uses Supabase 'kv_store' table when connected.
+   Falls back to localStorage when not.
+   All admins read/write the same values.
+══════════════════════════════════════════ */
+const KV = {
+  async get(key) {
+    if (SB.ready()) {
+      try {
+        const rows = await SB.select('kv_store', `key=eq.${encodeURIComponent(key)}&limit=1`);
+        if (rows && rows.length) return JSON.parse(rows[0].value);
+      } catch {}
+    }
+    try { const v = localStorage.getItem('kv:' + key); return v ? JSON.parse(v) : null; } catch { return null; }
+  },
+  async set(key, value) {
+    const json = JSON.stringify(value);
+    if (SB.ready()) {
+      try {
+        // Upsert: delete then insert (Supabase REST upsert)
+        await fetch(`${SB.getUrl()}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SB.getKey(), 'Authorization': 'Bearer ' + SB.getKey() }
+        });
+        await SB.insert('kv_store', { key, value: json, updated_at: Date.now() });
+      } catch {}
+    }
+    try { localStorage.setItem('kv:' + key, json); } catch {}
+  },
+  async del(key) {
+    if (SB.ready()) {
+      try {
+        await fetch(`${SB.getUrl()}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SB.getKey(), 'Authorization': 'Bearer ' + SB.getKey() }
+        });
+      } catch {}
+    }
+    try { localStorage.removeItem('kv:' + key); } catch {}
+  }
+};
 
 /* ══════════════════════════════════════════ UTILS ══ */
 const $=(s,r=document)=>r.querySelector(s);
@@ -1496,7 +1551,7 @@ function initSuperadminPin(){
       lockBtn.textContent='🔓';lockBtn.classList.add('unlocked');lockBtn.title='Lock superadmin';
       $$('.superadmin-tab').forEach(t=>t.classList.add('unlocked'));
       toast('🔓 Superadmin tabs unlocked');resetBuffer();
-      renderFaqEditor();renderEmpManager();renderExportSummary();resetInactivityTimer();
+      loadFaqEditData().then(()=>renderFaqEditor());renderEmpManager();renderExportSummary();resetInactivityTimer();
     } else { shakeBox();errEl.textContent='Incorrect PIN';saBuffer='';updateDots();logFailedPinAttempt();logActivity('❌','Failed superadmin PIN attempt');renderSecurityPanel(); }
   }
   function lockSuperadmin(){
@@ -1650,29 +1705,15 @@ const EmpTbl = {
 const EMP_LIST_KEY = 'ws_emp_list';
 
 async function getEmpList() {
-  // Try shared storage first, then localStorage fallback
-  if (typeof window.storage !== 'undefined') {
-    try {
-      const r = await window.storage.get(EMP_LIST_KEY, true);
-      if (r?.value) return JSON.parse(r.value);
-    } catch {}
-  }
-  try { return JSON.parse(localStorage.getItem(EMP_LIST_KEY) || 'null'); } catch { return null; }
+  return KV.get(EMP_LIST_KEY);
 }
 
 async function saveEmpList(obj) {
-  const json = JSON.stringify(obj);
-  if (typeof window.storage !== 'undefined') {
-    try { await window.storage.set(EMP_LIST_KEY, json, true); } catch {}
-  }
-  try { localStorage.setItem(EMP_LIST_KEY, json); } catch {}
+  await KV.set(EMP_LIST_KEY, obj);
 }
 
 async function clearEmpList() {
-  if (typeof window.storage !== 'undefined') {
-    try { await window.storage.delete(EMP_LIST_KEY, true); } catch {}
-  }
-  try { localStorage.removeItem(EMP_LIST_KEY); } catch {}
+  await KV.del(EMP_LIST_KEY);
 }
 
 function updateEmpListBadge(list) {
@@ -1828,6 +1869,8 @@ function bindEmpUpload() {
 async function refreshAll(){
   setSyncStatus('spin','Refreshing…');
   try{
+    _notesCache = null; // clear so next render re-fetches
+    await getNotes(); // pre-warm cache
     await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load(),EmpTbl.load()]);
     setSyncStatus('ok',SB.ready()?'✅ Supabase connected — all devices synced':'⚠ Local only — go to Setup tab');
     // Update tab notification badge
@@ -1853,16 +1896,23 @@ async function refreshAll(){
    ACTIVITY LOG — stores admin actions in localStorage
 ══════════════════════════════════════════ */
 const ACT_LOG_KEY = 'ws_admin_activity';
-function logActivity(icon, text) {
+let _actLogCache = null;
+
+async function logActivity(icon, text) {
   try {
-    const log = JSON.parse(localStorage.getItem(ACT_LOG_KEY) || '[]');
+    const log = _actLogCache || (await KV.get(ACT_LOG_KEY)) || [];
     log.unshift({ ts: Date.now(), icon, text });
     if (log.length > 200) log.length = 200;
-    localStorage.setItem(ACT_LOG_KEY, JSON.stringify(log));
+    _actLogCache = log;
+    await KV.set(ACT_LOG_KEY, log);
   } catch {}
 }
-function getActivityLog() {
-  try { return JSON.parse(localStorage.getItem(ACT_LOG_KEY) || '[]'); } catch { return []; }
+async function getActivityLog() {
+  try {
+    if (_actLogCache) return _actLogCache;
+    _actLogCache = (await KV.get(ACT_LOG_KEY)) || [];
+    return _actLogCache;
+  } catch { return []; }
 }
 
 /* ══════════════════════════════════════════
@@ -1870,11 +1920,18 @@ function getActivityLog() {
    Key: ws_ur_notes  { [id]: "note text" }
 ══════════════════════════════════════════ */
 const UR_NOTES_KEY = 'ws_ur_notes';
-function getNotes() { try { return JSON.parse(localStorage.getItem(UR_NOTES_KEY) || '{}'); } catch { return {}; } }
-function saveNote(id, text) {
-  const notes = getNotes();
+let _notesCache = null;
+
+async function getNotes() {
+  if (_notesCache) return _notesCache;
+  _notesCache = (await KV.get(UR_NOTES_KEY)) || {};
+  return _notesCache;
+}
+async function saveNote(id, text) {
+  const notes = await getNotes();
   if (text) notes[String(id)] = text; else delete notes[String(id)];
-  localStorage.setItem(UR_NOTES_KEY, JSON.stringify(notes));
+  _notesCache = notes;
+  await KV.set(UR_NOTES_KEY, notes);
 }
 
 let noteTargetId = null;
@@ -1893,18 +1950,18 @@ function bindNoteModal() {
     const cc = $('#note-char-count');
     if (cc) cc.textContent = `${ta.value.length} / 300`;
   });
-  $('#note-save')?.addEventListener('click', () => {
+  $('#note-save')?.addEventListener('click', async () => {
     if (noteTargetId === null) return;
     const text = $('#note-textarea').value.trim();
-    saveNote(noteTargetId, text);
+    await saveNote(noteTargetId, text);
     logActivity('📝', `Note ${text ? 'added' : 'updated'} on unresolved record`);
     $('#modal-note').classList.add('hidden');
     URTbl.render();
     toast('Note saved ✓');
   });
-  $('#note-delete')?.addEventListener('click', () => {
+  $('#note-delete')?.addEventListener('click', async () => {
     if (noteTargetId === null) return;
-    saveNote(noteTargetId, '');
+    await saveNote(noteTargetId, '');
     $('#modal-note').classList.add('hidden');
     URTbl.render();
     toast('Note removed');
@@ -2121,7 +2178,7 @@ function renderDeptChart(sms) {
 /* ══════════════════════════════════════════
    ACTIVITY LOG RENDER (Overview)
 ══════════════════════════════════════════ */
-function renderActivityLog() {
+async function renderActivityLog() {
   // Add activity log card to overview if not present
   let card = $('#act-log-card');
   if (!card) {
@@ -2129,12 +2186,12 @@ function renderActivityLog() {
     if (!panel0) return;
     card = document.createElement('div');
     card.className = 'card'; card.id = 'act-log-card';
-    card.innerHTML = '<div class="card-title">&#128218; Admin activity log <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">actions taken in this admin panel</span></div><div id="act-log-body"></div>';
+    card.innerHTML = '<div class="card-title">&#128218; Admin activity log <span style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px">actions taken in this admin panel — shared across all admins</span></div><div id="act-log-body"></div>';
     panel0.appendChild(card);
   }
   const body = $('#act-log-body');
   if (!body) return;
-  const log = getActivityLog().slice(0, 30);
+  const log = (await getActivityLog()).slice(0, 30);
   if (!log.length) { body.innerHTML = '<div class="empty" style="padding:16px 0"><p>No admin actions logged yet.</p></div>'; return; }
   body.innerHTML = log.map(e => `
     <div class="act-row">
@@ -2248,18 +2305,17 @@ const FAQ_EDIT_KEY = 'ws_faqs_edited';
 let faqEditData = [];
 let faqEdited = false;
 
-function loadFaqEditData() {
-  // Try edited version first, then fall back to loaded FAQS
+async function loadFaqEditData() {
   try {
-    const stored = localStorage.getItem(FAQ_EDIT_KEY);
-    if (stored) { faqEditData = JSON.parse(stored); return; }
+    const stored = await KV.get(FAQ_EDIT_KEY);
+    if (stored && Array.isArray(stored)) { faqEditData = stored; return; }
   } catch {}
-  // Deep copy from loaded FAQS
+  // Fall back to loaded FAQS
   faqEditData = JSON.parse(JSON.stringify(FAQS.length ? FAQS : []));
 }
 
-function saveFaqEditData() {
-  try { localStorage.setItem(FAQ_EDIT_KEY, JSON.stringify(faqEditData)); } catch {}
+async function saveFaqEditData() {
+  try { await KV.set(FAQ_EDIT_KEY, faqEditData); } catch {}
   faqEdited = true;
   const badge = $('#faq-unsaved');
   if (badge) badge.classList.add('show');
@@ -2319,7 +2375,7 @@ function renderFaqEditor() {
         category: item.querySelector('.faq-c-input').value,
         synonyms: item.querySelector('.faq-s-input').value.split(',').map(s=>s.trim()).filter(Boolean),
       };
-      saveFaqEditData();
+      await saveFaqEditData();
       item.classList.remove('open');
       item.querySelector('.faq-item-q').textContent = faqEditData[idx].question || 'Untitled';
       item.querySelector('.faq-item-cat').textContent = faqEditData[idx].category || 'general';
@@ -2331,7 +2387,7 @@ function renderFaqEditor() {
       e.stopPropagation();
       if (!await confirm2('Delete FAQ entry?', `"${f.question}" will be removed.`)) return;
       faqEditData.splice(f._idx, 1);
-      saveFaqEditData();
+      await saveFaqEditData();
       renderFaqEditor();
       logActivity('🗑️', `FAQ deleted: "${f.question}"`);
       toast('Entry deleted');
@@ -2347,7 +2403,7 @@ function bindFaqEditor() {
 
   $('#faq-add-new')?.addEventListener('click', () => {
     faqEditData.push({ question: '', answer: '', category: 'general', synonyms: [] });
-    saveFaqEditData();
+    await saveFaqEditData();
     renderFaqEditor();
     // Open the last item
     setTimeout(() => {
@@ -2377,7 +2433,7 @@ function bindFaqEditor() {
       if (!Array.isArray(data)) throw new Error('File must contain a JSON array');
       if (!await confirm2('Import FAQ file?', `This will replace your current ${faqEditData.length} entries with ${data.length} entries from the imported file.`)) return;
       faqEditData = data;
-      saveFaqEditData();
+      await saveFaqEditData();
       renderFaqEditor();
       logActivity('📂', `faqs.json imported (${data.length} entries)`);
       toast(`Imported ${data.length} FAQ entries ✓`);
@@ -2401,7 +2457,7 @@ function renderEmpManager() {
     }
     const count = Object.keys(list).length;
     if (cntEl) cntEl.textContent = `${count} employee${count!==1?'s':''}`;
-    if (statsEl) statsEl.innerHTML = `<strong>Total employees:</strong> ${count}<br><strong>Storage:</strong> ${typeof window.storage !== 'undefined' ? 'Shared (all devices)' : 'Local only'}<br><strong>Validation:</strong> ✅ Active`;
+    if (statsEl) statsEl.innerHTML = `<strong>Total employees:</strong> ${count}<br><strong>Storage:</strong> ${SB.ready() ? '✅ Supabase — shared across all admins' : '⚠️ Local only — connect Supabase in Setup'}<br><strong>Validation:</strong> ✅ Active`;
     renderEmpManagerTable(list);
   });
 }
@@ -2600,7 +2656,7 @@ function renderExportSummary() {
       <strong>Unresolved queries:</strong> ${ur.length} records<br>
       <strong>Employees (seen):</strong> ${emp.length} employees<br>
       <strong>Sessions:</strong> ${sess.length} sessions<br>
-      <strong>Activity log:</strong> ${getActivityLog().length} entries<br>
+      <strong>Activity log:</strong> ${(await getActivityLog()).length} entries<br>
       <strong>FAQ entries:</strong> ${faqEditData.length || FAQS.length} entries`;
   });
 }
@@ -2663,7 +2719,7 @@ function bindExport() {
   initSuperadminPin();initChangePinSection();
   bindDarkMode();bindPrint();bindGlobalSearch();bindNoteModal();
   bindSecurity();bindFaqEditor();bindEmpManager();bindBotTester();bindExport();
-  loadFaqEditData();
+  await loadFaqEditData();
   resetInactivityTimer();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
