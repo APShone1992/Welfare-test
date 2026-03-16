@@ -548,8 +548,8 @@ const INTENT_PHRASES = [
   { intent:"pay_query",       patterns:["not been paid","havent been paid","haven't been paid","missing pay","no pay","didnt get paid","didn't get paid","where is my pay","where is my wage","when do i get paid","payday","pay day","wrong pay","incorrect pay","short paid","underpaid","overpaid","pay is wrong","wages wrong","wages are wrong","not received my pay","pay query","pay question","pay issue","pay problem","payroll query","payroll issue","salary query","salary issue","wage query","wage issue","my pay","about my pay","check my pay"] },
   { intent:"deduction_query", patterns:["deduction","deductions","money taken","taken from my pay","taken from pay","taken out","stopped from pay","money missing","why has money been taken","missing money","wrong amount"] },
   { intent:"work_allocation", patterns:["no work","not got work","havent got work","haven't got work","no jobs","no job","not been allocated","not allocated","no allocation","no shifts","where is my work","need work","run out of work","work allocation","work alloc","allocated wrong","wrong job","wrong work","given wrong job"] },
-  { intent:"manager_dispute", patterns:["manager dispute","dispute with manager","problem with manager","issue with manager","trouble with manager","argument with manager","conflict with manager","my manager","manager being","manager has","manager is","field manager issue","area manager issue","unfair manager","manager treating","manager not","manager wont","manager won't"] },
-  { intent:"contract",        patterns:["contract","my contract","change contract","contract change","contract amendment","amend contract","contract query","contract issue","contract hours","contract type","permanent","part time","full time","contract update"] },
+  { intent:"manager_dispute", patterns:["manager disputes","manager dispute","dispute with manager","problem with manager","issue with manager","trouble with manager","argument with manager","conflict with manager","my manager","manager being","manager has","manager is","field manager issue","area manager issue","unfair manager","manager treating","manager not","manager wont","manager won't"] },
+  { intent:"contract",        patterns:["contract change","contract","my contract","change contract","contract amendment","amend contract","contract query","contract issue","contract hours","contract type","permanent","part time","full time","contract update"] },
   { intent:"equipment_stock", patterns:["stock","no stock","out of stock","missing stock","stock query","stock issue","stock form","need stock","request stock"] },
   { intent:"equipment_tooling",patterns:["tools","tooling","no tools","missing tools","need tools","tool query","tool issue","bybox","by box","tool order","order tools"] },
   { intent:"equipment_van",   patterns:["no van","need a van","when do i get a van","van query","van issue","van problem","company van","work van","my van","van not arrived","havent got a van","haven't got a van"] },
@@ -610,30 +610,40 @@ const CF_AREAS = {
 function handleFlow(text) {
   const q = normalize(text);
   if (!flowCtx) return null;
-  if (q === "cancel" || q === "stop" || q === "restart" || q === "back" || q === "go back" || q === "← back") { flowCtx = null; return { html: "No problem — I've gone back. Feel free to ask anything else or use the <b>Topics</b> button." }; }
+  if (q === "cancel" || q === "stop" || q === "restart" || q === "back" || q === "go back" || q === "← back") {
+    flowCtx = null;
+    return { html: "No problem — I've gone back. Feel free to ask anything else or use the <b>Topics</b> button." };
+  }
 
   // ── Work Allocation ──
   if (flowCtx.type === "workAllocation") {
-    if (q !== "yes" && q !== "no") return { html: "Sorry, I didn't catch that — has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes","No"] };
+    if (q !== "yes" && q !== "no") return { html: "Has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes","No"] };
     flowCtx = null;
     return q === "yes"
       ? { html: `Please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
-      : { html: `Please raise this with your <b>Field and Area Manager</b>. If concerns remain, contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
+      : { html: `Please raise this to your <b>Field and Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["Thanks — all sorted"] };
   }
 
   // ── Manager Dispute ──
   if (flowCtx.type === "managerDispute") {
     if (flowCtx.stage === "askFieldManager") {
-      if (q !== "yes" && q !== "no") return { html: "Sorry, I didn't catch that — is this regarding your <b>Field Manager</b>?", chips: ["Yes","No"] };
-      if (q === "yes") { flowCtx = { type: "managerDispute", stage: "askAreaManager" }; return { html: "Have you also contacted your <b>Area Manager</b>?", chips: ["Yes","No"] }; }
-      flowCtx = null; return { html: `Please contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
+      if (q !== "yes" && q !== "no") return { html: "Is this regarding your <b>Field Manager</b>?", chips: ["Yes","No"] };
+      if (q === "yes") {
+        flowCtx = { type: "managerDispute", stage: "askAreaManager" };
+        return { html: "Have you contacted your <b>Area Manager</b>?", chips: ["Yes","No"] };
+      }
+      // No — not regarding Field Manager → straight to Welfare
+      flowCtx = null;
+      return { html: `Please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
     }
     if (flowCtx.stage === "askAreaManager") {
-      if (q !== "yes" && q !== "no") return { html: "Sorry, I didn't catch that — have you contacted your <b>Area Manager</b>?", chips: ["Yes","No"] };
+      if (q !== "yes" && q !== "no") return { html: "Have you contacted your <b>Area Manager</b>?", chips: ["Yes","No"] };
       flowCtx = null;
       return q === "yes"
-        ? { html: `Please contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
-        : { html: `Please contact your <b>Area Manager</b>. If concerns remain, contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
+        // Yes contacted Area Manager → Welfare
+        ? { html: `Please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
+        // No — hasn't contacted Area Manager yet
+        : { html: `Please contact your <b>Area Manager</b>. Should there be any further concerns after this step, please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
     }
   }
 
@@ -642,20 +652,29 @@ function handleFlow(text) {
     if (flowCtx.stage === "askType") {
       if (q === "stock")   { flowCtx = { type:"equipment", stage:"stockForm" };  return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No","← Back"] }; }
       if (q === "tooling") { flowCtx = { type:"equipment", stage:"bybox" };      return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No","← Back"] }; }
-      if (q === "van")     { flowCtx = { type:"equipment", stage:"vanRaised" };  return { html: "Have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No","← Back"] }; }
+      if (q === "van")     { flowCtx = { type:"equipment", stage:"vanRaised" };  return { html: "Have you raised the query of receiving a van to your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No","← Back"] }; }
       return { html: "Sorry — is this about <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock","Tooling","Van"] };
     }
     if (flowCtx.stage === "stockForm") {
       if (q !== "yes" && q !== "no") return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No"] };
-      flowCtx = null; return q === "yes" ? { html: `Please follow up with your <b>Field Manager</b> on your stock. If needed, contact Welfare on ${WELFARE}.`, chips: ["I can't get through","Thanks — all sorted"] } : { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>." };
+      flowCtx = null;
+      return q === "yes"
+        ? { html: `Please contact your <b>Field Manager</b> regarding the update of your stock. Any further concerns, please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
+        : { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>." };
     }
     if (flowCtx.stage === "bybox") {
       if (q !== "yes" && q !== "no") return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No"] };
-      flowCtx = null; return q === "yes" ? { html: `Follow up with your <b>Field Manager</b> on the ByBox order. If needed, contact Welfare on ${WELFARE}.`, chips: ["I can't get through","Thanks — all sorted"] } : { html: "Please ask your <b>Field Manager</b> to submit an order through <b>ByBox</b>." };
+      flowCtx = null;
+      return q === "yes"
+        ? { html: `Please follow up with your <b>Field Manager</b> regarding your order. Any further concerns, please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
+        : { html: "Please contact your <b>Field Manager</b> and request them to submit an order to <b>ByBox</b>." };
     }
     if (flowCtx.stage === "vanRaised") {
-      if (q !== "yes" && q !== "no") return { html: "Have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No"] };
-      flowCtx = null; return q === "yes" ? { html: `Please contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] } : { html: "Please raise this with your <b>Field Manager</b> first." };
+      if (q !== "yes" && q !== "no") return { html: "Have you raised the query of receiving a van to your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No"] };
+      flowCtx = null;
+      return q === "yes"
+        ? { html: `If you have raised this to your <b>Field and Area Manager</b>, please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
+        : { html: "Please contact your <b>Field Manager</b> and query this through." };
     }
   }
 
@@ -811,8 +830,8 @@ function specialCases(text) {
   }
 
   // ── Guided flows ──
-  if (intent === "work_allocation")  { flowCtx = { type: "workAllocation" };                   return { html: "Sorry to hear that. Has this already been raised with your <b>Field and Area Manager</b>?", chips: ["Yes","No","← Back"], _intent: "work_allocation" }; }
-  if (intent === "manager_dispute")  { flowCtx = { type: "managerDispute", stage: "askFieldManager" }; return { html: "Let's get this sorted. Is this regarding your <b>Field Manager</b>?", chips: ["Yes","No","← Back"], _intent: "manager_dispute" }; }
+  if (intent === "work_allocation")  { flowCtx = { type: "workAllocation" }; return { html: "Has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes","No"], _intent: "work_allocation" }; }
+  if (intent === "manager_dispute")  { flowCtx = { type: "managerDispute", stage: "askFieldManager" }; return { html: "Is this regarding your <b>Field Manager</b>?", chips: ["Yes","No"], _intent: "manager_dispute" }; }
   if (intent === "equipment_stock")  { flowCtx = { type: "equipment", stage: "stockForm" };    return { html: "For stock queries — have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No"], _intent: "equipment" }; }
   if (intent === "equipment_tooling"){ flowCtx = { type: "equipment", stage: "bybox" };        return { html: "For tooling — has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No"], _intent: "equipment" }; }
   if (intent === "equipment_van")    { flowCtx = { type: "equipment", stage: "vanRaised" };    return { html: "For van queries — have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No"], _intent: "equipment" }; }
@@ -823,14 +842,14 @@ function specialCases(text) {
   if (intent === "cityfibre_ntf") { flowCtx = { type: "cfNtf" };   return { html: "Please select which area you are based in:", chips: ["Scotland","Midlands","South","North"], _intent: "cityfibre_ntf" }; }
 
   // ── Single-reply intents ──
-  if (intent === "contract")        return { html: "For contract change queries, please raise this with your <b>Area Manager</b>.", chips: ["Department Contacts","How can I contact support?"], _intent: "contract" };
-  if (intent === "street_works")    return { html: `For Street Works queries contact <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a>.`, _intent: "street_works" };
-  if (intent === "smart_awards")    return { html: `For Smart Awards queries contact <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a>.`, _intent: "smart_awards" };
-  if (intent === "id_cards")        return { html: `For lost, unreceived or expired ID cards contact <a href="mailto:nuneaton.admin@kelly.co.uk">nuneaton.admin@kelly.co.uk</a>.`, _intent: "id_cards" };
-  if (intent === "fleet")           return { html: `For fleet or vehicle queries call <a href="tel:01582841291"><b>01582841291</b></a> or <a href="tel:07940766377"><b>07940766377</b></a> (out of hours).`, _intent: "fleet" };
-  if (intent === "accident")        return { html: `For accident or injury reports call <a href="tel:07940792355"><b>07940792355</b></a> as soon as possible.`, _intent: "accident" };
-  if (intent === "parking")         return { html: `For parking queries call <a href="tel:07940792355"><b>07940792355</b></a>.`, _intent: "parking" };
-  if (intent === "recruitment")     return { html: `For recruitment queries call <a href="tel:02037583058"><b>02037583058</b></a>.`, _intent: "recruitment" };
+  if (intent === "contract")        return { html: "For any contract change queries, please raise this to your <b>Area Manager</b>.", chips: ["Department Contacts"], _intent: "contract" };
+  if (intent === "street_works")    return { html: `For any Street Work queries please contact <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a>.`, _intent: "street_works" };
+  if (intent === "smart_awards")    return { html: `For any Smart Award queries please contact <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a>.`, _intent: "smart_awards" };
+  if (intent === "id_cards")        return { html: `If you have lost, not received or your ID card has expired, please contact <a href="mailto:nuneaton.admin@kelly.co.uk">nuneaton.admin@kelly.co.uk</a>.`, _intent: "id_cards" };
+  if (intent === "fleet")           return { html: `Please call <a href="tel:01582841291"><b>01582841291</b></a> or <a href="tel:07940766377"><b>07940766377</b></a> (Out of Hours) for any vehicle or fleet related queries.`, _intent: "fleet" };
+  if (intent === "accident")        return { html: `Please call <a href="tel:07940792355"><b>07940792355</b></a> for any accident reports, whether this be injuries or damage reports.`, _intent: "accident" };
+  if (intent === "parking")         return { html: `Please call <a href="tel:07940792355"><b>07940792355</b></a> for any parking queries.`, _intent: "parking" };
+  if (intent === "recruitment")     return { html: `Please call <a href="tel:02037583058"><b>02037583058</b></a> for recruitment.`, _intent: "recruitment" };
   if (intent === "contact_support") return { html: `You can reach Welfare on ${WELFARE} — please hold the line when prompted.`, chips: ["Department Contacts","What are your opening times?"], _intent: "contact_support" };
 
   if (intent === "opening_times") return { html: "We're open <b>Monday–Friday, 8:30am–5:00pm</b> (UK time), closed weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"], _intent: "opening_times" };
@@ -843,14 +862,16 @@ function specialCases(text) {
   }
 
   if (intent === "dept_contacts") return {
-    html: `Here are the key department contacts:<br><br>` +
-      `<b>Welfare:</b> <a href="tel:02087583060">02087583060</a><br>` +
-      `<b>Fleet:</b> <a href="tel:01582841291">01582841291</a> / <a href="tel:07940766377">07940766377</a> (OOH)<br>` +
-      `<b>Accident &amp; Injury:</b> <a href="tel:07940792355">07940792355</a><br>` +
-      `<b>Parking:</b> <a href="tel:07940792355">07940792355</a><br>` +
-      `<b>Recruitment:</b> <a href="tel:02037583058">02037583058</a><br>` +
+    html: `Here are the department contacts:<br><br>` +
       `<b>Street Works:</b> <a href="mailto:Street.Works@kelly.co.uk">Street.Works@kelly.co.uk</a><br>` +
       `<b>Smart Awards:</b> <a href="mailto:smartawards@kelly.co.uk">smartawards@kelly.co.uk</a><br>` +
+      `<b>Support Team / City Fibre Back Office:</b> <a href="tel:02080164966"><b>02080164966</b></a><br>` +
+      `<b>BTOR Allocations Team:</b> <a href="tel:02080164962"><b>02080164962</b></a><br>` +
+      `<b>Fleet:</b> <a href="tel:01582841291"><b>01582841291</b></a> / <a href="tel:07940766377"><b>07940766377</b></a> (Out of Hours)<br>` +
+      `<b>Accident Line:</b> <a href="tel:07940792355"><b>07940792355</b></a><br>` +
+      `<b>Parking Line:</b> <a href="tel:07940792355"><b>07940792355</b></a><br>` +
+      `<b>Recruitment:</b> <a href="tel:02037583058"><b>02037583058</b></a><br>` +
+      `<b>Welfare:</b> <a href="tel:02087583060"><b>02087583060</b></a><br>` +
       `<b>ID Cards:</b> <a href="mailto:nuneaton.admin@kelly.co.uk">nuneaton.admin@kelly.co.uk</a>`,
     chips: ["BTOR NTF Support","City Fibre NTF Support","Is anyone available now?"], _intent: "dept_contacts"
   };
@@ -1069,7 +1090,16 @@ function init() {
   checkBroadcast();
   const firstName = empName ? empName.split(" ")[0] : null;
   const namePrefix = firstName ? `Hi <b>${escapeHTML(firstName)}</b>! ` : "";
-  addBubble(namePrefix + getGreeting(), "bot", { html: true, speak: false, noFeedback: true });
+  // Use document-specified greeting when open
+  if (isOpenNow()) {
+    addBubble(
+      `${namePrefix}I'm <b>Welfare Support</b>, please let me know what your query is regarding using the <b>Topics</b> button or type below.`,
+      "bot", { html: true, speak: false, noFeedback: true }
+    );
+    addChips(["Pay / Payroll","Deductions","Work Allocation","Manager Disputes","Department Contacts","Contract Change","Equipment Query","Street Works","Smart Awards","ID Cards"]);
+  } else {
+    addBubble(namePrefix + getGreeting(), "bot", { html: true, speak: false, noFeedback: true });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
