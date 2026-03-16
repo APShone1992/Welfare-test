@@ -1077,11 +1077,35 @@ topicsBtn.addEventListener("click",  () => { if (faqsLoaded) openDrawer(); else 
 drawerOverlay.addEventListener("click", closeDrawer);
 drawerCloseBtn.addEventListener("click", closeDrawer);
 
-fetch("./public/config/faqs.json")
-  .then(r => r.json())
-  .then(data => { FAQS = Array.isArray(data) ? data : []; })
-  .catch(() => { FAQS = []; })
-  .finally(() => { faqsLoaded = true; buildCategoryIndex(); renderDrawer(null); });
+// Load FAQs — try Supabase KV first (live, editor changes instant),
+// then local faqs.json as fallback
+(async function loadFAQs() {
+  try {
+    const resp = await fetch(
+      `${_SB_URL}/rest/v1/kv_store?key=eq.ws_faqs_edited&limit=1&select=value`,
+      { headers: { apikey: _SB_ANON, Authorization: 'Bearer ' + _SB_ANON } }
+    );
+    if (resp.ok) {
+      const rows = await resp.json();
+      if (rows && rows.length && rows[0].value) {
+        const data = JSON.parse(rows[0].value);
+        if (Array.isArray(data) && data.length) {
+          FAQS = data;
+          faqsLoaded = true;
+          buildCategoryIndex();
+          renderDrawer(null);
+          return;
+        }
+      }
+    }
+  } catch {}
+  // Fallback: local faqs.json file
+  fetch("./public/config/faqs.json")
+    .then(r => r.json())
+    .then(data => { FAQS = Array.isArray(data) ? data : []; })
+    .catch(() => { FAQS = []; })
+    .finally(() => { faqsLoaded = true; buildCategoryIndex(); renderDrawer(null); });
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INIT — show greeting after login
