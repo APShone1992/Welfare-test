@@ -296,6 +296,60 @@ body.dark .ws-item{background:var(--surface-3)}
   .tw{max-height:none!important;overflow:visible!important}
 }
 
+
+/* ── FAQ EDITOR ── */
+.faq-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:box-shadow var(--tr)}
+.faq-item:hover{box-shadow:0 2px 12px rgba(13,31,60,0.08)}
+.faq-item-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none}
+.faq-item-q{flex:1;font-size:13.5px;font-weight:600;color:var(--text)}
+.faq-item-cat{font-size:11px;background:var(--surface-3);border:1px solid var(--border-mid);padding:2px 8px;border-radius:99px;color:var(--text-sec);flex-shrink:0}
+.faq-item-chevron{color:var(--text-muted);font-size:12px;transition:transform var(--tr);flex-shrink:0}
+.faq-item.open .faq-item-chevron{transform:rotate(180deg)}
+.faq-item-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border)}
+.faq-item.open .faq-item-body{display:block}
+.faq-field{margin-top:12px}
+.faq-field label{display:block;font-size:11px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.faq-field input,.faq-field select,.faq-field textarea{width:100%;padding:8px 11px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr)}
+.faq-field input:focus,.faq-field select:focus,.faq-field textarea:focus{border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,212,0.1)}
+.faq-field textarea{resize:vertical;min-height:70px}
+.faq-item-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.faq-new-btn{border:2px dashed var(--border-mid);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;color:var(--text-sec);font-size:13.5px;font-weight:600;transition:border-color var(--tr),background var(--tr);background:transparent;width:100%;font-family:var(--font)}
+.faq-new-btn:hover{border-color:var(--brand-light);background:var(--accent);color:var(--brand-light)}
+.faq-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.faq-search{flex:1;min-width:160px}
+.faq-unsaved-badge{background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:600;display:none}
+.faq-unsaved-badge.show{display:inline-flex;align-items:center;gap:6px}
+
+/* ── EMP MANAGER ── */
+.emp-mgr-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.emp-mgr-row:last-child{border-bottom:none}
+.emp-mgr-emp{font-family:monospace;font-weight:700;font-size:13px;color:var(--brand);background:var(--surface-3);padding:2px 8px;border-radius:5px;flex-shrink:0}
+.emp-mgr-name{flex:1;font-size:13px;color:var(--text)}
+.emp-mgr-dept{font-size:12px;color:var(--text-sec);flex-shrink:0}
+
+/* ── BOT TESTER ── */
+.bot-test-window{height:260px;overflow-y:auto;background:var(--surface-2);border-radius:var(--radius);border:1px solid var(--border);padding:12px;display:flex;flex-direction:column-reverse;gap:6px;margin-bottom:10px}
+.bt-msg{max-width:80%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.5}
+.bt-msg.bot{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:3px;align-self:flex-start}
+.bt-msg.user{background:linear-gradient(135deg,#1e4d9b,#1a3a6b);color:#fff;border-bottom-right-radius:3px;align-self:flex-end}
+.bt-input-row{display:flex;gap:8px}
+.bt-input{flex:1;padding:9px 12px;border:1.5px solid var(--border-mid);border-radius:8px;font-size:13px;font-family:var(--font);color:var(--text);background:var(--surface);outline:none;transition:border-color var(--tr)}
+.bt-input:focus{border-color:var(--brand-light)}
+.bt-chip{display:inline-block;background:var(--surface-3);border:1px solid var(--border-mid);border-radius:99px;padding:4px 12px;font-size:12px;cursor:pointer;margin:3px;transition:background var(--tr)}
+.bt-chip:hover{background:var(--accent)}
+
+/* ── SECURITY / PIN ── */
+.pin-alert{background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start}
+.pin-alert-icon{font-size:18px;flex-shrink:0}
+.pin-alert-text{font-size:13px;color:#991b1b;line-height:1.6}
+.pin-history-row{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;align-items:center}
+.pin-history-row:last-child{border-bottom:none}
+.pin-history-time{color:var(--text-muted);font-size:11.5px;flex-shrink:0}
+
+/* ── EXPORT ── */
+.export-progress{background:var(--surface-3);border-radius:99px;height:8px;overflow:hidden;margin-top:10px;display:none}
+.export-progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width .3s}
+
 /* EMP UPLOAD ZONE */
 .emp-upload-zone{position:relative;border:2.5px dashed var(--border-mid);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color var(--tr),background var(--tr);background:var(--surface-2)}
 .emp-upload-zone:hover,.emp-upload-zone.drag-over{border-color:var(--brand-light);background:var(--accent)}
@@ -330,7 +384,12 @@ body.dark .ws-item{background:var(--surface-3)}
   <button class="tab" role="tab" aria-selected="false" id="tab-3">&#10071; Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
   <button class="tab" role="tab" aria-selected="false" id="tab-4">&#128101; Employees <span class="tab-badge zero" id="badge-emp">0</span></button>
   <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-5">&#128295; Manage</button>
-  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-6">&#9881; Setup</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-6">&#128218; FAQ Editor</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-7">&#128101; EMP Manager</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-8">&#129302; Bot Tester</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-9">&#128274; Security</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-10">&#128190; Export</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-11">&#9881; Setup</button>
 </nav>
 
 <!-- ══════════════════ OVERVIEW ══════════════════ -->
@@ -561,8 +620,149 @@ body.dark .ws-item{background:var(--surface-3)}
   </div>
 </div>
 
-<!-- ══════════════════ SETUP ══════════════════ -->
+
+<!-- ══════════════════ FAQ EDITOR ══════════════════ -->
 <div id="panel-6" class="panel" role="tabpanel">
+  <div class="panel-title">&#128218; FAQ Editor</div>
+  <div class="panel-desc">Add, edit and delete FAQ entries. Changes are saved to your browser and can be exported as a <code>faqs.json</code> file to replace <code>public/config/faqs.json</code>.</div>
+  <div class="faq-toolbar">
+    <input class="finput faq-search" type="text" id="faq-search" placeholder="Search FAQs&hellip;" autocomplete="off"/>
+    <select class="finput" id="faq-cat-filter">
+      <option value="">All categories</option>
+      <option value="general">General</option>
+      <option value="pay">Pay &amp; Deductions</option>
+      <option value="work">Work Allocation</option>
+      <option value="equipment">Equipment</option>
+      <option value="contract">Contract</option>
+      <option value="departments">Departments</option>
+      <option value="opening">Opening times</option>
+      <option value="support">Support</option>
+    </select>
+    <span class="faq-unsaved-badge" id="faq-unsaved">&#9888; Unsaved changes</span>
+    <button class="btn btn-primary btn-sm" id="faq-save-json">&#11015; Export faqs.json</button>
+    <button class="btn btn-sec btn-sm" id="faq-import-btn">&#128196; Import JSON</button>
+    <input type="file" id="faq-import-file" accept=".json" style="display:none"/>
+  </div>
+  <div id="faq-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px"></div>
+  <div id="faq-list"></div>
+  <button class="faq-new-btn" id="faq-add-new">&#43; Add new FAQ entry</button>
+</div>
+
+<!-- ══════════════════ EMP MANAGER ══════════════════ -->
+<div id="panel-7" class="panel" role="tabpanel">
+  <div class="panel-title">&#128101; EMP Manager</div>
+  <div class="panel-desc">Add or remove individual employees from the EMP validation list without re-uploading the whole spreadsheet.</div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">&#43; Add employee</div>
+      <div class="form-row"><label>EMP Number (6 digits)</label><input type="text" id="emp-mgr-emp" maxlength="6" inputmode="numeric" placeholder="e.g. 123456" autocomplete="off"/></div>
+      <div class="form-row"><label>Full name</label><input type="text" id="emp-mgr-name" placeholder="e.g. John Smith"/></div>
+      <div class="form-row"><label>Department</label><input type="text" id="emp-mgr-dept" placeholder="e.g. Telecoms"/></div>
+      <button class="btn btn-green" id="emp-mgr-add">&#43; Add to list</button>
+      <div class="setup-status" id="emp-mgr-status"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#128202; List status</div>
+      <div id="emp-mgr-stats" style="font-size:13.5px;color:var(--text-sec);line-height:2"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128101; Current EMP list <span id="emp-mgr-cnt" style="font-weight:400;font-size:11px;color:var(--text-muted);margin-left:6px"></span></div>
+    <div class="fbar">
+      <input class="finput finput-stretch" type="text" id="emp-mgr-search" placeholder="Search EMP or name&hellip;" autocomplete="off"/>
+    </div>
+    <div class="tw" style="max-height:50vh">
+      <table class="dt"><thead><tr>
+        <th>EMP No.</th><th>Name</th><th>Department</th><th style="width:70px;text-align:right">Remove</th>
+      </tr></thead><tbody id="emp-mgr-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ BOT TESTER ══════════════════ -->
+<div id="panel-8" class="panel" role="tabpanel">
+  <div class="panel-title">&#129302; Bot Tester</div>
+  <div class="panel-desc">Test how the bot responds to any phrase without leaving the admin page. Uses the same intent detection and FAQ matching as the real chat.</div>
+  <div class="g2">
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-title">&#128172; Test chat</div>
+      <div class="bot-test-window" id="bt-window"></div>
+      <div class="bt-input-row">
+        <input class="bt-input" type="text" id="bt-input" placeholder="Type a message to test&hellip;" autocomplete="off"/>
+        <button class="btn btn-primary btn-sm" id="bt-send">Send</button>
+        <button class="btn btn-sec btn-sm" id="bt-clear">Clear</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#9889; Quick test phrases</div>
+      <p style="font-size:12.5px;color:var(--text-sec);margin-bottom:10px">Click to test common inputs:</p>
+      <div id="bt-chips"></div>
+      <div class="card-title" style="margin-top:16px">&#128269; Intent detected</div>
+      <div id="bt-intent" style="font-size:13px;color:var(--text-sec);margin-top:4px">—</div>
+      <div class="card-title" style="margin-top:16px">&#128218; FAQ matched</div>
+      <div id="bt-faq" style="font-size:13px;color:var(--text-sec);margin-top:4px">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SECURITY ══════════════════ -->
+<div id="panel-9" class="panel" role="tabpanel">
+  <div class="panel-title">&#128274; Security</div>
+  <div class="panel-desc">Monitor PIN access attempts and manage session timeout.</div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">&#9888; Failed PIN attempts</div>
+      <div id="pin-attempts-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#9201; Session timeout</div>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Automatically lock the superadmin tabs after a period of inactivity. The page stays open but the tabs hide and require the PIN again.</p>
+      <div class="form-row">
+        <label>Lock after</label>
+        <select class="finput" id="timeout-select">
+          <option value="0">Never (manual lock only)</option>
+          <option value="5">5 minutes</option>
+          <option value="15" selected>15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="timeout-save">&#9989; Save timeout setting</button>
+      <div class="setup-status" id="timeout-status"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128218; PIN change history</div>
+    <div id="pin-history-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════ EXPORT ══════════════════ -->
+<div id="panel-10" class="panel" role="tabpanel">
+  <div class="panel-title">&#128190; Export &amp; Backup</div>
+  <div class="panel-desc">Download a full backup of all data as individual CSV files or a combined report.</div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">&#128230; Export all data</div>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px;line-height:1.6">Downloads all data as separate CSV files — SMS log, unresolved queries, employee list and activity log. Each file is named with today&apos;s date.</p>
+      <button class="btn btn-primary" id="export-all-btn">&#11015; Export all as CSV files</button>
+      <div class="export-progress" id="export-progress"><div class="export-progress-fill" id="export-progress-fill" style="width:0%"></div></div>
+      <div class="setup-status" id="export-status"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#128196; Export FAQ</div>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px;line-height:1.6">Download your current FAQ entries as a <code>faqs.json</code> file ready to drop into <code>public/config/faqs.json</code>.</p>
+      <button class="btn btn-green" id="export-faq-btn">&#11015; Download faqs.json</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128202; Export summary</div>
+    <div id="export-summary" style="font-size:13.5px;color:var(--text-sec);line-height:2"></div>
+  </div>
+</div>
+
+<!-- ══════════════════ SETUP ══════════════════ -->
+<div id="panel-11" class="panel" role="tabpanel">
   <div class="panel-title">&#9881; Setup</div>
   <div class="panel-desc">Employee list, Supabase connection and superadmin PIN management.</div>
 
@@ -1296,7 +1496,8 @@ function initSuperadminPin(){
       lockBtn.textContent='🔓';lockBtn.classList.add('unlocked');lockBtn.title='Lock superadmin';
       $$('.superadmin-tab').forEach(t=>t.classList.add('unlocked'));
       toast('🔓 Superadmin tabs unlocked');resetBuffer();
-    } else { shakeBox();errEl.textContent='Incorrect PIN';saBuffer='';updateDots(); }
+      renderFaqEditor();renderEmpManager();renderExportSummary();resetInactivityTimer();
+    } else { shakeBox();errEl.textContent='Incorrect PIN';saBuffer='';updateDots();logFailedPinAttempt();logActivity('❌','Failed superadmin PIN attempt');renderSecurityPanel(); }
   }
   function lockSuperadmin(){
     saUnlocked=false;lockBtn.textContent='🔒';lockBtn.classList.remove('unlocked');lockBtn.title='Superadmin access';
@@ -1331,7 +1532,7 @@ function initChangePinSection(){
     if(cur!==getSaPin()){st.textContent='❌ Current PIN incorrect';st.className='setup-status err';return;}
     if(!/^\d{4}$/.test(nw)){st.textContent='❌ Must be exactly 4 digits';st.className='setup-status err';return;}
     if(nw!==cf){st.textContent='❌ PINs do not match';st.className='setup-status err';return;}
-    saveSaPin(nw);st.textContent='✅ PIN updated';st.className='setup-status ok';
+    saveSaPin(nw);logPinChange();st.textContent='✅ PIN updated';st.className='setup-status ok';
     ['#pin-current','#pin-new','#pin-confirm'].forEach(id=>{const e=$(id);if(e)e.value='';});
     setTimeout(()=>{st.textContent='';},3000);
   });
@@ -1639,6 +1840,8 @@ async function refreshAll(){
     renderDeptChart(SMSTbl.data);
     renderTrainingSuggestions(URTbl.data);
     renderActivityLog();
+    renderSecurityPanel();
+    renderExportSummary();
   }catch(e){
     setSyncStatus('err','Error: '+e.message);
     toast('⚠ '+e.message,{dur:5000});
@@ -1941,6 +2144,517 @@ function renderActivityLog() {
     </div>`).join('');
 }
 
+
+/* ══════════════════════════════════════════
+   SECURITY — failed PIN tracking, session timeout, PIN history
+══════════════════════════════════════════ */
+const PIN_ATTEMPTS_KEY = 'ws_pin_attempts';
+const PIN_HISTORY_KEY  = 'ws_pin_history';
+const TIMEOUT_KEY      = 'ws_sa_timeout';
+
+function logFailedPinAttempt() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(PIN_ATTEMPTS_KEY) || '[]');
+    arr.unshift({ ts: Date.now() });
+    if (arr.length > 50) arr.length = 50;
+    localStorage.setItem(PIN_ATTEMPTS_KEY, JSON.stringify(arr));
+  } catch {}
+}
+
+function logPinChange() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(PIN_HISTORY_KEY) || '[]');
+    arr.unshift({ ts: Date.now() });
+    if (arr.length > 20) arr.length = 20;
+    localStorage.setItem(PIN_HISTORY_KEY, JSON.stringify(arr));
+    logActivity('🔑', 'Superadmin PIN changed');
+  } catch {}
+}
+
+function renderSecurityPanel() {
+  // Failed attempts
+  const attEl = $('#pin-attempts-list');
+  if (attEl) {
+    const attempts = JSON.parse(localStorage.getItem(PIN_ATTEMPTS_KEY) || '[]');
+    if (!attempts.length) {
+      attEl.innerHTML = '<div class="empty" style="padding:16px 0"><p>No failed attempts recorded.</p></div>';
+    } else {
+      const recent = attempts.filter(a => Date.now() - a.ts < 86400000 * 7).length;
+      let html = '';
+      if (recent > 0) html += `<div class="pin-alert"><div class="pin-alert-icon">⚠️</div><div class="pin-alert-text"><strong>${recent} failed attempt${recent!==1?'s':''} in the last 7 days.</strong> If you didn't make these, consider changing your PIN.</div></div>`;
+      html += attempts.slice(0, 10).map(a => `<div class="pin-history-row"><div class="pin-history-time">${fmtDT(a.ts)}</div><span style="color:var(--red);font-weight:600">❌ Failed PIN attempt</span></div>`).join('');
+      attEl.innerHTML = html;
+    }
+  }
+  // PIN history
+  const histEl = $('#pin-history-list');
+  if (histEl) {
+    const hist = JSON.parse(localStorage.getItem(PIN_HISTORY_KEY) || '[]');
+    if (!hist.length) {
+      histEl.innerHTML = '<div class="empty" style="padding:16px 0"><p>No PIN changes recorded yet.</p></div>';
+    } else {
+      histEl.innerHTML = hist.map((h,i) => `<div class="pin-history-row"><div class="pin-history-time">${fmtDT(h.ts)}</div><span style="color:var(--green);font-weight:600">✅ PIN changed${i===0?' (most recent)':''}</span></div>`).join('');
+    }
+  }
+  // Timeout setting
+  const sel = $('#timeout-select');
+  if (sel) {
+    const saved = localStorage.getItem(TIMEOUT_KEY) || '15';
+    sel.value = saved;
+  }
+}
+
+function bindSecurity() {
+  $('#timeout-save')?.addEventListener('click', () => {
+    const val = $('#timeout-select')?.value || '15';
+    localStorage.setItem(TIMEOUT_KEY, val);
+    resetInactivityTimer();
+    const st = $('#timeout-status');
+    if (st) { st.textContent = val === '0' ? '✅ Auto-lock disabled' : `✅ Will lock after ${val} minutes of inactivity`; st.className = 'setup-status ok'; setTimeout(() => { st.textContent = ''; }, 3000); }
+    logActivity('⏱️', `Session timeout set to ${val === '0' ? 'never' : val + ' minutes'}`);
+  });
+}
+
+/* ══════════════════════════════════════════
+   SESSION TIMEOUT — auto-lock superadmin tabs
+══════════════════════════════════════════ */
+let _inactivityTimer = null;
+
+function resetInactivityTimer() {
+  clearTimeout(_inactivityTimer);
+  const mins = parseInt(localStorage.getItem(TIMEOUT_KEY) || '15');
+  if (!mins || !saUnlocked) return;
+  _inactivityTimer = setTimeout(() => {
+    if (saUnlocked) {
+      lockSuperadmin();
+      toast('🔒 Superadmin locked due to inactivity', { dur: 5000 });
+      logActivity('⏱️', 'Superadmin auto-locked due to inactivity');
+    }
+  }, mins * 60 * 1000);
+}
+
+// Reset timer on any user interaction
+['click','keydown','mousemove','touchstart'].forEach(ev =>
+  document.addEventListener(ev, () => { if (saUnlocked) resetInactivityTimer(); }, { passive: true })
+);
+
+/* ══════════════════════════════════════════
+   FAQ EDITOR
+   FAQs stored in localStorage as ws_faqs_edited
+   On export: downloads faqs.json
+   On import: reads existing faqs.json file
+══════════════════════════════════════════ */
+const FAQ_EDIT_KEY = 'ws_faqs_edited';
+let faqEditData = [];
+let faqEdited = false;
+
+function loadFaqEditData() {
+  // Try edited version first, then fall back to loaded FAQS
+  try {
+    const stored = localStorage.getItem(FAQ_EDIT_KEY);
+    if (stored) { faqEditData = JSON.parse(stored); return; }
+  } catch {}
+  // Deep copy from loaded FAQS
+  faqEditData = JSON.parse(JSON.stringify(FAQS.length ? FAQS : []));
+}
+
+function saveFaqEditData() {
+  try { localStorage.setItem(FAQ_EDIT_KEY, JSON.stringify(faqEditData)); } catch {}
+  faqEdited = true;
+  const badge = $('#faq-unsaved');
+  if (badge) badge.classList.add('show');
+}
+
+function renderFaqEditor() {
+  loadFaqEditData();
+  const listEl = $('#faq-list');
+  const cntEl  = $('#faq-cnt');
+  if (!listEl) return;
+
+  const q   = ($('#faq-search')?.value || '').toLowerCase();
+  const cat = $('#faq-cat-filter')?.value || '';
+  const filtered = faqEditData.filter((f, i) => {
+    f._idx = i;
+    if (cat && (f.category || 'general') !== cat) return false;
+    if (q && !f.question.toLowerCase().includes(q) && !(f.answer || '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (cntEl) cntEl.textContent = `${filtered.length} of ${faqEditData.length} entries`;
+  listEl.innerHTML = '';
+
+  filtered.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'faq-item';
+    item.innerHTML = `
+      <div class="faq-item-header">
+        <span class="faq-item-q">${esc(f.question || 'Untitled')}</span>
+        <span class="faq-item-cat">${esc(f.category || 'general')}</span>
+        <span class="faq-item-chevron">▼</span>
+      </div>
+      <div class="faq-item-body">
+        <div class="faq-field"><label>Question</label><input type="text" class="faq-q-input" value="${esc(f.question || '')}" placeholder="e.g. What are your opening times?"/></div>
+        <div class="faq-field"><label>Answer (HTML allowed: &lt;b&gt;, &lt;a href="tel:..."&gt;, &lt;br&gt;)</label><textarea class="faq-a-input" rows="3">${esc(f.answer || '')}</textarea></div>
+        <div class="faq-field"><label>Category</label>
+          <select class="faq-c-input">
+            ${['general','pay','work','equipment','contract','departments','opening','support'].map(c => `<option value="${c}"${(f.category||'general')===c?' selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="faq-field"><label>Synonyms / alternate phrasings (comma-separated)</label><input type="text" class="faq-s-input" value="${esc((f.synonyms||[]).join(', '))}" placeholder="e.g. what time do you open, when are you open"/></div>
+        <div class="faq-item-actions">
+          <button class="btn btn-primary btn-sm faq-save-btn">&#9989; Save changes</button>
+          <button class="btn btn-red btn-sm faq-del-btn">&#128465; Delete</button>
+        </div>
+      </div>`;
+
+    item.querySelector('.faq-item-header').addEventListener('click', () => item.classList.toggle('open'));
+
+    item.querySelector('.faq-save-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = f._idx;
+      faqEditData[idx] = {
+        ...faqEditData[idx],
+        question: item.querySelector('.faq-q-input').value.trim(),
+        answer:   item.querySelector('.faq-a-input').value.trim(),
+        category: item.querySelector('.faq-c-input').value,
+        synonyms: item.querySelector('.faq-s-input').value.split(',').map(s=>s.trim()).filter(Boolean),
+      };
+      saveFaqEditData();
+      item.classList.remove('open');
+      item.querySelector('.faq-item-q').textContent = faqEditData[idx].question || 'Untitled';
+      item.querySelector('.faq-item-cat').textContent = faqEditData[idx].category || 'general';
+      toast('FAQ entry saved ✓');
+      logActivity('📝', `FAQ edited: "${faqEditData[idx].question}"`);
+    });
+
+    item.querySelector('.faq-del-btn').addEventListener('click', async e => {
+      e.stopPropagation();
+      if (!await confirm2('Delete FAQ entry?', `"${f.question}" will be removed.`)) return;
+      faqEditData.splice(f._idx, 1);
+      saveFaqEditData();
+      renderFaqEditor();
+      logActivity('🗑️', `FAQ deleted: "${f.question}"`);
+      toast('Entry deleted');
+    });
+
+    listEl.appendChild(item);
+  });
+}
+
+function bindFaqEditor() {
+  $('#faq-search')?.addEventListener('input', () => renderFaqEditor());
+  $('#faq-cat-filter')?.addEventListener('change', () => renderFaqEditor());
+
+  $('#faq-add-new')?.addEventListener('click', () => {
+    faqEditData.push({ question: '', answer: '', category: 'general', synonyms: [] });
+    saveFaqEditData();
+    renderFaqEditor();
+    // Open the last item
+    setTimeout(() => {
+      const items = $$('#faq-list .faq-item');
+      const last = items[items.length - 1];
+      if (last) { last.classList.add('open'); last.scrollIntoView({ behavior: 'smooth', block: 'center' }); last.querySelector('.faq-q-input')?.focus(); }
+    }, 100);
+  });
+
+  $('#faq-save-json')?.addEventListener('click', () => {
+    const json = JSON.stringify(faqEditData, null, 2);
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([json], {type:'application/json'})), download: 'faqs.json' });
+    document.body.appendChild(a); a.click(); a.remove();
+    logActivity('📥', `faqs.json exported (${faqEditData.length} entries)`);
+    toast('faqs.json downloaded — replace public/config/faqs.json with this file');
+    faqEdited = false;
+    const badge = $('#faq-unsaved');
+    if (badge) badge.classList.remove('show');
+  });
+
+  $('#faq-import-btn')?.addEventListener('click', () => $('#faq-import-file')?.click());
+  $('#faq-import-file')?.addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error('File must contain a JSON array');
+      if (!await confirm2('Import FAQ file?', `This will replace your current ${faqEditData.length} entries with ${data.length} entries from the imported file.`)) return;
+      faqEditData = data;
+      saveFaqEditData();
+      renderFaqEditor();
+      logActivity('📂', `faqs.json imported (${data.length} entries)`);
+      toast(`Imported ${data.length} FAQ entries ✓`);
+    } catch (err) { toast('❌ Could not read file: ' + err.message); }
+    e.target.value = '';
+  });
+}
+
+/* ══════════════════════════════════════════
+   EMP MANAGER — add/remove individual EMPs
+══════════════════════════════════════════ */
+function renderEmpManager() {
+  getEmpList().then(list => {
+    const statsEl = $('#emp-mgr-stats');
+    const cntEl   = $('#emp-mgr-cnt');
+    if (!list) {
+      if (statsEl) statsEl.innerHTML = '⚠️ No EMP list loaded yet.<br>Upload one in the Setup tab first.';
+      if (cntEl) cntEl.textContent = '';
+      $('#emp-mgr-body').innerHTML = '<tr><td colspan="4" class="empty"><span class="empty-icon">📋</span><p>No EMP list loaded. Upload a spreadsheet in the Setup tab.</p></td></tr>';
+      return;
+    }
+    const count = Object.keys(list).length;
+    if (cntEl) cntEl.textContent = `${count} employee${count!==1?'s':''}`;
+    if (statsEl) statsEl.innerHTML = `<strong>Total employees:</strong> ${count}<br><strong>Storage:</strong> ${typeof window.storage !== 'undefined' ? 'Shared (all devices)' : 'Local only'}<br><strong>Validation:</strong> ✅ Active`;
+    renderEmpManagerTable(list);
+  });
+}
+
+function renderEmpManagerTable(list, filter = '') {
+  const body = $('#emp-mgr-body');
+  if (!body) return;
+  const entries = Object.entries(list)
+    .filter(([emp, rec]) => {
+      if (!filter) return true;
+      const f = filter.toLowerCase();
+      const name = typeof rec === 'object' ? rec.name : rec;
+      return emp.includes(f) || (name||'').toLowerCase().includes(f);
+    })
+    .sort((a,b) => a[0].localeCompare(b[0]));
+
+  if (!entries.length) {
+    body.innerHTML = '<tr><td colspan="4"><div class="empty" style="padding:20px"><p>No matching employees.</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = entries.map(([emp, rec]) => {
+    const name = typeof rec === 'object' ? rec.name : rec;
+    const dept = typeof rec === 'object' ? rec.dept : '';
+    return `<tr>
+      <td><span class="emp-mgr-emp">${esc(emp)}</span></td>
+      <td class="emp-mgr-name">${esc(name||'—')}</td>
+      <td class="emp-mgr-dept">${esc(dept||'—')}</td>
+      <td><div class="row-actions"><button class="btn btn-red btn-sm btn-icon" data-emp="${esc(emp)}" title="Remove from list">✕</button></div></td>
+    </tr>`;
+  }).join('');
+
+  body.querySelectorAll('[data-emp]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const emp = btn.dataset.emp;
+      if (!await confirm2('Remove employee?', `EMP ${emp} will be removed from the validation list. They will not be able to log into the chat bot.`)) return;
+      const list2 = await getEmpList();
+      if (list2 && list2[emp] !== undefined) {
+        delete list2[emp];
+        await saveEmpList(list2);
+        logActivity('👤', `Removed EMP ${emp} from validation list`);
+        toast(`EMP ${emp} removed ✓`);
+        renderEmpManager();
+      }
+    });
+  });
+}
+
+function bindEmpManager() {
+  $('#emp-mgr-search')?.addEventListener('input', async e => {
+    const list = await getEmpList();
+    if (list) renderEmpManagerTable(list, e.target.value);
+  });
+
+  $('#emp-mgr-add')?.addEventListener('click', async () => {
+    const emp  = ($('#emp-mgr-emp')?.value || '').trim().replace(/\D/g,'');
+    const name = ($('#emp-mgr-name')?.value || '').trim();
+    const dept = ($('#emp-mgr-dept')?.value || '').trim();
+    const st = $('#emp-mgr-status');
+    if (!/^\d{6}$/.test(emp)) { if (st) { st.textContent = '❌ EMP must be exactly 6 digits'; st.className = 'setup-status err'; } return; }
+    const list = (await getEmpList()) || {};
+    if (list[emp] && !await confirm2('EMP already exists', `EMP ${emp} is already on the list. Overwrite with new details?`)) return;
+    list[emp] = { name: name || '', dept: dept || '' };
+    await saveEmpList(list);
+    logActivity('👤', `Added/updated EMP ${emp} (${name})`);
+    if (st) { st.textContent = `✅ EMP ${emp} added`; st.className = 'setup-status ok'; setTimeout(() => { st.textContent = ''; }, 3000); }
+    ['#emp-mgr-emp','#emp-mgr-name','#emp-mgr-dept'].forEach(id => { const el=$(id); if(el) el.value=''; });
+    renderEmpManager();
+    toast(`EMP ${emp} added ✓`);
+  });
+}
+
+/* ══════════════════════════════════════════
+   BOT TESTER — mini chat using same logic as real bot
+   Calls the Anthropic API via fetch to simulate
+   intent + FAQ matching using a system prompt
+   that mirrors chat.js logic
+══════════════════════════════════════════ */
+const BT_QUICK = [
+  'Hello','Pay query','I have a deduction issue','BTOR NTF',
+  'City Fibre NTF','Is anyone available now?','What are your opening times?',
+  'Work allocation','Department contacts','No van','Manager dispute','Where are you?'
+];
+
+function btAddMsg(text, type) {
+  const win = $('#bt-window');
+  if (!win) return;
+  const div = document.createElement('div');
+  div.className = `bt-msg ${type}`;
+  div.textContent = text;
+  win.prepend(div);
+}
+
+function btDetectIntent(text) {
+  // Mirror chat.js detectIntent — same INTENT_PHRASES list
+  const INTENT_PHRASES = [
+    {i:'greeting',p:['hello','hi','hey','good morning','good afternoon','good evening']},
+    {i:'pay_query',p:['pay query','pay issue','not been paid','missing pay','wrong pay','payroll']},
+    {i:'deduction_query',p:['deduction','money taken','taken from my pay','missing money']},
+    {i:'work_allocation',p:['no work','not got work','work allocation','no jobs','not allocated']},
+    {i:'manager_dispute',p:['manager dispute','problem with manager','my manager']},
+    {i:'equipment',p:['equipment','kit','van','tooling','stock']},
+    {i:'btor_ntf',p:['btor','openreach','btor ntf']},
+    {i:'cityfibre_ntf',p:['city fibre','cityfibre','cf ntf']},
+    {i:'available_now',p:['available now','anyone available','are you open now','speak to someone']},
+    {i:'opening_times',p:['opening times','office hours','when do you open','what time']},
+    {i:'location',p:['where are you','depot','nuneaton','directions']},
+    {i:'dept_contacts',p:['department contacts','contact details','who do i call','contact list']},
+    {i:'contact_support',p:['welfare support','call welfare','speak to welfare']},
+    {i:'fleet',p:['fleet','breakdown','company car']},
+    {i:'accident',p:['accident','injury','hurt']},
+    {i:'parking',p:['parking','pcn','parking fine']},
+    {i:'recruitment',p:['recruitment','new job','start date']},
+    {i:'thanks',p:['thank','thanks','cheers']},
+    {i:'bye',p:['bye','goodbye','see you']},
+  ];
+  const q = text.toLowerCase().trim();
+  for (const {i,p} of INTENT_PHRASES) for (const pat of p) if (q.includes(pat)) return i;
+  return null;
+}
+
+function btMatchFAQ(text) {
+  if (!FAQS.length) return null;
+  const q = text.toLowerCase();
+  let best = null, bestScore = 0;
+  for (const f of FAQS) {
+    const variants = [f.question, ...(f.synonyms||[])].filter(Boolean);
+    for (const v of variants) {
+      const vn = v.toLowerCase();
+      let score = 0;
+      if (vn === q) score = 1;
+      else if (vn.includes(q) || q.includes(vn)) score = 0.85;
+      else {
+        const qWords = new Set(q.split(' ').filter(w=>w.length>2));
+        const vWords = new Set(vn.split(' ').filter(w=>w.length>2));
+        const inter = [...qWords].filter(w=>vWords.has(w)).length;
+        score = inter / Math.max(qWords.size, vWords.size, 1) * 0.8;
+      }
+      if (score > bestScore) { bestScore = score; best = f; }
+    }
+  }
+  return bestScore > 0.2 ? best : null;
+}
+
+function btHandleMessage(text) {
+  const input = $('#bt-input');
+  if (!text.trim()) return;
+  btAddMsg(text, 'user');
+  if (input) input.value = '';
+
+  const intent = btDetectIntent(text);
+  const faq    = btMatchFAQ(text);
+
+  const intentEl = $('#bt-intent');
+  const faqEl    = $('#bt-faq');
+  if (intentEl) intentEl.innerHTML = intent ? `<span style="background:var(--accent);color:var(--brand);padding:2px 10px;border-radius:99px;font-weight:700">${intent}</span>` : '<span style="color:var(--text-muted)">No intent detected</span>';
+  if (faqEl) faqEl.innerHTML = faq ? `<strong>${esc(faq.question)}</strong><br><span style="color:var(--text-sec);font-size:12px">${esc((faq.answer||'').replace(/<[^>]+>/g,'').slice(0,120))}…</span>` : '<span style="color:var(--text-muted)">No FAQ match</span>';
+
+  // Simulate bot response
+  setTimeout(() => {
+    let response = '';
+    if (faq) response = (faq.answer||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0, 200);
+    else if (intent === 'greeting') response = 'Hey! 👋 How can I help you today?';
+    else if (intent === 'pay_query') response = "I'll help you send a text to the pay team. What's the best phone number to reach you on?";
+    else if (intent === 'btor_ntf') response = 'Please select which area you are based in: Wales & Midlands, London & SE, Wessex, or North England & Scotland.';
+    else if (intent === 'cityfibre_ntf') response = 'Please select which area you are based in: Scotland, Midlands, South, or North.';
+    else if (intent === 'available_now') response = 'Checking opening hours… (in the real bot this checks live UK time)';
+    else if (intent === 'opening_times') response = "We're open Monday–Friday, 8:30am–5:00pm (UK time), closed weekends and bank holidays.";
+    else if (intent === 'dept_contacts') response = 'Here are the key department contacts: Welfare: 02087583060, Fleet: 01582841291…';
+    else if (intent === 'thanks') response = 'Happy to help! 😊 Anything else?';
+    else if (intent === 'bye') response = 'Take care! 👋';
+    else response = "I'm not sure about that one — try the Topics button or pick a common query.";
+    btAddMsg(response, 'bot');
+  }, 600);
+}
+
+function bindBotTester() {
+  const chipsEl = $('#bt-chips');
+  if (chipsEl) {
+    chipsEl.innerHTML = BT_QUICK.map(q => `<span class="bt-chip" data-q="${esc(q)}">${esc(q)}</span>`).join('');
+    chipsEl.querySelectorAll('.bt-chip').forEach(c => c.addEventListener('click', () => btHandleMessage(c.dataset.q)));
+  }
+  $('#bt-send')?.addEventListener('click', () => btHandleMessage($('#bt-input')?.value || ''));
+  $('#bt-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); btHandleMessage($('#bt-input')?.value || ''); } });
+  $('#bt-clear')?.addEventListener('click', () => { const w=$('#bt-window'); if(w) w.innerHTML=''; });
+}
+
+/* ══════════════════════════════════════════
+   EXPORT & BACKUP
+══════════════════════════════════════════ */
+function renderExportSummary() {
+  const el = $('#export-summary');
+  if (!el) return;
+  Promise.all([fetchSMS(), fetchUR(), fetchEmployees(), fetchSessions()]).then(([sms,ur,emp,sess]) => {
+    el.innerHTML = `
+      <strong>SMS logs:</strong> ${sms.length} records<br>
+      <strong>Unresolved queries:</strong> ${ur.length} records<br>
+      <strong>Employees (seen):</strong> ${emp.length} employees<br>
+      <strong>Sessions:</strong> ${sess.length} sessions<br>
+      <strong>Activity log:</strong> ${getActivityLog().length} entries<br>
+      <strong>FAQ entries:</strong> ${faqEditData.length || FAQS.length} entries`;
+  });
+}
+
+function bindExport() {
+  $('#export-all-btn')?.addEventListener('click', async () => {
+    const btn = $('#export-all-btn');
+    const prog = $('#export-progress');
+    const progFill = $('#export-progress-fill');
+    const statusEl = $('#export-status');
+    if (btn) btn.disabled = true;
+    if (prog) prog.style.display = 'block';
+
+    const today = new Date().toISOString().slice(0,10);
+    const setProgress = pct => { if (progFill) progFill.style.width = pct + '%'; };
+    const setStatus = msg => { if (statusEl) { statusEl.textContent = msg; statusEl.className = 'setup-status ok'; } };
+
+    try {
+      setProgress(10); const sms = await fetchSMS();
+      setProgress(25); const ur  = await fetchUR();
+      setProgress(40); const emp = await fetchEmployees();
+      setProgress(55); const act = getActivityLog();
+      setProgress(70);
+
+      dlCSV([['Date','EMP','Name','Phone','Type','Query'],...sms.map(x=>[fmtDT(x.ts),x.emp||'',x.sender_name||'',x.phone||'',x.type||'',x.content||''])], `sms_log_${today}.csv`);
+      await new Promise(r=>setTimeout(r,200));
+      setProgress(80);
+      dlCSV([['Date','EMP','Query','Type','Days Old'],...ur.map(x=>[fmtDT(x.ts),x.emp||'',x.query||'',x.type||'',Math.floor((Date.now()-x.ts)/86400000)])], `unresolved_${today}.csv`);
+      await new Promise(r=>setTimeout(r,200));
+      setProgress(90);
+      dlCSV([['EMP','Name','Department','First Seen','Last Active','Sessions'],...emp.map(x=>[x.emp||'',x.name||'',x.dept||'',x.firstSeen?fmtDT(x.firstSeen):'',x.lastSeen?fmtDT(x.lastSeen):'',x.sessions||0])], `employees_${today}.csv`);
+      await new Promise(r=>setTimeout(r,200));
+      dlCSV([['Date','Action'],...act.map(a=>[fmtDT(a.ts),a.text])], `activity_log_${today}.csv`);
+      setProgress(100);
+      setStatus(`✅ 4 files exported successfully`);
+      logActivity('💾', 'Full data export completed');
+      toast('All data exported ✓');
+    } catch(e) {
+      if (statusEl) { statusEl.textContent = '❌ Export failed: ' + e.message; statusEl.className = 'setup-status err'; }
+    } finally {
+      if (btn) { btn.disabled = false; setTimeout(() => { if(prog) prog.style.display='none'; setProgress(0); }, 2000); }
+    }
+  });
+
+  $('#export-faq-btn')?.addEventListener('click', () => {
+    loadFaqEditData();
+    const json = JSON.stringify(faqEditData, null, 2);
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([json],{type:'application/json'})), download:`faqs_${new Date().toISOString().slice(0,10)}.json` });
+    document.body.appendChild(a); a.click(); a.remove();
+    logActivity('📥', 'faqs.json exported from Export tab');
+    toast('faqs.json downloaded ✓');
+  });
+}
+
 /* ══════════════════════════════════════════
    BOOT
 ══════════════════════════════════════════ */
@@ -1948,6 +2662,9 @@ function renderActivityLog() {
   SMSTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();bindEmpUpload();
   initSuperadminPin();initChangePinSection();
   bindDarkMode();bindPrint();bindGlobalSearch();bindNoteModal();
+  bindSecurity();bindFaqEditor();bindEmpManager();bindBotTester();bindExport();
+  loadFaqEditData();
+  resetInactivityTimer();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
   await refreshAll();
