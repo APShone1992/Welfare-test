@@ -147,6 +147,32 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 @media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
 @media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
 
+/* SUPERADMIN — hidden tabs */
+.tab.superadmin-tab{display:none}
+.tab.superadmin-tab.unlocked{display:flex}
+
+/* Lock icon in header */
+.lock-btn{background:none;border:none;color:rgba(255,255,255,0.45);font-size:16px;padding:4px 6px;border-radius:6px;transition:color var(--tr),background var(--tr);line-height:1}
+.lock-btn:hover{color:#fff;background:rgba(255,255,255,0.15)}
+.lock-btn.unlocked{color:#4ade80}
+
+/* Superadmin PIN modal */
+.sa-pin-modal{position:fixed;inset:0;background:rgba(13,31,60,0.55);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.sa-pin-modal.hidden{display:none}
+.sa-pin-box{background:#fff;border-radius:16px;padding:32px 28px;max-width:320px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(13,31,60,0.22)}
+.sa-pin-box h3{font-size:17px;font-weight:800;color:var(--brand);margin-bottom:6px}
+.sa-pin-box p{font-size:13px;color:var(--text-sec);margin-bottom:20px;line-height:1.5}
+.sa-pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:18px}
+.sa-pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border-mid);background:transparent;transition:background .15s,border-color .15s}
+.sa-pin-dot.filled{background:var(--brand-light);border-color:var(--brand-light)}
+.sa-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto 14px}
+.sa-key{padding:13px;font-size:17px;font-weight:700;background:var(--surface-3);border:1.5px solid var(--border-mid);border-radius:10px;color:var(--text);transition:background var(--tr),transform var(--tr)}
+.sa-key:hover{background:var(--accent);border-color:var(--brand-light)}
+.sa-key:active{transform:scale(.93)}
+.sa-key.wide{grid-column:span 2}
+.sa-pin-err{font-size:12.5px;color:var(--red);font-weight:600;min-height:18px;margin-bottom:6px}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+
 /* PIN GATE */
 .pin-gate{position:fixed;inset:0;background:linear-gradient(145deg,#d6e4ff 0%,#e8f0ff 50%,#f0f5ff 100%);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px}
 .pin-box{background:#fff;border-radius:18px;padding:40px 36px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(13,31,60,0.18),0 0 0 1px rgba(26,58,107,0.08)}
@@ -185,6 +211,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
     <button class="btn btn-sec btn-sm" id="fsBtn">&#x26F6; Full screen</button>
     <button class="btn btn-green btn-sm" id="addSmsBtn">+ Add SMS</button>
     <a href="index.html" class="btn btn-sec btn-sm">&#8592; Chat</a>
+    <button class="lock-btn" id="lockBtn" title="Superadmin access">&#128274;</button>
   </div>
 </header>
 
@@ -193,8 +220,8 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
   <button class="tab" role="tab" aria-selected="false" id="tab-1">&#128200; Analytics</button>
   <button class="tab" role="tab" aria-selected="false" id="tab-2">&#128172; SMS Log <span class="tab-badge zero" id="badge-sms">0</span></button>
   <button class="tab" role="tab" aria-selected="false" id="tab-3">&#10071; Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-4">&#128295; Manage</button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-5">&#9881; Setup</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-4">&#128295; Manage</button>
+  <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-5">&#9881; Setup</button>
 </nav>
 
 <!-- OVERVIEW -->
@@ -397,6 +424,36 @@ create policy "public insert" on sessions for insert with check (true);</code>
     <div class="modal-btns">
       <button class="btn btn-sec" id="confirm-cancel">Cancel</button>
       <button class="btn btn-red" id="confirm-ok">Yes, delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPERADMIN PIN MODAL -->
+<div class="sa-pin-modal hidden" id="sa-pin-modal">
+  <div class="sa-pin-box">
+    <div style="font-size:40px;margin-bottom:12px">&#128272;</div>
+    <h3>Superadmin Access</h3>
+    <p>Enter your superadmin PIN to access Manage &amp; Setup</p>
+    <div class="sa-pin-dots" id="sa-pin-dots">
+      <div class="sa-pin-dot" id="sa-d0"></div>
+      <div class="sa-pin-dot" id="sa-d1"></div>
+      <div class="sa-pin-dot" id="sa-d2"></div>
+      <div class="sa-pin-dot" id="sa-d3"></div>
+    </div>
+    <div class="sa-pin-err" id="sa-pin-err"></div>
+    <div class="sa-keypad">
+      <button class="sa-key" data-k="1">1</button>
+      <button class="sa-key" data-k="2">2</button>
+      <button class="sa-key" data-k="3">3</button>
+      <button class="sa-key" data-k="4">4</button>
+      <button class="sa-key" data-k="5">5</button>
+      <button class="sa-key" data-k="6">6</button>
+      <button class="sa-key" data-k="7">7</button>
+      <button class="sa-key" data-k="8">8</button>
+      <button class="sa-key" data-k="9">9</button>
+      <button class="sa-key" data-k="del">&#9003;</button>
+      <button class="sa-key" data-k="0">0</button>
+      <button class="sa-key" data-k="cancel" style="font-size:12px;font-weight:600;color:var(--text-sec)">Cancel</button>
     </div>
   </div>
 </div>
@@ -781,33 +838,130 @@ async function refreshAll(){
   }
 }
 
-/* ═══ BOOT ═══ */
-/* ═══ CHANGE PIN SECTION (Setup tab) ═══ */
-const PIN_KEY = 'ws_admin_pin';
-function getPin(){ return localStorage.getItem(PIN_KEY) || '1234'; }
-function savePin(p){ localStorage.setItem(PIN_KEY, p); }
+/* ═══════════════════════════════════════════════
+   SUPERADMIN PIN SYSTEM
+   The Manage & Setup tabs are hidden until the
+   correct superadmin PIN is entered via the 🔒
+   icon in the header. PIN stored in localStorage
+   so you can change it any time from Setup tab.
+   Default PIN: 9999  ← change this below
+═══════════════════════════════════════════════ */
+const SA_PIN_KEY = 'ws_sa_pin';
+const SA_DEFAULT = '9999'; // ← Change this to your preferred superadmin PIN
+function getSaPin(){ return localStorage.getItem(SA_PIN_KEY) || SA_DEFAULT; }
+function saveSaPin(p){ localStorage.setItem(SA_PIN_KEY, p); }
 
+let saUnlocked = false;
+let saBuffer   = '';
+
+function initSuperadminPin(){
+  const modal   = $('#sa-pin-modal');
+  const errEl   = $('#sa-pin-err');
+  const lockBtn = $('#lockBtn');
+
+  function updateDots(){
+    for(let i=0;i<4;i++) $('#sa-d'+i).classList.toggle('filled', i < saBuffer.length);
+  }
+
+  function resetBuffer(){ saBuffer=''; updateDots(); errEl.textContent=''; }
+
+  function shakeBox(){
+    const box = modal.querySelector('.sa-pin-box');
+    box.style.animation='shake 0.4s ease';
+    setTimeout(()=>{ box.style.animation=''; },400);
+  }
+
+  function checkPin(){
+    if(saBuffer === getSaPin()){
+      // Correct — unlock
+      saUnlocked = true;
+      modal.classList.add('hidden');
+      lockBtn.textContent = '🔓';
+      lockBtn.classList.add('unlocked');
+      lockBtn.title = 'Lock superadmin tabs';
+      // Show the hidden tabs
+      $$('.superadmin-tab').forEach(t=>t.classList.add('unlocked'));
+      toast('🔓 Superadmin tabs unlocked');
+      resetBuffer();
+    } else {
+      shakeBox();
+      errEl.textContent = 'Incorrect PIN — try again';
+      saBuffer = '';
+      updateDots();
+    }
+  }
+
+  function lockSuperadmin(){
+    saUnlocked = false;
+    lockBtn.textContent = '🔒';
+    lockBtn.classList.remove('unlocked');
+    lockBtn.title = 'Superadmin access';
+    $$('.superadmin-tab').forEach(t=>{
+      t.classList.remove('unlocked');
+      // If currently on a locked tab, switch to overview
+      if(t.getAttribute('aria-selected')==='true'){
+        $$('.tab-bar .tab')[0].click();
+      }
+    });
+    toast('🔒 Superadmin tabs locked');
+  }
+
+  // Lock button in header — toggle
+  lockBtn.addEventListener('click',()=>{
+    if(saUnlocked){ lockSuperadmin(); return; }
+    resetBuffer();
+    modal.classList.remove('hidden');
+  });
+
+  // Keypad
+  $$('.sa-key').forEach(k=>{
+    k.addEventListener('click',()=>{
+      const v = k.dataset.k;
+      if(v==='cancel'){ modal.classList.add('hidden'); resetBuffer(); return; }
+      if(v==='del'){ saBuffer=saBuffer.slice(0,-1); updateDots(); errEl.textContent=''; return; }
+      if(saBuffer.length>=4) return;
+      saBuffer+=v;
+      updateDots();
+      if(saBuffer.length===4) setTimeout(checkPin,120);
+    });
+  });
+
+  // Physical keyboard support
+  document.addEventListener('keydown',e=>{
+    if(modal.classList.contains('hidden')) return;
+    if(e.key>='0'&&e.key<='9'&&saBuffer.length<4){ saBuffer+=e.key; updateDots(); if(saBuffer.length===4)setTimeout(checkPin,120); }
+    if(e.key==='Backspace'){ saBuffer=saBuffer.slice(0,-1); updateDots(); errEl.textContent=''; }
+    if(e.key==='Escape'){ modal.classList.add('hidden'); resetBuffer(); }
+  });
+
+  // Close on backdrop click
+  modal.addEventListener('click',e=>{ if(e.target===modal){ modal.classList.add('hidden'); resetBuffer(); } });
+}
+
+/* ═══ CHANGE SUPERADMIN PIN (in Setup tab) ═══ */
 function initChangePinSection(){
-  $('#pin-save').addEventListener('click', () => {
-    const cur = $('#pin-current').value.trim();
-    const nw  = $('#pin-new').value.trim();
-    const cf  = $('#pin-confirm').value.trim();
+  const el = $('#pin-save');
+  if(!el) return;
+  el.addEventListener('click', () => {
+    const cur = val('#pin-current');
+    const nw  = val('#pin-new');
+    const cf  = val('#pin-confirm');
     const st  = $('#pin-status');
-    if(cur !== getPin()){ st.textContent='❌ Current PIN is incorrect'; st.className='setup-status err'; return; }
+    if(cur !== getSaPin()){ st.textContent='❌ Current PIN is incorrect'; st.className='setup-status err'; return; }
     if(!/^\d{4}$/.test(nw)){ st.textContent='❌ New PIN must be exactly 4 digits'; st.className='setup-status err'; return; }
     if(nw !== cf){ st.textContent='❌ PINs do not match'; st.className='setup-status err'; return; }
-    savePin(nw);
-    st.textContent='✅ PIN updated successfully';
+    saveSaPin(nw);
+    st.textContent='✅ Superadmin PIN updated';
     st.className='setup-status ok';
-    ['#pin-current','#pin-new','#pin-confirm'].forEach(id=>$(id).value='');
+    ['#pin-current','#pin-new','#pin-confirm'].forEach(id=>{ const el=$(id); if(el)el.value=''; });
     setTimeout(()=>{ st.textContent=''; }, 3000);
   });
 }
 
+/* ═══ BOOT ═══ */
 (async function boot(){
-  // Pre-load credentials if not already saved
-  if(!SB.getUrl()) SB.save('https://jlhtcwsbigznojwfxmox.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaHRjd3NiaWd6bm9qd2Z4bW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTkzNjcsImV4cCI6MjA4ODk3NTM2N30.u9hOH97ASyyVaLgBKHdrdBo1F8W1BIqwGrm06vcvasU');
   SMSTbl.bind(); URTbl.bind(); bindManage(); bindModal(); initSetup();
+  initSuperadminPin();
   initChangePinSection();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
