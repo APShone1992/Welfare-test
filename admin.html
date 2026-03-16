@@ -224,6 +224,11 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 
 @media(max-width:600px){.sgrid{grid-template-columns:repeat(2,1fr)}.panel{padding:14px}.tab{padding:10px 14px;font-size:12.5px}}
 @media print{header,.tab-bar,.fbar,.row-actions,.toast,.loader{display:none!important}.panel{display:block!important}.tw{max-height:none}}
+
+/* EMP UPLOAD ZONE */
+.emp-upload-zone{position:relative;border:2.5px dashed var(--border-mid);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color var(--tr),background var(--tr);background:var(--surface-2)}
+.emp-upload-zone:hover,.emp-upload-zone.drag-over{border-color:var(--brand-light);background:var(--accent)}
+.emp-upload-zone.has-file{border-color:var(--green);background:#f0fdf4}
 </style>
 </head>
 <body>
@@ -413,6 +418,8 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
       <option value="firstSeen">Sort: First seen</option>
       <option value="sessions">Sort: Most sessions</option>
       <option value="emp">Sort: EMP number</option>
+      <option value="name">Sort: Name</option>
+      <option value="dept">Sort: Department</option>
     </select>
     <button class="btn btn-green btn-sm" id="emp-export">&#11015; CSV</button>
   </div>
@@ -468,7 +475,34 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 <!-- ══════════════════ SETUP ══════════════════ -->
 <div id="panel-6" class="panel" role="tabpanel">
   <div class="panel-title">&#9881; Setup</div>
-  <div class="panel-desc">Supabase connection and superadmin PIN management.</div>
+  <div class="panel-desc">Employee list, Supabase connection and superadmin PIN management.</div>
+
+  <!-- EMP LIST UPLOAD -->
+  <div class="card">
+    <div class="card-title">&#128101; Employee EMP List <span id="emp-list-badge" style="font-weight:400;font-size:11px;color:var(--text-muted)">not loaded</span></div>
+    <p style="font-size:13.5px;color:var(--text-sec);margin-bottom:16px;line-height:1.7">
+      Upload your employee spreadsheet (<strong>.xlsx</strong> or <strong>.csv</strong>). Column A: <strong>EMP number</strong>, Column B: <strong>Full name</strong>, Column C: <strong>Department</strong>. A header row is fine — it will be skipped automatically.<br>
+      Once uploaded, the list is saved in shared storage and the chat bot will <strong>block anyone whose EMP number is not on the list</strong>. Upload a new file at any time to update the list.
+    </p>
+    <div class="emp-upload-zone" id="empUploadZone">
+      <div style="font-size:32px;margin-bottom:8px">&#128196;</div>
+      <div style="font-size:14px;font-weight:600;color:var(--brand)">Drop your Excel or CSV file here</div>
+      <div style="font-size:12.5px;color:var(--text-muted);margin-top:4px">or click to browse</div>
+      <input type="file" id="empFileInput" accept=".xlsx,.xls,.csv" style="position:absolute;inset:0;opacity:0;cursor:pointer"/>
+    </div>
+    <div id="emp-upload-status" style="font-size:13px;font-weight:600;margin-top:12px;min-height:20px"></div>
+    <div id="emp-list-preview" style="margin-top:16px;display:none">
+      <div style="font-size:12px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Preview (first 10 rows)</div>
+      <div class="tw" style="max-height:240px">
+        <table class="dt"><thead><tr><th>EMP Number</th><th>Name</th><th>Department</th></tr></thead><tbody id="emp-preview-body"></tbody></table>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-green" id="emp-upload-save" style="display:none">&#9989; Save &amp; activate list</button>
+      <button class="btn btn-red btn-sm" id="emp-list-clear">&#128465; Clear EMP list (disable validation)</button>
+    </div>
+  </div>
+
   <div class="card" style="max-width:420px">
     <div class="card-title">&#128274; Change Superadmin PIN</div>
     <div class="form-row"><label>Current PIN</label><input type="password" id="pin-current" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off"/></div>
@@ -1206,17 +1240,16 @@ async function fetchEmployees() {
       const empMap = {};
       sessions.forEach(s => {
         if (!s.emp) return;
-        const e = empMap[s.emp] || { emp: s.emp, name: s.name || '', firstSeen: s.ts, lastSeen: s.ts, sessions: 0 };
+        const e = empMap[s.emp] || { emp: s.emp, firstSeen: s.ts, lastSeen: s.ts, sessions: 0 };
         e.sessions++;
         if (s.ts < e.firstSeen) e.firstSeen = s.ts;
         if (s.ts > e.lastSeen)  e.lastSeen  = s.ts;
-        if (s.name && !e.name)  e.name = s.name;
         empMap[s.emp] = e;
       });
-      // Merge: Supabase wins for session counts; localStorage wins for names if Supabase blank
+      // Merge: Supabase gives session counts; localStorage gives name/dept (set in browser)
       Object.values(empMap).forEach(sb => {
         const loc = local[sb.emp];
-        if (loc && loc.name && !sb.name) sb.name = loc.name;
+        if (loc) { sb.name = loc.name || ''; sb.dept = loc.dept || ''; }
         empMap[sb.emp] = sb;
       });
       // Add any localStorage-only entries not in Supabase
@@ -1255,7 +1288,7 @@ const EmpTbl = {
 
     const body = $('#emp-body'); body.innerHTML = '';
     if (!rows.length) {
-      body.innerHTML = `<tr><td colspan="5"><div class="empty"><span class="empty-icon">&#128101;</span><p>${this.data.length ? 'No employees match your search.' : 'No employees yet — they will appear here once someone logs in with their EMP number.'}</p></div></td></tr>`;
+      body.innerHTML = `<tr><td colspan="6"><div class="empty"><span class="empty-icon">&#128101;</span><p>${this.data.length ? 'No employees match your search.' : 'No employees yet — they will appear here once someone logs in with their EMP number.'}</p></div></td></tr>`;
       return;
     }
     rows.forEach(x => {
@@ -1263,6 +1296,7 @@ const EmpTbl = {
       tr.innerHTML = `
         <td><code style="font-size:13px;font-weight:700;color:var(--brand);background:var(--surface-3);padding:2px 8px;border-radius:5px">${esc(x.emp||'—')}</code></td>
         <td><strong>${esc(x.name||'—')}</strong></td>
+        <td style="color:var(--text-sec)">${esc(x.dept||'—')}</td>
         <td style="white-space:nowrap;color:var(--text-sec)">${x.firstSeen ? fmtDT(x.firstSeen) : '—'}</td>
         <td style="white-space:nowrap">${x.lastSeen ? fmtDT(x.lastSeen) : '—'}</td>
         <td><span style="background:var(--brand-light);color:#fff;font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:99px">${x.sessions || 0}</span></td>`;
@@ -1271,8 +1305,8 @@ const EmpTbl = {
   },
   exportCSV() {
     dlCSV(
-      [['EMP Number','Name','First Seen','Last Active','Sessions'],
-       ...this.fil().map(x => [x.emp||'',x.name||'',x.firstSeen?fmtDT(x.firstSeen):'',x.lastSeen?fmtDT(x.lastSeen):'',x.sessions||0])],
+      [['EMP Number','Name','Department','First Seen','Last Active','Sessions'],
+       ...this.fil().map(x => [x.emp||'',x.name||'',x.dept||'',x.firstSeen?fmtDT(x.firstSeen):'',x.lastSeen?fmtDT(x.lastSeen):'',x.sessions||0])],
       `employees_${new Date().toISOString().slice(0,10)}.csv`
     );
     toast('CSV downloaded ✓');
@@ -1290,7 +1324,186 @@ const EmpTbl = {
 };
 
 /* ══════════════════════════════════════════
-   REFRESH ALL
+   EMP LIST — upload, parse, store, validate
+   Key: ws_emp_list (shared storage or localStorage)
+   Format stored: { "123456": "John Smith", ... }
+══════════════════════════════════════════ */
+const EMP_LIST_KEY = 'ws_emp_list';
+
+async function getEmpList() {
+  // Try shared storage first, then localStorage fallback
+  if (typeof window.storage !== 'undefined') {
+    try {
+      const r = await window.storage.get(EMP_LIST_KEY, true);
+      if (r?.value) return JSON.parse(r.value);
+    } catch {}
+  }
+  try { return JSON.parse(localStorage.getItem(EMP_LIST_KEY) || 'null'); } catch { return null; }
+}
+
+async function saveEmpList(obj) {
+  const json = JSON.stringify(obj);
+  if (typeof window.storage !== 'undefined') {
+    try { await window.storage.set(EMP_LIST_KEY, json, true); } catch {}
+  }
+  try { localStorage.setItem(EMP_LIST_KEY, json); } catch {}
+}
+
+async function clearEmpList() {
+  if (typeof window.storage !== 'undefined') {
+    try { await window.storage.delete(EMP_LIST_KEY, true); } catch {}
+  }
+  try { localStorage.removeItem(EMP_LIST_KEY); } catch {}
+}
+
+function updateEmpListBadge(list) {
+  const badge = $('#emp-list-badge');
+  if (!badge) return;
+  if (!list) {
+    badge.textContent = 'not loaded — validation disabled';
+    badge.style.color = 'var(--orange)';
+  } else {
+    const count = Object.keys(list).length;
+    badge.textContent = `✅ ${count.toLocaleString()} employee${count !== 1 ? 's' : ''} loaded`;
+    badge.style.color = 'var(--green)';
+  }
+}
+
+// Parse CSV text → { emp: name }
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const result = {};
+  lines.forEach((line, i) => {
+    // Support quoted fields
+    const cols = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, '').trim());
+    const emp  = (cols[0] || '').replace(/\D/g, '');
+    const name = (cols[1] || '').trim();
+    const dept = (cols[2] || '').trim();
+    if (/^\d{6}$/.test(emp)) result[emp] = { name: name || '', dept: dept || '' };
+  });
+  return result;
+}
+
+// Parse XLSX ArrayBuffer → { emp: name } using SheetJS
+async function parseXLSX(buffer) {
+  // Dynamically load SheetJS from CDN if not already loaded
+  if (typeof XLSX === 'undefined') {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const result = {};
+  rows.forEach(row => {
+    const emp  = String(row[0] ?? '').replace(/\D/g, '');
+    const name = String(row[1] ?? '').trim();
+    const dept = String(row[2] ?? '').trim();
+    if (/^\d{6}$/.test(emp)) result[emp] = { name: name || '', dept: dept || '' };
+  });
+  return result;
+}
+
+function bindEmpUpload() {
+  const zone       = $('#empUploadZone');
+  const fileInput  = $('#empFileInput');
+  const statusEl   = $('#emp-upload-status');
+  const previewEl  = $('#emp-list-preview');
+  const previewBody= $('#emp-preview-body');
+  const saveBtn    = $('#emp-upload-save');
+  const clearBtn2  = $('#emp-list-clear');
+  let pendingList  = null;
+
+  function setStatus(msg, type = '') {
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.style.color = type === 'ok' ? 'var(--green)' : type === 'err' ? 'var(--red)' : 'var(--text-sec)';
+  }
+
+  function showPreview(list) {
+    if (!previewEl || !previewBody) return;
+    const entries = Object.entries(list).slice(0, 10);
+    previewBody.innerHTML = entries.map(([emp, rec]) => {
+      const name = typeof rec === 'object' ? rec.name : rec;
+      const dept = typeof rec === 'object' ? rec.dept : '';
+      return `<tr><td><code style="font-size:13px;font-weight:700;color:var(--brand);background:var(--surface-3);padding:2px 8px;border-radius:5px">${esc(emp)}</code></td><td>${esc(name || '—')}</td><td>${esc(dept || '—')}</td></tr>`;
+    }).join('');
+    previewEl.style.display = 'block';
+    if (saveBtn) saveBtn.style.display = 'inline-flex';
+  }
+
+  async function processFile(file) {
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith('.xlsx') && !name.endsWith('.xls') && !name.endsWith('.csv')) {
+      setStatus('❌ Please upload a .xlsx, .xls or .csv file', 'err'); return;
+    }
+    setStatus('Reading file…');
+    zone.classList.add('has-file');
+    try {
+      let list;
+      if (name.endsWith('.csv')) {
+        const text = await file.text();
+        list = parseCSV(text);
+      } else {
+        const buf = await file.arrayBuffer();
+        list = await parseXLSX(buf);
+      }
+      const count = Object.keys(list).length;
+      if (count === 0) { setStatus('❌ No valid 6-digit EMP numbers found. Check your file has EMP numbers in column A.', 'err'); zone.classList.remove('has-file'); return; }
+      pendingList = list;
+      setStatus(`Found ${count.toLocaleString()} employee${count !== 1 ? 's' : ''}. Review below then click Save.`, 'ok');
+      showPreview(list);
+    } catch (e) {
+      setStatus('❌ Could not read file: ' + e.message, 'err');
+      zone.classList.remove('has-file');
+    }
+  }
+
+  // Drag & drop
+  zone?.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone?.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone?.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0]; if (file) processFile(file);
+  });
+  fileInput?.addEventListener('change', () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+
+  // Save
+  saveBtn?.addEventListener('click', async () => {
+    if (!pendingList) return;
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+    await saveEmpList(pendingList);
+    updateEmpListBadge(pendingList);
+    setStatus(`✅ Saved ${Object.keys(pendingList).length.toLocaleString()} employees. The chat bot will now validate against this list.`, 'ok');
+    saveBtn.textContent = '✅ Saved!';
+    toast(`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees loaded ✓`);
+    pendingList = null;
+    setTimeout(() => { if (saveBtn) { saveBtn.disabled = false; saveBtn.style.display = 'none'; saveBtn.innerHTML = '&#9989; Save &amp; activate list'; } }, 2000);
+  });
+
+  // Clear
+  clearBtn2?.addEventListener('click', async () => {
+    if (!await confirm2('Clear EMP list?', 'This will disable EMP validation — anyone with any 6-digit number will be able to log in.')) return;
+    await clearEmpList();
+    updateEmpListBadge(null);
+    if (previewEl) previewEl.style.display = 'none';
+    if (saveBtn)   saveBtn.style.display = 'none';
+    zone?.classList.remove('has-file');
+    if (fileInput) fileInput.value = '';
+    setStatus('EMP list cleared — validation disabled.');
+    toast('EMP list cleared');
+  });
+
+  // Load current status on init
+  getEmpList().then(list => updateEmpListBadge(list));
+}
+
+
 ══════════════════════════════════════════ */
 async function refreshAll(){
   setSyncStatus('spin','Refreshing…');
@@ -1307,7 +1520,7 @@ async function refreshAll(){
    BOOT
 ══════════════════════════════════════════ */
 (async function boot(){
-  SMSTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();
+  SMSTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();bindEmpUpload();
   initSuperadminPin();initChangePinSection();
   $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
   setInterval(refreshAll,30000);
