@@ -543,9 +543,9 @@ function fuzzyWordMatch(q, candidate) {
 const INTENT_PHRASES = [
   { intent:"greeting",        patterns:["hello","hi","hey","good morning","good afternoon","good evening","hiya","alright","howdy","morning","afternoon"] },
   { intent:"smalltalk_how",   patterns:["how are you","you ok","you alright","how r u","hows things","how are things"] },
-  { intent:"thanks",          patterns:["thank","thanks","cheers","ta ","appreciated","helpful"] },
+  { intent:"thanks",          patterns:["thank you","thanks","cheers","that was helpful","appreciated"] },
   { intent:"bye",             patterns:["bye","goodbye","see you","see ya","cya","later","ttyl"] },
-  { intent:"pay_query",       patterns:["not been paid","havent been paid","haven't been paid","missing pay","no pay","didnt get paid","didn't get paid","where is my pay","where is my wage","when do i get paid","payday","pay day","wrong pay","incorrect pay","short paid","underpaid","overpaid","pay is wrong","wages wrong","wages are wrong","not received my pay","pay query","pay question","pay issue","pay problem","payroll query","payroll issue","salary query","salary issue","wage query","wage issue","my pay","about my pay","check my pay"] },
+  { intent:"pay_query",       patterns:["pay / payroll","pay payroll","pay/payroll","not been paid","havent been paid","haven't been paid","missing pay","no pay","didnt get paid","didn't get paid","where is my pay","where is my wage","when do i get paid","payday","pay day","wrong pay","incorrect pay","short paid","underpaid","overpaid","pay is wrong","wages wrong","wages are wrong","not received my pay","pay query","pay question","pay issue","pay problem","payroll query","payroll issue","salary query","salary issue","wage query","wage issue","my pay","about my pay","check my pay"] },
   { intent:"deduction_query", patterns:["deduction","deductions","money taken","taken from my pay","taken from pay","taken out","stopped from pay","money missing","why has money been taken","missing money","wrong amount"] },
   { intent:"work_allocation", patterns:["no work","not got work","havent got work","haven't got work","no jobs","no job","not been allocated","not allocated","no allocation","no shifts","where is my work","need work","run out of work","work allocation","work alloc","allocated wrong","wrong job","wrong work","given wrong job"] },
   { intent:"manager_dispute", patterns:["manager disputes","manager dispute","dispute with manager","problem with manager","issue with manager","trouble with manager","argument with manager","conflict with manager","my manager","manager being","manager has","manager is","field manager issue","area manager issue","unfair manager","manager treating","manager not","manager wont","manager won't"] },
@@ -553,12 +553,12 @@ const INTENT_PHRASES = [
   { intent:"equipment_stock", patterns:["stock","no stock","out of stock","missing stock","stock query","stock issue","stock form","need stock","request stock"] },
   { intent:"equipment_tooling",patterns:["tools","tooling","no tools","missing tools","need tools","tool query","tool issue","bybox","by box","tool order","order tools"] },
   { intent:"equipment_van",   patterns:["no van","need a van","when do i get a van","van query","van issue","van problem","company van","work van","my van","van not arrived","havent got a van","haven't got a van"] },
-  { intent:"equipment",       patterns:["equipment","kit","gear","my kit","my equipment","kit query","kit issue"] },
+  { intent:"equipment",       patterns:["equipment query","equipment","kit","gear","my kit","my equipment","kit query","kit issue"] },
   { intent:"street_works",    patterns:["street work","streetwork","street works","streetworks","street job","sw query","sw issue"] },
   { intent:"smart_awards",    patterns:["smart award","smartaward","smart awards","smartawards","award query","award issue","my award","claim award"] },
   { intent:"id_cards",        patterns:["id card","id cards","id badge","identification","lost id","id lost","id expired","expired id","id not arrived","id not received","need new id","replace id","id renewal"] },
   { intent:"contact_support", patterns:["contact support","get help","need help","speak to welfare","welfare team","welfare number","welfare contact","welfare support","call welfare"] },
-  { intent:"dept_contacts",   patterns:["department contacts","department numbers","dept contacts","who do i call","who do i contact","who should i contact","contact details","contact list","what number","which number","contact for","call for","all contacts","departments"] },
+  { intent:"dept_contacts",   patterns:["department contacts","contacts","department contacts","department numbers","dept contacts","who do i call","who do i contact","who should i contact","contact details","contact list","what number","which number","contact for","call for","all contacts","departments"] },
   { intent:"fleet",           patterns:["fleet","fleet query","fleet issue","fleet contact","breakdown","car broken","company car","vehicle broken","my vehicle"] },
   { intent:"accident",        patterns:["accident","injury","injured","hurt","accident report","report accident","had an accident","been in accident","crash","vehicle damage","damage report","road accident","near miss"] },
   { intent:"parking",         patterns:["parking","parking fine","parking ticket","parking query","parking issue","penalty charge","pcn","council fine"] },
@@ -714,8 +714,25 @@ function specialCases(text) {
   const q      = normalize(text);
   const intent = detectIntent(text);
 
-  // Active flow takes priority
-  if (flowCtx) { const r = handleFlow(text); if (r) return r; }
+  // Active flow takes priority — BUT if user clearly wants a new topic, reset
+  if (flowCtx) {
+    const TOPIC_INTENTS = new Set(['pay_query','deduction_query','sms_query',
+      'work_allocation','manager_dispute','equipment','equipment_stock','equipment_tooling',
+      'equipment_van','street_works','smart_awards','id_cards','dept_contacts',
+      'btor_ntf','cityfibre_ntf','contract','fleet','accident','parking','recruitment',
+      'greeting','available_now','opening_times','location','contact_support']);
+    const flowAnswers = new Set(['yes','no','stock','tooling','van',
+      'wales & midlands','london & se','wessex','north england & scotland',
+      'scotland','midlands','south','north']);
+    const isNewTopic = TOPIC_INTENTS.has(intent) && !flowAnswers.has(q) && !q.startsWith('use ');
+    if (isNewTopic) {
+      flowCtx = null;
+      // Fall through to handle as fresh intent below
+    } else {
+      const r = handleFlow(text);
+      if (r) return r;
+    }
+  }
 
   // ── Active SMS collection flow ──
   if (smsCtx) {
