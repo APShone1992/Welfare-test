@@ -2521,12 +2521,31 @@ let faqEditData = [];
 let faqEdited = false;
 
 async function loadFaqEditData() {
+  // Try KV store first
   try {
     const stored = await KV.get(FAQ_EDIT_KEY);
-    if (stored && Array.isArray(stored)) { faqEditData = stored; return; }
+    if (stored && Array.isArray(stored) && stored.length) {
+      faqEditData = stored;
+      return;
+    }
   } catch {}
-  // Fall back to loaded FAQS
-  faqEditData = JSON.parse(JSON.stringify(FAQS.length ? FAQS : []));
+
+  // Try fetching faqs.json as seed data
+  try {
+    const resp = await fetch('./public/config/faqs.json');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data) && data.length) {
+        faqEditData = data;
+        // Save to KV so it's available next time and cross-device
+        await saveFaqEditData();
+        return;
+      }
+    }
+  } catch {}
+
+  // Last resort: empty list
+  faqEditData = [];
 }
 
 async function saveFaqEditData() {
@@ -2534,10 +2553,12 @@ async function saveFaqEditData() {
   faqEdited = true;
   const badge = $('#faq-unsaved');
   if (badge) badge.classList.add('show');
+  // Also update the "live" key that chat.js reads (same key — ws_faqs_edited)
+  // Chat bot will pick up changes on next FAQ load automatically
 }
 
-function renderFaqEditor() {
-  loadFaqEditData();
+async function renderFaqEditor() {
+  if (!faqEditData.length) await loadFaqEditData();
   const listEl = $('#faq-list');
   const cntEl  = $('#faq-cnt');
   if (!listEl) return;
@@ -2571,7 +2592,9 @@ function renderFaqEditor() {
             ${['general','pay','work','equipment','contract','departments','opening','support'].map(c => `<option value="${c}"${(f.category||'general')===c?' selected':''}>${c}</option>`).join('')}
           </select>
         </div>
-        <div class="faq-field"><label>Synonyms / alternate phrasings (comma-separated)</label><input type="text" class="faq-s-input" value="${esc((f.synonyms||[]).join(', '))}" placeholder="e.g. what time do you open, when are you open"/></div>
+        <div class="faq-field"><label>Synonyms / alternate phrasings (comma-separated) <button type="button" class="faq-gen-btn" style="margin-left:8px;background:var(--brand-light);color:#fff;border:none;border-radius:5px;padding:2px 9px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:var(--font)">&#9889; Auto-generate</button></label><input type="text" class="faq-s-input" value="${esc((f.synonyms||[]).join(', '))}" placeholder="e.g. what time do you open, when are you open"/></div>
+        <div class="faq-field"><label>Keywords (comma-separated)</label><input type="text" class="faq-k-input" value="${esc((f.canonicalKeywords||[]).join(', '))}" placeholder="e.g. hours, open, availability"/></div>
+        <div class="faq-field"><label>Follow-up chips (comma-separated)</label><input type="text" class="faq-fu-input" value="${esc((f.followUps||[]).join(', '))}" placeholder="e.g. Department Contacts, Is anyone available now?"/></div>
         <div class="faq-item-actions">
           <button class="btn btn-primary btn-sm faq-save-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Save changes</button>
           <button class="btn btn-red btn-sm faq-del-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete</button>
@@ -2579,6 +2602,39 @@ function renderFaqEditor() {
       </div>`;
 
     item.querySelector('.faq-item-header').addEventListener('click', () => item.classList.toggle('open'));
+
+    item.querySelector('.faq-gen-btn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      const q   = item.querySelector('.faq-q-input').value.trim();
+      const ans = item.querySelector('.faq-a-input').value.trim();
+      if (!q) { toast('Enter a question first'); return; }
+      const { synonyms, keywords } = autoGenerateSynonyms(q, ans);
+      const sInput = item.querySelector('.faq-s-input');
+      const kInput = item.querySelector('.faq-k-input');
+      const existingSyn = sInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+      const existingKw  = kInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+      sInput.value = [...new Set([...existingSyn, ...synonyms])].join(', ');
+      kInput.value = [...new Set([...existingKw,  ...keywords])].join(', ');
+      toast('Generated synonyms and keywords — review then save ✓');
+    });
+
+    item.querySelector('.faq-gen-btn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      const q   = item.querySelector('.faq-q-input').value.trim();
+      const ans = item.querySelector('.faq-a-input').value.trim();
+      if (!q) { toast('Enter a question first'); return; }
+      const { synonyms, keywords } = autoGenerateSynonyms(q, ans);
+      const sInput = item.querySelector('.faq-s-input');
+      const kInput = item.querySelector('.faq-k-input');
+      // Merge with existing
+      const existingSyn = sInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+      const existingKw  = kInput.value.split(',').map(s=>s.trim()).filter(Boolean);
+      const mergedSyn = [...new Set([...existingSyn, ...synonyms])];
+      const mergedKw  = [...new Set([...existingKw,  ...keywords])];
+      sInput.value = mergedSyn.join(', ');
+      kInput.value = mergedKw.join(', ');
+      toast(`Generated ${synonyms.length} synonyms and ${keywords.length} keywords ✓`);
+    });
 
     item.querySelector('.faq-save-btn').addEventListener('click', async e => {
       e.stopPropagation();
@@ -2610,6 +2666,123 @@ function renderFaqEditor() {
 
     listEl.appendChild(item);
   });
+}
+
+
+/* ══════════════════════════════════════════
+   FAQ AUTO-GENERATE SYNONYMS & KEYWORDS
+   Analyses the question text and generates
+   common variations automatically.
+══════════════════════════════════════════ */
+function autoGenerateSynonyms(question, answer) {
+  const q = question.toLowerCase().trim();
+  const synonyms = new Set();
+  const keywords = new Set();
+
+  // Always add the question itself as a synonym
+  synonyms.add(q);
+
+  // Extract key words (ignore stop words)
+  const stopWords = new Set(['a','an','the','is','are','was','were','be','been','being',
+    'have','has','had','do','does','did','will','would','could','should','may','might',
+    'shall','can','need','dare','ought','used','i','my','your','our','their','its',
+    'this','that','these','those','what','when','where','why','how','which','who',
+    'to','of','in','on','at','by','for','with','about','against','between','into',
+    'through','during','before','after','above','below','from','up','down','out',
+    'and','but','or','nor','so','yet','both','either','neither','not','no','any',
+    'all','please','contact','call','email','get','let','know','using','button']);
+
+  const words = q.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+  words.forEach(w => keywords.add(w));
+
+  // Generate common phrasing variations
+  const variations = [];
+
+  // "I have a X query" pattern
+  words.forEach(w => {
+    if (['pay','deduction','contract','equipment','allocation','dispute','stock','tooling','van','parking','accident','recruitment'].includes(w)) {
+      variations.push(`i have a ${w} query`);
+      variations.push(`${w} query`);
+      variations.push(`${w} issue`);
+      variations.push(`${w} problem`);
+      variations.push(`my ${w}`);
+    }
+  });
+
+  // Opening times variations
+  if (q.includes('opening') || q.includes('hours') || q.includes('open')) {
+    variations.push('opening times', 'office hours', 'when do you open', 'what time do you open', 'are you open', 'opening hours', 'business hours');
+    keywords.add('hours'); keywords.add('open');
+  }
+
+  // Contact / support variations
+  if (q.includes('contact') || q.includes('support') || q.includes('welfare')) {
+    variations.push('how do i contact', 'contact details', 'welfare number', 'call welfare', 'speak to welfare');
+    keywords.add('contact'); keywords.add('welfare');
+  }
+
+  // Pay variations
+  if (q.includes('pay') || q.includes('payroll') || q.includes('wage') || q.includes('salary')) {
+    variations.push('not been paid', 'missing pay', 'wrong pay', 'payroll query', 'wage query', 'salary query', 'pay issue', 'havent been paid');
+    keywords.add('pay'); keywords.add('payroll');
+  }
+
+  // Deduction variations
+  if (q.includes('deduction') || q.includes('deduct')) {
+    variations.push('money taken', 'deductions query', 'taken from my pay', 'missing money', 'wrong amount');
+    keywords.add('deduction');
+  }
+
+  // Work allocation variations
+  if (q.includes('work') || q.includes('allocation') || q.includes('job')) {
+    variations.push('no work', 'not got work', 'work allocation', 'no jobs', 'not allocated', 'no shifts');
+    keywords.add('work'); keywords.add('allocation');
+  }
+
+  // Manager variations
+  if (q.includes('manager') || q.includes('dispute')) {
+    variations.push('manager dispute', 'problem with manager', 'issue with manager', 'my manager', 'field manager', 'area manager');
+    keywords.add('manager'); keywords.add('dispute');
+  }
+
+  // Equipment variations
+  if (q.includes('equipment') || q.includes('stock') || q.includes('tooling') || q.includes('van')) {
+    variations.push('equipment query', 'kit issue', 'my equipment', 'stock query', 'tooling query', 'van query');
+    keywords.add('equipment');
+  }
+
+  // ID card variations
+  if (q.includes('id') || q.includes('card') || q.includes('badge')) {
+    variations.push('id card', 'lost id', 'id expired', 'id not received', 'identification');
+    keywords.add('id card'); keywords.add('id');
+  }
+
+  // Department / contact list
+  if (q.includes('department') || q.includes('contacts')) {
+    variations.push('department contacts', 'who do i call', 'contact list', 'all contacts', 'which number');
+    keywords.add('department'); keywords.add('contacts');
+  }
+
+  // NTF variations
+  if (q.includes('ntf') || q.includes('btor') || q.includes('openreach')) {
+    variations.push('btor ntf', 'openreach', 'btor support', 'ntf support');
+    keywords.add('btor'); keywords.add('ntf');
+  }
+  if (q.includes('city fibre') || q.includes('cityfibre') || q.includes('cf ntf')) {
+    variations.push('city fibre ntf', 'cityfibre', 'cf ntf', 'city fibre support');
+    keywords.add('city fibre'); keywords.add('ntf');
+  }
+
+  // Add all variations
+  variations.forEach(v => synonyms.add(v));
+
+  // Remove the question itself from synonyms if it's there (it's redundant)
+  synonyms.delete(q);
+
+  return {
+    synonyms: [...synonyms].slice(0, 12),
+    keywords: [...keywords].slice(0, 8)
+  };
 }
 
 function bindFaqEditor() {
