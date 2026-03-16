@@ -23,8 +23,8 @@ function getStoredEmpSession() {
   } catch {}
   return null;
 }
-function storeEmpSession(emp, name) {
-  try { sessionStorage.setItem(EMP_SESSION_KEY, JSON.stringify({ emp, name })); } catch {}
+function storeEmpSession(emp, name, dept) {
+  try { sessionStorage.setItem(EMP_SESSION_KEY, JSON.stringify({ emp, name, dept: dept || "" })); } catch {}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,15 +88,17 @@ function saveSession() {
   } catch {}
 }
 
-function logEmployee(emp, name) {
+function logEmployee(emp, name, dept) {
   try {
     const employees = JSON.parse(localStorage.getItem(WS_EMPLOYEES_KEY) || "{}");
     const prev = employees[emp] || {};
     employees[emp] = {
-      emp, name: name || prev.name || "",
-      firstSeen:   prev.firstSeen || Date.now(),
-      lastSeen:    Date.now(),
-      sessions:    (prev.sessions || 0) + (prev._thisSession === SESSION_ID ? 0 : 1),
+      emp,
+      name: name || prev.name || "",
+      dept: dept || prev.dept || "",
+      firstSeen:    prev.firstSeen || Date.now(),
+      lastSeen:     Date.now(),
+      sessions:     (prev.sessions || 0) + (prev._thisSession === SESSION_ID ? 0 : 1),
       _thisSession: SESSION_ID
     };
     localStorage.setItem(WS_EMPLOYEES_KEY, JSON.stringify(employees));
@@ -501,7 +503,8 @@ const INTENT_PHRASES = [
   { intent:"street_works",    patterns:["street work","streetwork","street works","streetworks","street job","sw query","sw issue"] },
   { intent:"smart_awards",    patterns:["smart award","smartaward","smart awards","smartawards","award query","award issue","my award","claim award"] },
   { intent:"id_cards",        patterns:["id card","id cards","id badge","identification","lost id","id lost","id expired","expired id","id not arrived","id not received","need new id","replace id","id renewal"] },
-  { intent:"dept_contacts",   patterns:["contact","contacts","department","departments","who do i call","who do i contact","who should i contact","contact details","contact list","what number","which number","contact for","call for"] },
+  { intent:"contact_support", patterns:["contact support","get help","need help","speak to welfare","welfare team","welfare number","welfare contact","welfare support","call welfare"] },
+  { intent:"dept_contacts",   patterns:["department contacts","department numbers","dept contacts","who do i call","who do i contact","who should i contact","contact details","contact list","what number","which number","contact for","call for","all contacts","departments"] },
   { intent:"fleet",           patterns:["fleet","fleet query","fleet issue","fleet contact","breakdown","van broken","van broken down","car broken","company car"] },
   { intent:"accident",        patterns:["accident","injury","injured","hurt","accident report","report accident","had an accident","been in accident","crash","vehicle damage","damage report","road accident","near miss"] },
   { intent:"parking",         patterns:["parking","parking fine","parking ticket","parking query","parking issue","penalty charge","pcn","council fine"] },
@@ -512,7 +515,6 @@ const INTENT_PHRASES = [
   { intent:"bank_holiday",    patterns:["bank holiday","bank holidays","public holiday","open on bank holiday","open bank holiday"] },
   { intent:"available_now",   patterns:["available now","anyone available","is someone available","are you open now","anyone there","is anyone there","can i speak","speak to someone","talk to someone","open now"] },
   { intent:"location",        patterns:["where are you","your address","office address","where is the office","nuneaton","depot","closest depot","nearest depot","how far","directions","how to get","get there"] },
-  { intent:"contact_support", patterns:["contact support","get help","need help","speak to welfare","welfare team","welfare number","welfare contact","welfare support","call welfare"] },
   { intent:"sms_query",       patterns:["send a text","text you","text support","text query","text message","sms","message support"] },
 ];
 
@@ -741,6 +743,12 @@ function specialCases(text) {
     return { html: `Our main office is at <b>${escapeHTML(depot.label)}</b>.<br>${linkTag(mapsUrl,"View on Google Maps")}<br>${imgTag(tile)}`, chips: ["How do I get there?","Department Contacts"], _intent: "location" };
   }
 
+  // "How do I get there?" chip — set up the directions flow
+  if (q === "how do i get there" || q === "directions") {
+    distanceCtx = { stage: "needOrigin" };
+    return { html: "What town or city are you travelling from?", chips: ["Coventry","Birmingham","Leicester","London","Use my location"] };
+  }
+
   // ── Distance / directions flow ──
   if (distanceCtx?.stage === "needOrigin") {
     const cityKey = Object.keys(PLACES).find(k => q === k || q.includes(k));
@@ -929,8 +937,35 @@ function init() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EMP GATE — full-screen login before chat is accessible
+// EMP LIST VALIDATION
+// Reads the list saved by admin.html from shared/local storage.
+// Returns { valid: bool, name: string|null }
+// If no list is stored, validation is disabled (all 6-digit EMPs pass).
 // ─────────────────────────────────────────────────────────────────────────────
+const EMP_LIST_KEY = 'ws_emp_list';
+
+async function lookupEMP(emp) {
+  let list = null;
+  // Try shared storage (Claude.ai artifact environment)
+  if (typeof window.storage !== 'undefined') {
+    try {
+      const r = await window.storage.get(EMP_LIST_KEY, true);
+      if (r?.value) list = JSON.parse(r.value);
+    } catch {}
+  }
+  // Fallback to localStorage
+  if (!list) {
+    try { list = JSON.parse(localStorage.getItem(EMP_LIST_KEY) || 'null'); } catch {}
+  }
+  // No list uploaded yet — allow any valid 6-digit EMP
+  if (!list) return { valid: true, name: null, dept: null, listLoaded: false };
+  const rec = list[emp];
+  if (rec === undefined) return { valid: false, name: null, dept: null, listLoaded: true };
+  // Support both old string format and new {name, dept} object format
+  const name = typeof rec === 'object' ? rec.name : rec;
+  const dept = typeof rec === 'object' ? rec.dept : null;
+  return { valid: true, name: name || null, dept: dept || null, listLoaded: true };
+}
 function showEmpGate() {
   input.disabled = sendBtn.disabled = micBtn.disabled = true;
 
@@ -968,21 +1003,51 @@ function showEmpGate() {
   function setErr(msg) { gErr.textContent = msg; gErr.style.display = "block"; gEmp.style.cssText += ";border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,0.15)"; shake(gEmp); }
   function clrErr() { gErr.style.display = "none"; gEmp.style.borderColor = "rgba(26,58,107,0.18)"; gEmp.style.boxShadow = ""; }
 
-  function validateEMP() {
-    if (!/^\d{6}$/.test(gEmp.value.trim())) {
-      if (++attempts >= 3) { gEmp.disabled = gNext.disabled = true; gErr.textContent = "Too many attempts — please refresh to try again."; gErr.style.display = "block"; return; }
-      setErr(`Please enter exactly 6 digits. ${3 - attempts} attempt${3 - attempts !== 1 ? "s" : ""} remaining.`); gEmp.value = ""; gEmp.focus(); return;
+  async function validateEMP() {
+    const raw = gEmp.value.trim();
+    if (!/^\d{6}$/.test(raw)) {
+      if (++attempts >= 3) { lockout('Too many attempts — please refresh the page to try again.'); return; }
+      setErr(`Please enter exactly 6 digits. ${3 - attempts} attempt${3 - attempts !== 1 ? "s" : ""} remaining.`);
+      gEmp.value = ""; gEmp.focus(); return;
     }
-    clrErr(); empNumber = gEmp.value.trim(); gEmp.disabled = true; gNext.style.display = "none";
-    gate.querySelector("#gTitle").textContent = "Almost there!"; gate.querySelector("#gDesc").style.display = "none";
+    // Disable button while checking
+    gNext.disabled = true; gNext.textContent = 'Checking…';
+    const result = await lookupEMP(raw);
+    gNext.disabled = false; gNext.textContent = 'Continue →';
+
+    if (!result.valid) {
+      if (++attempts >= 3) { lockout('EMP number not recognised. Please contact your manager or HR to verify your EMP number.'); return; }
+      setErr(`EMP number not found on our system. ${3 - attempts} attempt${3 - attempts !== 1 ? "s" : ""} remaining.`);
+      gEmp.value = ""; gEmp.focus(); return;
+    }
+
+    // Valid EMP — if we have their name from the spreadsheet, skip the name step
+    clrErr(); empNumber = raw;
+    if (result.name) {
+      empName = result.name;
+      storeEmpSession(empNumber, empName, result.dept); logEmployee(empNumber, empName, result.dept); saveSession();
+      gate.style.transition = "opacity 0.35s ease"; gate.style.opacity = "0";
+      setTimeout(() => { gate.remove(); input.disabled = sendBtn.disabled = micBtn.disabled = false; init(); }, 360);
+      return;
+    }
+    // No name in spreadsheet (or no list) — ask for name
+    gEmp.disabled = true; gNext.style.display = "none";
+    gate.querySelector("#gTitle").textContent = "Almost there!";
+    gate.querySelector("#gDesc").style.display = "none";
     gStep2.style.display = "block"; setTimeout(() => gName.focus(), 50);
   }
 
   function validateName() {
     if (gName.value.trim().length < 2) { gName.style.borderColor = "#dc2626"; shake(gName); return; }
-    empName = gName.value.trim(); storeEmpSession(empNumber, empName); logEmployee(empNumber, empName); saveSession();
+    empName = gName.value.trim(); storeEmpSession(empNumber, empName, null); logEmployee(empNumber, empName, null); saveSession();
     gate.style.transition = "opacity 0.35s ease"; gate.style.opacity = "0";
     setTimeout(() => { gate.remove(); input.disabled = sendBtn.disabled = micBtn.disabled = false; init(); }, 360);
+  }
+
+  function lockout(msg) {
+    gEmp.disabled = gNext.disabled = true;
+    gErr.textContent = msg; gErr.style.display = "block";
+    gEmp.style.borderColor = "#dc2626";
   }
 
   gEmp.addEventListener("focus", clrErr);
@@ -1004,7 +1069,7 @@ function showEmpGate() {
 // ─────────────────────────────────────────────────────────────────────────────
 function boot() {
   const stored = getStoredEmpSession();
-  if (stored) { empNumber = stored.emp; empName = stored.name; logEmployee(empNumber, empName); init(); }
+  if (stored) { empNumber = stored.emp; empName = stored.name; logEmployee(empNumber, empName, stored.dept || null); init(); }
   else showEmpGate();
 }
 
