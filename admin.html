@@ -934,7 +934,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 /* ══════════════════════════════════════════
    SUPABASE CLIENT
 ══════════════════════════════════════════ */
-const SB = (() => {
+const SB = (async () => {
   const CFG_KEY = 'ws_sb_cfg';
   let url = '', key = '';
   function load(){ try{ const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}');url=c.url||'';key=c.key||''; }catch{} }
@@ -1161,12 +1161,12 @@ function dlCSV(rows,fn){
 }
 
 /* TABS */
-(()=>{
+(async () => {
   const tabs=$$('.tab-bar [role=tab]'),panels=$$('.panel');
   function go(i){tabs.forEach((t,j)=>{t.setAttribute('aria-selected',String(i===j));panels[j].classList.toggle('active',i===j);});}
   tabs.forEach((t,i)=>{
     t.addEventListener('click',()=>go(i));
-    t.addEventListener('keydown',e=>{
+    t.addEventListener('keydown',async e=>{
       const visible=tabs.filter(t=>t.style.display!=='none');
       const vi=visible.indexOf(t);
       const m={ArrowRight:visible[(vi+1)%visible.length],ArrowLeft:visible[(vi-1+visible.length)%visible.length],Home:visible[0],End:visible[visible.length-1]};
@@ -1435,7 +1435,7 @@ const SMSTbl={
     $('#sms-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
     $('#sms-export').addEventListener('click',()=>this.exportCSV());
     $('#sms-clear').addEventListener('click',()=>this.clearAll());
-    $$('#panel-2 th.sort').forEach(th=>th.addEventListener('click',()=>{const c=th.dataset.col;this.sortField===c?this.sortDir=this.sortDir==='asc'?'desc':'asc':(this.sortField=c,this.sortDir='desc');this.render();}));
+    $$('#panel-2 th.sort').forEach(th=>th.addEventListener('click',async () => {const c=th.dataset.col;this.sortField===c?this.sortDir=this.sortDir==='asc'?'desc':'asc':(this.sortField=c,this.sortDir='desc');this.render();}));
   }
 };
 
@@ -1484,7 +1484,7 @@ const URTbl={
   bind(){
     $('#ur-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
     $('#ur-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
-    $('#ur-age').addEventListener('change',e=>{this.age=e.target.value;this.render();});
+    $('#ur-age').addEventListener('change',async e=>{this.age=e.target.value;this.render();});
     $('#ur-export').addEventListener('click',()=>this.exportCSV());
     $('#ur-clear').addEventListener('click',()=>this.clearAll());
   }
@@ -1520,7 +1520,7 @@ function bindManage(){
 function bindModal(){
   $('#addSmsBtn').addEventListener('click',()=>$('#modal-sms').classList.remove('hidden'));
   $('#qm-cancel').addEventListener('click',()=>$('#modal-sms').classList.add('hidden'));
-  $('#modal-sms').addEventListener('click',e=>{if(e.target===$('#modal-sms'))$('#modal-sms').classList.add('hidden');});
+  $('#modal-sms').addEventListener('click',async e=>{if(e.target===$('#modal-sms'))$('#modal-sms').classList.add('hidden');});
   $('#qm-save').addEventListener('click',async()=>{
     const sender=val('#qm-name'),phone=val('#qm-phone'),type=$('#qm-type').value,content=val('#qm-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
@@ -1589,7 +1589,7 @@ function initChangePinSection(){
     if(nw!==cf){st.textContent='❌ PINs do not match';st.className='setup-status err';return;}
     saveSaPin(nw);logPinChange();st.textContent='✅ PIN updated';st.className='setup-status ok';
     ['#pin-current','#pin-new','#pin-confirm'].forEach(id=>{const e=$(id);if(e)e.value='';});
-    setTimeout(()=>{st.textContent='';},3000);
+    setTimeout(async () => {st.textContent='';},3000);
   });
 }
 
@@ -1689,7 +1689,7 @@ const EmpTbl = {
     $('#emp-q').addEventListener('input', debounce(e => { this.q = e.target.value; this.render(); }));
     $('#emp-sort').addEventListener('change', e => { this.sortField = e.target.value; this.render(); });
     $('#emp-export').addEventListener('click', () => this.exportCSV());
-    $$('#panel-4 th.sort').forEach(th => th.addEventListener('click', () => {
+    $$('#panel-4 th.sort').forEach(th => th.addEventListener('click', async () => {
       const c = th.dataset.col;
       this.sortField === c ? this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc' : (this.sortField = c, this.sortDir = 'desc');
       this.render();
@@ -1825,13 +1825,13 @@ function bindEmpUpload() {
   }
 
   // Drag & drop
-  zone?.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone?.addEventListener('dragover',  async e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone?.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone?.addEventListener('drop', e => {
+  zone?.addEventListener('drop', async e => {
     e.preventDefault(); zone.classList.remove('drag-over');
     const file = e.dataTransfer.files[0]; if (file) processFile(file);
   });
-  fileInput?.addEventListener('change', () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+  fileInput?.addEventListener('change', async () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
 
   // Save
   saveBtn?.addEventListener('click', async () => {
@@ -1843,7 +1843,7 @@ function bindEmpUpload() {
     saveBtn.textContent = '✅ Saved!';
     logActivity('📋',`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees`);toast(`EMP list updated — ${Object.keys(pendingList).length.toLocaleString()} employees loaded ✓`);
     pendingList = null;
-    setTimeout(() => { if (saveBtn) { saveBtn.disabled = false; saveBtn.style.display = 'none'; saveBtn.innerHTML = '&#9989; Save &amp; activate list'; } }, 2000);
+    setTimeout(async () => { if (saveBtn) { saveBtn.disabled = false; saveBtn.style.display = 'none'; saveBtn.innerHTML = '&#9989; Save &amp; activate list'; } }, 2000);
   });
 
   // Clear
@@ -1894,7 +1894,7 @@ function openNoteModal(id, existing) {
 }
 function bindNoteModal() {
   const ta = $('#note-textarea');
-  ta?.addEventListener('input', () => {
+  ta?.addEventListener('input', async () => {
     const cc = $('#note-char-count');
     if (cc) cc.textContent = `${ta.value.length} / 300`;
   });
@@ -1915,7 +1915,7 @@ function bindNoteModal() {
     toast('Note removed');
   });
   $('#note-cancel')?.addEventListener('click', () => $('#modal-note').classList.add('hidden'));
-  $('#modal-note')?.addEventListener('click', e => { if (e.target === $('#modal-note')) $('#modal-note').classList.add('hidden'); });
+  $('#modal-note')?.addEventListener('click', async e => { if (e.target === $('#modal-note')) $('#modal-note').classList.add('hidden'); });
 }
 
 /* ══════════════════════════════════════════
@@ -2294,7 +2294,7 @@ function resetInactivityTimer() {
 
 // Reset timer on any user interaction
 ['click','keydown','mousemove','touchstart'].forEach(ev =>
-  document.addEventListener(ev, () => { if (saUnlocked) resetInactivityTimer(); }, { passive: true })
+  document.addEventListener(ev, async () => { if (saUnlocked) resetInactivityTimer(); }, { passive: true })
 );
 
 /* ══════════════════════════════════════════
@@ -2367,7 +2367,7 @@ function renderFaqEditor() {
 
     item.querySelector('.faq-item-header').addEventListener('click', () => item.classList.toggle('open'));
 
-    item.querySelector('.faq-save-btn').addEventListener('click', e => {
+    item.querySelector('.faq-save-btn').addEventListener('click', async e => {
       e.stopPropagation();
       const idx = f._idx;
       faqEditData[idx] = {
@@ -2403,19 +2403,19 @@ function bindFaqEditor() {
   $('#faq-search')?.addEventListener('input', () => renderFaqEditor());
   $('#faq-cat-filter')?.addEventListener('change', () => renderFaqEditor());
 
-  $('#faq-add-new')?.addEventListener('click', () => {
+  $('#faq-add-new')?.addEventListener('click', async () => {
     faqEditData.push({ question: '', answer: '', category: 'general', synonyms: [] });
     await saveFaqEditData();
     renderFaqEditor();
     // Open the last item
-    setTimeout(() => {
+    setTimeout(async () => {
       const items = $$('#faq-list .faq-item');
       const last = items[items.length - 1];
       if (last) { last.classList.add('open'); last.scrollIntoView({ behavior: 'smooth', block: 'center' }); last.querySelector('.faq-q-input')?.focus(); }
     }, 100);
   });
 
-  $('#faq-save-json')?.addEventListener('click', () => {
+  $('#faq-save-json')?.addEventListener('click', async () => {
     const json = JSON.stringify(faqEditData, null, 2);
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([json], {type:'application/json'})), download: 'faqs.json' });
     document.body.appendChild(a); a.click(); a.remove();
@@ -2642,8 +2642,8 @@ function bindBotTester() {
     chipsEl.querySelectorAll('.bt-chip').forEach(c => c.addEventListener('click', () => btHandleMessage(c.dataset.q)));
   }
   $('#bt-send')?.addEventListener('click', () => btHandleMessage($('#bt-input')?.value || ''));
-  $('#bt-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); btHandleMessage($('#bt-input')?.value || ''); } });
-  $('#bt-clear')?.addEventListener('click', () => { const w=$('#bt-window'); if(w) w.innerHTML=''; });
+  $('#bt-input')?.addEventListener('keydown', async e => { if (e.key === 'Enter') { e.preventDefault(); btHandleMessage($('#bt-input')?.value || ''); } });
+  $('#bt-clear')?.addEventListener('click', async () => { const w=$('#bt-window'); if(w) w.innerHTML=''; });
 }
 
 /* ══════════════════════════════════════════
@@ -2701,11 +2701,11 @@ function bindExport() {
     } catch(e) {
       if (statusEl) { statusEl.textContent = '❌ Export failed: ' + e.message; statusEl.className = 'setup-status err'; }
     } finally {
-      if (btn) { btn.disabled = false; setTimeout(() => { if(prog) prog.style.display='none'; setProgress(0); }, 2000); }
+      if (btn) { btn.disabled = false; setTimeout(async () => { if(prog) prog.style.display='none'; setProgress(0); }, 2000); }
     }
   });
 
-  $('#export-faq-btn')?.addEventListener('click', () => {
+  $('#export-faq-btn')?.addEventListener('click', async () => {
     loadFaqEditData();
     const json = JSON.stringify(faqEditData, null, 2);
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([json],{type:'application/json'})), download:`faqs_${new Date().toISOString().slice(0,10)}.json` });
