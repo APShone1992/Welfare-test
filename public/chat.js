@@ -1082,22 +1082,52 @@ const EMP_LIST_KEY = 'ws_emp_list';
 
 async function lookupEMP(emp) {
   let list = null;
-  // Try shared storage (Claude.ai artifact environment)
-  if (typeof window.storage !== 'undefined') {
+
+  // admin.html KV helper stores under 'kv:' + key in localStorage
+  // and also syncs to Supabase kv_store table.
+  // We read from localStorage first (fast, works offline).
+  // Key used by KV.set() is 'kv:ws_emp_list'
+  const KV_PREFIX = 'kv:';
+  try {
+    const raw = localStorage.getItem(KV_PREFIX + EMP_LIST_KEY);
+    if (raw) list = JSON.parse(raw);
+  } catch {}
+
+  // Also try the bare key (legacy — before KV prefix was added)
+  if (!list) {
     try {
-      const r = await window.storage.get(EMP_LIST_KEY, true);
-      if (r?.value) list = JSON.parse(r.value);
+      const raw = localStorage.getItem(EMP_LIST_KEY);
+      if (raw) list = JSON.parse(raw);
     } catch {}
   }
-  // Fallback to localStorage
+
+  // Also try fetching direct from Supabase kv_store if credentials stored
   if (!list) {
-    try { list = JSON.parse(localStorage.getItem(EMP_LIST_KEY) || 'null'); } catch {}
+    try {
+      const cfg = JSON.parse(localStorage.getItem('ws_sb_cfg') || '{}');
+      if (cfg.url && cfg.key) {
+        const resp = await fetch(
+          `${cfg.url}/rest/v1/kv_store?key=eq.${encodeURIComponent(EMP_LIST_KEY)}&limit=1`,
+          { headers: { apikey: cfg.key, Authorization: 'Bearer ' + cfg.key } }
+        );
+        if (resp.ok) {
+          const rows = await resp.json();
+          if (rows && rows.length) {
+            list = JSON.parse(rows[0].value);
+            // Cache locally for next time
+            try { localStorage.setItem(KV_PREFIX + EMP_LIST_KEY, rows[0].value); } catch {}
+          }
+        }
+      }
+    } catch {}
   }
+
   // No list uploaded yet — allow any valid 6-digit EMP
   if (!list) return { valid: true, name: null, dept: null, listLoaded: false };
+
   const rec = list[emp];
   if (rec === undefined) return { valid: false, name: null, dept: null, listLoaded: true };
-  // Support both old string format and new {name, dept} object format
+  // Support both string format and {name, dept} object format
   const name = typeof rec === 'object' ? rec.name : rec;
   const dept = typeof rec === 'object' ? rec.dept : null;
   return { valid: true, name: name || null, dept: dept || null, listLoaded: true };
