@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 const SETTINGS = {
   minConfidence:      0.20,
-  chipLimit:          6,
+  chipLimit:          8,
   chipClickCooldownMs:900,
   smsNumber:          "07773652107",
   smsMaxChars:        500,
@@ -25,6 +25,12 @@ function getStoredEmpSession() {
 }
 function storeEmpSession(emp, name, dept) {
   try { sessionStorage.setItem(EMP_SESSION_KEY, JSON.stringify({ emp, name, dept: dept || "" })); } catch {}
+}
+function getStoredPhone() {
+  try { return sessionStorage.getItem("ws_last_phone_" + (empNumber || "")) || null; } catch { return null; }
+}
+function storePhone(phone) {
+  try { if (empNumber && phone) sessionStorage.setItem("ws_last_phone_" + empNumber, phone); } catch {}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -452,7 +458,14 @@ function showTyping() {
   row.appendChild(bub); chatWindow.prepend(row);
 }
 function hideTyping() { document.getElementById("typingIndicator")?.remove(); }
-const typingDelay = () => 800 + Math.random() * 800;  // 800–1600ms
+// Typing delay: short input = snappier reply, longer input = more "thinking" time
+// Pass response HTML length after it's known for best accuracy,
+// or input length as a proxy before.
+const typingDelay = (responseLen = 80) => {
+  const len = typeof responseLen === "string" ? responseLen.length : responseLen;
+  const base = Math.min(Math.max(len * 6, 350), 1300); // 6ms/char, 350–1300ms
+  return base + Math.random() * 250; // +0–250ms jitter
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FUZZY MATCHING — Levenshtein distance
@@ -498,14 +511,14 @@ const INTENT_PHRASES = [
   { intent:"contract",        patterns:["contract","my contract","change contract","contract change","contract amendment","amend contract","contract query","contract issue","contract hours","contract type","permanent","part time","full time","contract update"] },
   { intent:"equipment_stock", patterns:["stock","no stock","out of stock","missing stock","stock query","stock issue","stock form","need stock","request stock"] },
   { intent:"equipment_tooling",patterns:["tools","tooling","no tools","missing tools","need tools","tool query","tool issue","bybox","by box","tool order","order tools"] },
-  { intent:"equipment_van",   patterns:["no van","need a van","when do i get a van","van query","van issue","van problem","company van","work van"] },
+  { intent:"equipment_van",   patterns:["no van","need a van","when do i get a van","van query","van issue","van problem","company van","work van","my van","van not arrived","havent got a van","haven't got a van"] },
   { intent:"equipment",       patterns:["equipment","kit","gear","my kit","my equipment","kit query","kit issue"] },
   { intent:"street_works",    patterns:["street work","streetwork","street works","streetworks","street job","sw query","sw issue"] },
   { intent:"smart_awards",    patterns:["smart award","smartaward","smart awards","smartawards","award query","award issue","my award","claim award"] },
   { intent:"id_cards",        patterns:["id card","id cards","id badge","identification","lost id","id lost","id expired","expired id","id not arrived","id not received","need new id","replace id","id renewal"] },
   { intent:"contact_support", patterns:["contact support","get help","need help","speak to welfare","welfare team","welfare number","welfare contact","welfare support","call welfare"] },
   { intent:"dept_contacts",   patterns:["department contacts","department numbers","dept contacts","who do i call","who do i contact","who should i contact","contact details","contact list","what number","which number","contact for","call for","all contacts","departments"] },
-  { intent:"fleet",           patterns:["fleet","fleet query","fleet issue","fleet contact","breakdown","van broken","van broken down","car broken","company car"] },
+  { intent:"fleet",           patterns:["fleet","fleet query","fleet issue","fleet contact","breakdown","car broken","company car","vehicle broken","my vehicle"] },
   { intent:"accident",        patterns:["accident","injury","injured","hurt","accident report","report accident","had an accident","been in accident","crash","vehicle damage","damage report","road accident","near miss"] },
   { intent:"parking",         patterns:["parking","parking fine","parking ticket","parking query","parking issue","penalty charge","pcn","council fine"] },
   { intent:"recruitment",     patterns:["recruit","recruitment","hiring","new job","apply","application","job application","job vacancy","vacancy","start date","when do i start","joining","onboard","onboarding"] },
@@ -560,23 +573,26 @@ function handleFlow(text) {
 
   // ── Work Allocation ──
   if (flowCtx.type === "workAllocation") {
+    if (q !== "yes" && q !== "no") return { html: "Sorry, I didn't catch that — has this been raised with your <b>Field and Area Manager</b>?", chips: ["Yes","No"] };
     flowCtx = null;
     return q === "yes"
-      ? { html: `Please contact Welfare directly on ${WELFARE} and hold the line.` }
-      : { html: `Please raise this with your <b>Field and Area Manager</b>. If concerns remain, contact Welfare on ${WELFARE} and hold the line.` };
+      ? { html: `Please contact Welfare directly on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
+      : { html: `Please raise this with your <b>Field and Area Manager</b>. If concerns remain, contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
   }
 
   // ── Manager Dispute ──
   if (flowCtx.type === "managerDispute") {
     if (flowCtx.stage === "askFieldManager") {
+      if (q !== "yes" && q !== "no") return { html: "Sorry, I didn't catch that — is this regarding your <b>Field Manager</b>?", chips: ["Yes","No"] };
       if (q === "yes") { flowCtx = { type: "managerDispute", stage: "askAreaManager" }; return { html: "Have you also contacted your <b>Area Manager</b>?", chips: ["Yes","No"] }; }
-      flowCtx = null; return { html: `Please contact Welfare on ${WELFARE} and hold the line.` };
+      flowCtx = null; return { html: `Please contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
     }
     if (flowCtx.stage === "askAreaManager") {
+      if (q !== "yes" && q !== "no") return { html: "Sorry, I didn't catch that — have you contacted your <b>Area Manager</b>?", chips: ["Yes","No"] };
       flowCtx = null;
       return q === "yes"
-        ? { html: `Please contact Welfare on ${WELFARE} and hold the line.` }
-        : { html: `Please contact your <b>Area Manager</b>. If concerns remain, contact Welfare on ${WELFARE} and hold the line.` };
+        ? { html: `Please contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] }
+        : { html: `Please contact your <b>Area Manager</b>. If concerns remain, contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] };
     }
   }
 
@@ -586,10 +602,20 @@ function handleFlow(text) {
       if (q === "stock")   { flowCtx = { type:"equipment", stage:"stockForm" };  return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No"] }; }
       if (q === "tooling") { flowCtx = { type:"equipment", stage:"bybox" };      return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No"] }; }
       if (q === "van")     { flowCtx = { type:"equipment", stage:"vanRaised" };  return { html: "Have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No"] }; }
+      return { html: "Sorry — is this about <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock","Tooling","Van"] };
     }
-    if (flowCtx.stage === "stockForm")  { flowCtx = null; return q === "yes" ? { html: `Please follow up with your <b>Field Manager</b> on your stock. If needed, contact Welfare on ${WELFARE}.` } : { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>." }; }
-    if (flowCtx.stage === "bybox")      { flowCtx = null; return q === "yes" ? { html: `Follow up with your <b>Field Manager</b> on the ByBox order. If needed, contact Welfare on ${WELFARE}.` } : { html: "Please ask your <b>Field Manager</b> to submit an order through <b>ByBox</b>." }; }
-    if (flowCtx.stage === "vanRaised")  { flowCtx = null; return q === "yes" ? { html: `Please contact Welfare on ${WELFARE} and hold the line.` } : { html: "Please raise this with your <b>Field Manager</b> first." }; }
+    if (flowCtx.stage === "stockForm") {
+      if (q !== "yes" && q !== "no") return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No"] };
+      flowCtx = null; return q === "yes" ? { html: `Please follow up with your <b>Field Manager</b> on your stock. If needed, contact Welfare on ${WELFARE}.`, chips: ["I can't get through","Thanks — all sorted"] } : { html: "Please contact your <b>Field Manager</b> and complete a <b>Stock Form</b>." };
+    }
+    if (flowCtx.stage === "bybox") {
+      if (q !== "yes" && q !== "no") return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No"] };
+      flowCtx = null; return q === "yes" ? { html: `Follow up with your <b>Field Manager</b> on the ByBox order. If needed, contact Welfare on ${WELFARE}.`, chips: ["I can't get through","Thanks — all sorted"] } : { html: "Please ask your <b>Field Manager</b> to submit an order through <b>ByBox</b>." };
+    }
+    if (flowCtx.stage === "vanRaised") {
+      if (q !== "yes" && q !== "no") return { html: "Have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No"] };
+      flowCtx = null; return q === "yes" ? { html: `Please contact Welfare on ${WELFARE} and hold the line.`, chips: ["I can't get through","Thanks — all sorted"] } : { html: "Please raise this with your <b>Field Manager</b> first." };
+    }
   }
 
   // ── BTOR NTF area picker ──
@@ -634,11 +660,33 @@ function specialCases(text) {
   // ── Active SMS collection flow ──
   if (smsCtx) {
     if (q === "cancel" || q === "stop" || q === "restart") { smsCtx = null; return { html: "No problem — that's been cancelled." }; }
+    if (smsCtx.stage === "awaitingConfirm") {
+      if (q.includes("yes") || q.includes("sent") || q.includes("done")) {
+        smsCtx = null;
+        return { html: "Great — the team will be in touch. Is there anything else I can help with?", chips: ["Department Contacts","What are your opening times?","Is anyone available now?"] };
+      }
+      // They couldn't send — restart the flow
+      smsCtx = null;
+      return { html: `No problem. You can also call Welfare directly on ${WELFARE} and hold the line, or try sending the text manually to <b>${escapeHTML(SETTINGS.smsNumber)}</b>.`, chips: ["Try again","Department Contacts"] };
+    }
+    if (smsCtx.stage === "confirmPhone") {
+      // They're confirming whether to use saved phone
+      // Match "use <number>" chip — compare normalised digits only
+      const _savedDigits = (smsCtx.savedPhone || "").replace(/\D/g, "");
+      const _qDigits = text.replace(/\D/g, "");
+      if (q.startsWith("use ") && _savedDigits && _qDigits === _savedDigits) {
+        smsCtx.phone = smsCtx.savedPhone; storePhone(smsCtx.phone); smsCtx.stage = "needType";
+        return { html: "Is this a <b>Pay</b> or <b>Deduction</b> query?", chips: ["Pay query","Deduction query"] };
+      }
+      // They want a different number
+      smsCtx.stage = "needPhone"; smsCtx.savedPhone = null;
+      return { html: "No problem — what phone number would you like to use?" };
+    }
     if (smsCtx.stage === "needPhone") {
       // Basic phone validation
       const digits = text.replace(/[^\d]/g, "");
       if (digits.length < 8 || digits.length > 16) return { html: "That doesn't look like a valid phone number — please enter your number again (8–16 digits):" };
-      smsCtx.phone = text.trim(); smsCtx.stage = "needType";
+      smsCtx.phone = text.trim(); storePhone(smsCtx.phone); smsCtx.stage = "needType";
       return { html: "Is this a <b>Pay</b> or <b>Deduction</b> query?", chips: ["Pay query","Deduction query"] };
     }
     if (smsCtx.stage === "needType") { smsCtx.type = text.trim(); smsCtx.stage = "needDescription"; return { html: "Please briefly describe your query in 1–3 sentences:" }; }
@@ -655,8 +703,8 @@ function specialCases(text) {
         `<a href="${escapeAttrUrl(href)}" target="_blank" rel="noopener">📱 Tap here to send your text to ${escapeHTML(SETTINGS.smsNumber)}</a><br>` +
         `<small>Opens your messaging app with the message pre-filled and ready to send.</small>`;
       logSMS({ name: smsCtx.name, phone: smsCtx.phone, type: smsCtx.type, description: smsCtx.description });
-      logIntent("sms_sent"); smsCtx = null;
-      return { html, chips: ["Pay / Payroll query","Deductions query"], _intent: "sms_sent" };
+      logIntent("sms_sent"); smsCtx = { stage: "awaitingConfirm" };
+      return { html, chips: ["Yes — sent ✓","No — try again"], _intent: "sms_sent" };
     }
   }
 
@@ -666,6 +714,23 @@ function specialCases(text) {
   if (q.includes("say it again") || q.includes("repeat that") || q.includes("what did you say") || q.includes("come again")) {
     const last = CHAT_LOG.filter(l => l.role === "Bot").at(-1);
     if (last) return { html: last.text };
+  }
+
+  // ── Escalation — can't get through ──
+  if (q.includes("cant get through") || q.includes("not get through") || q.includes("not answering") || q.includes("no answer") || q.includes("cant reach") || q.includes("wont answer") || q.includes("not picking up")) {
+    return { html: `No problem — here are some alternative options:<br><br>` +
+      `📱 <b>Text instead:</b> Start a pay/deduction query above and I'll prepare a text for you.<br>` +
+      `📧 <b>Email welfare:</b> Contact your Area Manager to escalate.<br>` +
+      `🚨 <b>Urgent out-of-hours:</b><br>` +
+      `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
+      `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`,
+      chips: ["Pay / Payroll query","Department Contacts"], _intent: "contact_support" };
+  }
+
+  // ── "Thanks — all sorted" follow-up ──
+  if (q === "thanks all sorted" || q === "thanks sorted" || q === "all sorted") {
+    const opts = ["Glad to help! 😊 Come back any time.", "Great — hope it gets sorted quickly!", "No problem at all — take care! 👋"];
+    return { html: opts[Math.floor(Math.random() * opts.length)], _intent: "thanks" };
   }
 
   // ── Greetings & small talk ──
@@ -682,13 +747,24 @@ function specialCases(text) {
 
   // ── Pay / deductions — start SMS flow ──
   // Pre-fill name from EMP gate so they only need to confirm phone number
-  if (intent === "pay_query" || intent === "sms_query") {
-    smsCtx = { stage: "needPhone", name: empName || "" };
-    return { html: `I'll help you send a text to the pay team.<br><br>What's the best <b>phone number</b> to reach you on${empName ? `, <b>${escapeHTML(empName.split(" ")[0])}</b>` : ""}?`, _intent: "pay_query" };
+  // "Try again" after failed SMS send
+  if ((q === "try again" || q.includes("try again")) && !smsCtx && !flowCtx) {
+    const savedPhone = getStoredPhone();
+    smsCtx = { stage: savedPhone ? "confirmPhone" : "needPhone", name: empName || "", savedPhone: savedPhone || null };
+    const firstName = empName ? `, <b>${escapeHTML(empName.split(" ")[0])}</b>` : "";
+    if (savedPhone) return { html: `Let\'s try again. Use <b>${escapeHTML(savedPhone)}</b>${firstName}?`, chips: [`Use ${savedPhone}`, "Use a different number"] };
+    return { html: "Let\'s try again. What phone number would you like to use?" };
   }
-  if (intent === "deduction_query") {
-    smsCtx = { stage: "needPhone", name: empName || "" };
-    return { html: `I can help with that. What's the best <b>phone number</b> to reach you on${empName ? `, <b>${escapeHTML(empName.split(" ")[0])}</b>` : ""}?`, _intent: "deduction_query" };
+
+  if (intent === "pay_query" || intent === "sms_query" || intent === "deduction_query") {
+    const isDeduction = intent === "deduction_query";
+    const savedPhone = getStoredPhone();
+    smsCtx = { stage: savedPhone ? "confirmPhone" : "needPhone", name: empName || "", savedPhone: savedPhone || null };
+    const firstName = empName ? `, <b>${escapeHTML(empName.split(" ")[0])}</b>` : "";
+    if (savedPhone) {
+      return { html: `${isDeduction ? "I can help with that." : "I'll help you send a text to the pay team."}<br><br>Shall I use your previous number <b>${escapeHTML(savedPhone)}</b>${firstName}?`, chips: [`Use ${savedPhone}`, "Use a different number"], _intent: intent };
+    }
+    return { html: `${isDeduction ? "I can help with that." : "I'll help you send a text to the pay team."}<br><br>What's the best <b>phone number</b> to reach you on${firstName}?`, _intent: intent };
   }
 
   // ── Guided flows ──
@@ -855,7 +931,9 @@ async function handleUserMessage(text) {
   if (suggestionsEl) suggestionsEl.hidden = true;
   addBubble(text, "user", { speak: false });
   input.value = ""; isResponding = true; sendBtn.disabled = true;
-  showTyping(); await new Promise(r => setTimeout(r, typingDelay())); hideTyping();
+  showTyping();
+  // Use input length as proxy — longer questions get slightly more "thinking" time
+  await new Promise(r => setTimeout(r, typingDelay(text.length * 3))); hideTyping();
 
   const special = specialCases(text);
   if (special) {
