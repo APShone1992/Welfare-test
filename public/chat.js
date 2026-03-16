@@ -869,7 +869,7 @@ function specialCases(text) {
   if (intent === "recruitment")     return { html: `Please call <a href="tel:02037583058"><b>02037583058</b></a> for recruitment.`, _intent: "recruitment" };
   if (intent === "contact_support") return { html: `You can reach Welfare on ${WELFARE} — please hold the line when prompted.`, chips: ["Department Contacts","What are your opening times?"], _intent: "contact_support" };
 
-  if (intent === "opening_times") return { html: "We're open <b>Monday–Friday, 8:30am–5:00pm</b> (UK time), closed weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"], _intent: "opening_times" };
+  if (intent === "opening_times") return { html: "We're open <b>Monday–Friday, 8:30am–5:30pm</b> (UK time), closed weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"], _intent: "opening_times" };
   if (intent === "bank_holiday")  return { html: "❌ <b>We are not open on bank holidays.</b>", chips: ["What are your opening times?"], _intent: "opening_times" };
 
   if (intent === "available_now") {
