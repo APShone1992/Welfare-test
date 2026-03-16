@@ -1864,58 +1864,6 @@ function bindEmpUpload() {
 }
 
 /* ══════════════════════════════════════════
-   REFRESH ALL
-══════════════════════════════════════════ */
-async function refreshAll(){
-  setSyncStatus('spin','Refreshing…');
-  try{
-    _notesCache = null; // clear so next render re-fetches
-    await getNotes(); // pre-warm cache
-    await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load(),EmpTbl.load()]);
-    setSyncStatus('ok',SB.ready()?'✅ Supabase connected — all devices synced':'⚠ Local only — go to Setup tab');
-    // Update tab notification badge
-    updateTabBadge(URTbl.data);
-    // Update global search cache
-    _searchCache.sms = SMSTbl.data;
-    _searchCache.ur  = URTbl.data;
-    _searchCache.emp = EmpTbl.data;
-    // Render dept chart and training suggestions
-    renderDeptChart(SMSTbl.data);
-    renderTrainingSuggestions(URTbl.data);
-    await renderActivityLog();
-    renderSecurityPanel();
-    renderExportSummary();
-  }catch(e){
-    setSyncStatus('err','Error: '+e.message);
-    toast('⚠ '+e.message,{dur:5000});
-  }
-}
-
-
-/* ══════════════════════════════════════════
-   ACTIVITY LOG — stores admin actions in localStorage
-══════════════════════════════════════════ */
-const ACT_LOG_KEY = 'ws_admin_activity';
-let _actLogCache = null;
-
-async function logActivity(icon, text) {
-  try {
-    const log = _actLogCache || (await KV.get(ACT_LOG_KEY)) || [];
-    log.unshift({ ts: Date.now(), icon, text });
-    if (log.length > 200) log.length = 200;
-    _actLogCache = log;
-    await KV.set(ACT_LOG_KEY, log);
-  } catch {}
-}
-async function getActivityLog() {
-  try {
-    if (_actLogCache) return _actLogCache;
-    _actLogCache = (await KV.get(ACT_LOG_KEY)) || [];
-    return _actLogCache;
-  } catch { return []; }
-}
-
-/* ══════════════════════════════════════════
    NOTES on Unresolved — stored in localStorage
    Key: ws_ur_notes  { [id]: "note text" }
 ══════════════════════════════════════════ */
@@ -1969,6 +1917,60 @@ function bindNoteModal() {
   $('#note-cancel')?.addEventListener('click', () => $('#modal-note').classList.add('hidden'));
   $('#modal-note')?.addEventListener('click', e => { if (e.target === $('#modal-note')) $('#modal-note').classList.add('hidden'); });
 }
+
+/* ══════════════════════════════════════════
+   REFRESH ALL
+══════════════════════════════════════════ */
+async function refreshAll(){
+  setSyncStatus('spin','Refreshing…');
+  try{
+    _notesCache = null; // clear so next render re-fetches
+    await getNotes(); // pre-warm cache
+    await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load(),EmpTbl.load()]);
+    setSyncStatus('ok',SB.ready()?'✅ Supabase connected — all devices synced':'⚠ Local only — go to Setup tab');
+    // Update tab notification badge
+    updateTabBadge(URTbl.data);
+    // Update global search cache
+    _searchCache.sms = SMSTbl.data;
+    _searchCache.ur  = URTbl.data;
+    _searchCache.emp = EmpTbl.data;
+    // Render dept chart and training suggestions
+    renderDeptChart(SMSTbl.data);
+    renderTrainingSuggestions(URTbl.data);
+    await renderActivityLog();
+    renderSecurityPanel();
+    renderExportSummary();
+  }catch(e){
+    setSyncStatus('err','Error: '+(e?.message||e));
+    console.error('refreshAll error:', e);
+    // Don't rethrow — let the page stay usable
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   ACTIVITY LOG — stores admin actions in localStorage
+══════════════════════════════════════════ */
+const ACT_LOG_KEY = 'ws_admin_activity';
+let _actLogCache = null;
+
+async function logActivity(icon, text) {
+  try {
+    const log = _actLogCache || (await KV.get(ACT_LOG_KEY)) || [];
+    log.unshift({ ts: Date.now(), icon, text });
+    if (log.length > 200) log.length = 200;
+    _actLogCache = log;
+    await KV.set(ACT_LOG_KEY, log);
+  } catch {}
+}
+async function getActivityLog() {
+  try {
+    if (_actLogCache) return _actLogCache;
+    _actLogCache = (await KV.get(ACT_LOG_KEY)) || [];
+    return _actLogCache;
+  } catch { return []; }
+}
+
 
 /* ══════════════════════════════════════════
    DARK MODE
@@ -2650,15 +2652,17 @@ function bindBotTester() {
 async function renderExportSummary() {
   const el = $('#export-summary');
   if (!el) return;
-  Promise.all([fetchSMS(), fetchUR(), fetchEmployees(), fetchSessions()]).then(([sms,ur,emp,sess]) => {
+  try {
+    const [sms, ur, emp, sess] = await Promise.all([fetchSMS(), fetchUR(), fetchEmployees(), fetchSessions()]);
+    const act = await getActivityLog();
     el.innerHTML = `
       <strong>SMS logs:</strong> ${sms.length} records<br>
       <strong>Unresolved queries:</strong> ${ur.length} records<br>
       <strong>Employees (seen):</strong> ${emp.length} employees<br>
       <strong>Sessions:</strong> ${sess.length} sessions<br>
-      <strong>Activity log:</strong> ${(await getActivityLog()).length} entries<br>
+      <strong>Activity log:</strong> ${act.length} entries<br>
       <strong>FAQ entries:</strong> ${faqEditData.length || FAQS.length} entries`;
-  });
+  } catch {}
 }
 
 function bindExport() {
@@ -2715,16 +2719,27 @@ function bindExport() {
    BOOT
 ══════════════════════════════════════════ */
 (async function boot(){
-  SMSTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();bindEmpUpload();
-  initSuperadminPin();initChangePinSection();
-  bindDarkMode();bindPrint();bindGlobalSearch();bindNoteModal();
-  bindSecurity();bindFaqEditor();bindEmpManager();bindBotTester();bindExport();
-  await loadFaqEditData();
-  resetInactivityTimer();
-  $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
-  setInterval(refreshAll,30000);
-  await refreshAll();
-  $('#loader').style.display='none';
+  try {
+    SMSTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();bindEmpUpload();
+    initSuperadminPin();initChangePinSection();
+    bindDarkMode();bindPrint();bindGlobalSearch();bindNoteModal();
+    bindSecurity();bindFaqEditor();bindEmpManager();bindBotTester();bindExport();
+    await loadFaqEditData();
+    resetInactivityTimer();
+    $('#refreshBtn').addEventListener('click',async()=>{await refreshAll();toast('Refreshed ✓');});
+    setInterval(refreshAll,30000);
+    await refreshAll();
+  } catch(e) {
+    console.error('Boot error:', e);
+    // Show error on page rather than blank loader
+    const syncLbl = $('#syncLabel');
+    if (syncLbl) syncLbl.textContent = 'Error loading — check console';
+    setSyncStatus('err', 'Load error: ' + (e?.message || e));
+  } finally {
+    // Always hide loader — never leave user stuck on loading screen
+    const loader = $('#loader');
+    if (loader) loader.style.display = 'none';
+  }
 })();
 
 }); // DOMContentLoaded
