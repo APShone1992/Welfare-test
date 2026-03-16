@@ -1,4 +1,27 @@
 // ─────────────────────────────────────────────────────────────────────────────
+// BROADCAST MESSAGE — shown at top of chat if set by admin
+// ─────────────────────────────────────────────────────────────────────────────
+const BROADCAST_KEY = 'ws_broadcast';
+
+async function checkBroadcast() {
+  try {
+    let data = null;
+    // Try localStorage first (fast), then KV if Supabase available
+    const local = localStorage.getItem('kv:' + BROADCAST_KEY);
+    if (local) data = JSON.parse(local);
+    if (!data?.msg) return;
+    // Show as a sticky banner above the chat
+    if (document.getElementById('broadcastBanner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'broadcastBanner';
+    banner.style.cssText = 'background:#1a3a6b;color:#fff;padding:9px 16px 9px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.15);font-family:system-ui,sans-serif;flex-shrink:0';
+    banner.innerHTML = `<span style="flex:1">📢 ${escapeHTML(data.msg)}</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);font-size:16px;cursor:pointer;padding:0;line-height:1" title="Dismiss">✕</button>`;
+    const chatWindow = document.getElementById('chatWindow');
+    if (chatWindow) chatWindow.parentElement.insertBefore(banner, chatWindow);
+  } catch {}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SETTINGS
 // ─────────────────────────────────────────────────────────────────────────────
 const SETTINGS = {
@@ -140,6 +163,24 @@ function logUnresolved(text) {
 
 setInterval(saveSession, 30000);
 window.addEventListener("beforeunload", saveSession);
+
+// ── Offline banner ──
+(function() {
+  function showOfflineBanner() {
+    if (document.getElementById("offlineBanner")) return;
+    const b = document.createElement("div");
+    b.id = "offlineBanner";
+    b.style.cssText = "position:sticky;top:0;z-index:999;background:#dc2626;color:#fff;text-align:center;padding:8px 16px;font-size:13px;font-weight:600;font-family:system-ui,sans-serif";
+    b.textContent = "⚠️ No internet connection — some features may not work";
+    document.body.prepend(b);
+  }
+  function hideOfflineBanner() {
+    document.getElementById("offlineBanner")?.remove();
+  }
+  window.addEventListener("online",  hideOfflineBanner);
+  window.addEventListener("offline", showOfflineBanner);
+  if (!navigator.onLine) showOfflineBanner();
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UK TIME HELPERS
@@ -569,7 +610,7 @@ const CF_AREAS = {
 function handleFlow(text) {
   const q = normalize(text);
   if (!flowCtx) return null;
-  if (q === "cancel" || q === "stop" || q === "restart") { flowCtx = null; return { html: "No problem — that's been cancelled. Feel free to ask anything else or use the <b>Topics</b> button." }; }
+  if (q === "cancel" || q === "stop" || q === "restart" || q === "back" || q === "go back" || q === "← back") { flowCtx = null; return { html: "No problem — I've gone back. Feel free to ask anything else or use the <b>Topics</b> button." }; }
 
   // ── Work Allocation ──
   if (flowCtx.type === "workAllocation") {
@@ -599,9 +640,9 @@ function handleFlow(text) {
   // ── Equipment ──
   if (flowCtx.type === "equipment") {
     if (flowCtx.stage === "askType") {
-      if (q === "stock")   { flowCtx = { type:"equipment", stage:"stockForm" };  return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No"] }; }
-      if (q === "tooling") { flowCtx = { type:"equipment", stage:"bybox" };      return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No"] }; }
-      if (q === "van")     { flowCtx = { type:"equipment", stage:"vanRaised" };  return { html: "Have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No"] }; }
+      if (q === "stock")   { flowCtx = { type:"equipment", stage:"stockForm" };  return { html: "Have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No","← Back"] }; }
+      if (q === "tooling") { flowCtx = { type:"equipment", stage:"bybox" };      return { html: "Has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No","← Back"] }; }
+      if (q === "van")     { flowCtx = { type:"equipment", stage:"vanRaised" };  return { html: "Have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No","← Back"] }; }
       return { html: "Sorry — is this about <b>Stock</b>, <b>Tooling</b> or a <b>Van</b>?", chips: ["Stock","Tooling","Van"] };
     }
     if (flowCtx.stage === "stockForm") {
@@ -689,9 +730,11 @@ function specialCases(text) {
       smsCtx.phone = text.trim(); storePhone(smsCtx.phone); smsCtx.stage = "needType";
       return { html: "Is this a <b>Pay</b> or <b>Deduction</b> query?", chips: ["Pay query","Deduction query"] };
     }
-    if (smsCtx.stage === "needType") { smsCtx.type = text.trim(); smsCtx.stage = "needDescription"; return { html: "Please briefly describe your query in 1–3 sentences:" }; }
+    if (smsCtx.stage === "needType") { smsCtx.type = text.trim(); smsCtx.stage = "needDescription"; return { html: `Please briefly describe your query in 1–3 sentences: <small style="color:var(--text-muted,#8a94a8)">(max ${SETTINGS.smsMaxChars} characters)</small>` }; }
     if (smsCtx.stage === "needDescription") {
-      smsCtx.description = text.trim();
+      const trimmedDesc = text.trim().slice(0, SETTINGS.smsMaxChars);
+      if (text.trim().length > SETTINGS.smsMaxChars) { return { html: `That's a bit long — please keep it under <b>${SETTINGS.smsMaxChars} characters</b>. You currently have <b>${text.trim().length}</b>. Please shorten it and send again.` }; }
+      smsCtx.description = trimmedDesc;
       const body = encodeURIComponent(`Welfare Support Query\nEMP: ${empNumber||"N/A"}\nName: ${smsCtx.name}\nPhone: ${smsCtx.phone}\nType: ${smsCtx.type}\nQuery: ${smsCtx.description}`);
       const href = `sms:${SETTINGS.smsNumber}?body=${body}`;
       const html = `<b>Ready to send</b><br>` +
@@ -736,7 +779,7 @@ function specialCases(text) {
   // ── Greetings & small talk ──
   if (intent === "greeting") {
     const opts = ["Hey! 👋 How can I help you today?","Hi there! What can I help you with?","Hello! What's your query today?","Hey, good to hear from you! What can I help with?"];
-    return { html: opts[Math.floor(Math.random() * opts.length)], chips: ["Pay / Payroll query","Work Allocation","Department Contacts","Equipment Query"], _intent: "greeting" };
+    return { html: opts[Math.floor(Math.random() * opts.length)], chips: ["Pay / Payroll query","BTOR NTF Support","City Fibre NTF Support","Department Contacts","Work Allocation","Equipment Query"], _intent: "greeting" };
   }
   if (intent === "smalltalk_how") return { html: "I'm doing well thanks! I'm here to help with welfare queries — what do you need?", _intent: "smalltalk" };
   if (intent === "thanks") {
@@ -768,8 +811,8 @@ function specialCases(text) {
   }
 
   // ── Guided flows ──
-  if (intent === "work_allocation")  { flowCtx = { type: "workAllocation" };                   return { html: "Sorry to hear that. Has this already been raised with your <b>Field and Area Manager</b>?", chips: ["Yes","No"], _intent: "work_allocation" }; }
-  if (intent === "manager_dispute")  { flowCtx = { type: "managerDispute", stage: "askFieldManager" }; return { html: "Let's get this sorted. Is this regarding your <b>Field Manager</b>?", chips: ["Yes","No"], _intent: "manager_dispute" }; }
+  if (intent === "work_allocation")  { flowCtx = { type: "workAllocation" };                   return { html: "Sorry to hear that. Has this already been raised with your <b>Field and Area Manager</b>?", chips: ["Yes","No","← Back"], _intent: "work_allocation" }; }
+  if (intent === "manager_dispute")  { flowCtx = { type: "managerDispute", stage: "askFieldManager" }; return { html: "Let's get this sorted. Is this regarding your <b>Field Manager</b>?", chips: ["Yes","No","← Back"], _intent: "manager_dispute" }; }
   if (intent === "equipment_stock")  { flowCtx = { type: "equipment", stage: "stockForm" };    return { html: "For stock queries — have you submitted a <b>Stock Form</b> with your Field Manager?", chips: ["Yes","No"], _intent: "equipment" }; }
   if (intent === "equipment_tooling"){ flowCtx = { type: "equipment", stage: "bybox" };        return { html: "For tooling — has your <b>Field Manager submitted an order through ByBox</b>?", chips: ["Yes","No"], _intent: "equipment" }; }
   if (intent === "equipment_van")    { flowCtx = { type: "equipment", stage: "vanRaised" };    return { html: "For van queries — have you raised this with your <b>Field Manager and Area Manager</b>?", chips: ["Yes","No"], _intent: "equipment" }; }
@@ -952,7 +995,7 @@ async function handleUserMessage(text) {
 
   logUnresolved(text);
   addBubble("I'm not sure about that one — try the <b>Topics</b> button or pick a common query:", "bot", { html: true });
-  addChips(["Pay / Payroll query","Work Allocation","Department Contacts","Is anyone available now?"]);
+  addChips(["Pay / Payroll query","Department Contacts","BTOR NTF Support","Is anyone available now?"]);
   isResponding = false; sendBtn.disabled = false;
 }
 
@@ -980,22 +1023,36 @@ function buildCategoryIndex() {
 }
 
 function openDrawer()  { drawerOverlay.hidden = false; drawer.hidden = false; }
-function closeDrawer() { drawerOverlay.hidden = true;  drawer.hidden = true; }
+function closeDrawer() { drawerOverlay.hidden = true; drawer.hidden = true; const ds = document.getElementById("drawerSearch"); if (ds) { ds.value = ""; renderDrawer(null); } }
 
-function renderDrawer(selectedKey) {
+function renderDrawer(selectedKey, searchQ) {
+  const sq = (searchQ || "").toLowerCase().trim();
   drawerCategoriesEl.innerHTML = ""; drawerQuestionsEl.innerHTML = "";
+
+  // Search box — inject once at top of drawer body
+  if (!document.getElementById("drawerSearch")) {
+    const sw = document.createElement("div");
+    sw.style.cssText = "padding:0 0 12px 0";
+    sw.innerHTML = '<input id="drawerSearch" type="text" placeholder="Search topics…" autocomplete="off" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-mid,rgba(26,58,107,0.18));border-radius:10px;font-size:13.5px;font-family:var(--font,system-ui);color:var(--text-primary,#0d1f3c);background:var(--surface-3,#eef2fb);outline:none"/>';
+    drawerCategoriesEl.parentElement.insertBefore(sw, drawerCategoriesEl);
+    document.getElementById("drawerSearch").addEventListener("input", e => renderDrawer(null, e.target.value));
+    document.getElementById("drawerSearch").addEventListener("keydown", e => { if (e.key === "Escape") { e.target.value = ""; renderDrawer(selectedKey); } });
+  }
   categories.forEach(c => {
     const pill = document.createElement("button"); pill.type = "button"; pill.className = "cat-pill"; pill.textContent = `${c.label} (${c.count})`; pill.setAttribute("aria-selected", String(c.key === selectedKey));
     pill.addEventListener("click", () => renderDrawer(c.key)); drawerCategoriesEl.appendChild(pill);
   });
-  const list = selectedKey && categoryIndex.has(selectedKey) ? categoryIndex.get(selectedKey) : FAQS;
+  const list = sq
+    ? FAQS.filter(item => item.question.toLowerCase().includes(sq) || (item.synonyms||[]).some(s=>s.toLowerCase().includes(sq)))
+    : (selectedKey && categoryIndex.has(selectedKey) ? categoryIndex.get(selectedKey) : FAQS);
+  if (sq && list.length === 0) { drawerQuestionsEl.innerHTML = '<p style="font-size:13px;color:var(--text-muted,#8a94a8);padding:16px 4px">No topics found for \"' + sq + '\". Try a different word.</p>'; return; }
   list.forEach(item => {
     const b = document.createElement("button"); b.type = "button"; b.className = "drawer-q"; b.textContent = item.question;
     b.addEventListener("click", () => { closeDrawer(); handleUserMessage(item.question); }); drawerQuestionsEl.appendChild(b);
   });
 }
 
-topicsBtn.addEventListener("click",  () => { if (faqsLoaded) openDrawer(); });
+topicsBtn.addEventListener("click",  () => { if (faqsLoaded) openDrawer(); else addBubble("Loading topics — please try again in a moment.", "bot", { speak: false }); });
 drawerOverlay.addEventListener("click", closeDrawer);
 drawerCloseBtn.addEventListener("click", closeDrawer);
 
@@ -1009,6 +1066,7 @@ fetch("./public/config/faqs.json")
 // INIT — show greeting after login
 // ─────────────────────────────────────────────────────────────────────────────
 function init() {
+  checkBroadcast();
   const firstName = empName ? empName.split(" ")[0] : null;
   const namePrefix = firstName ? `Hi <b>${escapeHTML(firstName)}</b>! ` : "";
   addBubble(namePrefix + getGreeting(), "bot", { html: true, speak: false, noFeedback: true });
