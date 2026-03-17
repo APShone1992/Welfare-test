@@ -1027,6 +1027,11 @@ const SB = (() => {
   async function delAll(table){ const r=await fetch(`${url}/rest/v1/${table}?id=gt.0`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
   async function test(){ const r=await fetch(`${url}/rest/v1/sms_log?limit=1`,{headers:hdrs()});if(!r.ok)throw new Error('HTTP '+r.status);return true; }
   load();
+  if (!url || !key) {
+  url = 'https://jlhtcwsbigznojwfxmox.supabase.co';
+  key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaHRjd3NiaWd6bm9qd2Z4bW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTkzNjcsImV4cCI6MjA4ODk3NTM2N30.u9hOH97ASyyVaLgBKHdrdBo1F8W1BIqwGrm06vcvasU';
+  save(url, key);
+}
   return{load,save,clear,ready,select,insert,del,delAll,test,getUrl:()=>url,getKey:()=>key};
 })();
 
