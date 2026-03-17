@@ -1242,9 +1242,9 @@ function showEmpGate() {
     <div style="background:#fff;border-radius:18px;padding:40px 36px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(13,31,60,0.18),0 0 0 1px rgba(26,58,107,0.08)">
       <div style="font-size:44px;margin-bottom:12px">🔐</div>
       <h2 id="gTitle" style="font-size:20px;font-weight:800;color:#1a3a6b;margin-bottom:6px">Employee Login</h2>
-      <p id="gDesc"  style="font-size:13.5px;color:#4a5878;margin-bottom:24px;line-height:1.6">Enter your <strong>6-digit EMP number</strong> to continue.</p>
+      <p id="gDesc"  style="font-size:13.5px;color:#4a5878;margin-bottom:24px;line-height:1.6">Enter your <strong>6-digit Resource number</strong> to continue.</p>
       <div id="gListStatus" style="font-size:11px;color:#8a94a8;margin-bottom:8px;margin-top:-16px;display:none"></div>
-      <input id="gEmp" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 123456" autocomplete="off" spellcheck="false"
+      <input id="gEmp" type="text" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off" spellcheck="false"
         style="width:100%;padding:14px 16px;font-size:22px;letter-spacing:6px;text-align:center;border:2px solid rgba(26,58,107,0.18);border-radius:12px;outline:none;font-family:monospace;color:#0d1f3c;background:#f7f9ff;margin-bottom:12px;transition:border-color 0.15s,box-shadow 0.15s"/>
       <div id="gErr" style="font-size:13px;color:#dc2626;font-weight:600;min-height:18px;margin-bottom:12px;display:none"></div>
       <button id="gNext" style="width:100%;padding:13px;font-size:15px;font-weight:700;background:#1a3a6b;color:#fff;border:none;border-radius:12px;cursor:pointer;transition:background 0.15s">Continue →</button>
