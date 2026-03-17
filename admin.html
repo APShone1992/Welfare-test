@@ -1607,6 +1607,9 @@ const URTbl={
       const tr=document.createElement('tr');
       if(daysAgo(x.ts)>=7)tr.style.background='#fff5f5';
       tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td class="clip" title="${esc(x.query)}">${esc(x.query||'—')}</td><td>${badge(x.type)}</td><td>${ageBadge(x.ts)}</td><td><div class="row-actions"></div></td>`;
+      const res=document.createElement('button');res.className='btn btn-green btn-sm';res.title='Mark resolved';res.textContent='✓ Resolved';
+      res.addEventListener('click',async()=>{if(!SB.ready()){toast('⚠ Connect Supabase first');return;}await SB.del('unresolved',x.id);logActivity('✅','Marked unresolved query as resolved');await refreshAll();toast('Marked as resolved ✓');});
+      tr.querySelector('.row-actions').appendChild(res);
       const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
       del.addEventListener('click',()=>this.remove(x.id));
       tr.querySelector('.row-actions').appendChild(del);body.appendChild(tr);
