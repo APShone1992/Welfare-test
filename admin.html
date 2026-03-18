@@ -432,7 +432,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <button class="tab" role="tab" aria-selected="false" id="tab-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Analytics</button>
   <button class="tab" role="tab" aria-selected="false" id="tab-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> SMS Log <span class="tab-badge zero" id="badge-sms">0</span></button>
   <button class="tab" role="tab" aria-selected="false" id="tab-3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-4"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Employees
+  <button class="tab" role="tab" aria-selected="false" id="tab-4"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Employees 
   <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Manage</button>
   <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> FAQ Editor</button>
   <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-7"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg> EMP Manager</button>
@@ -569,7 +569,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="sms-q" placeholder="Search name, phone or query&hellip;" autocomplete="off"/>
     <select class="finput" id="sms-t"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
-    <select class="finput" id="sms-status"><option value="">All statuses</option><option value="pending">Pending</option><option value="resolved">Resolved</option></select>
+ <select class="finput" id="sms-status"><option value="">All statuses</option><option value="pending">Pending</option><option value="resolved">Resolved</option></select>
     <button class="btn btn-green btn-sm" id="sms-export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
     <button class="btn btn-red btn-sm" id="sms-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear all</button>
   </div>
@@ -592,7 +592,6 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="fbar">
     <input class="finput finput-stretch" type="text" id="ur-q" placeholder="Search queries&hellip;" autocomplete="off"/>
     <select class="finput" id="ur-t"><option value="">All types</option><option value="unanswered">Unanswered</option><option value="unhelpful">Marked unhelpful</option></select>
-    <select class="finput" id="ur-status"><option value="">All statuses</option><option value="pending">Pending</option><option value="resolved">Resolved</option></select>
     <select class="finput" id="ur-age"><option value="">Any age</option><option value="hot">Older than 7 days</option><option value="warm">3–7 days</option><option value="ok">Last 3 days</option></select>
     <button class="btn btn-green btn-sm" id="ur-export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
     <button class="btn btn-red btn-sm" id="ur-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear all</button>
@@ -1027,14 +1026,24 @@ const SB = (() => {
   async function insert(table,row){ const r=await fetch(`${url}/rest/v1/${table}`,{method:'POST',headers:hdrs({'Prefer':'return=minimal'}),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text()); }
   async function del(table,id){ const r=await fetch(`${url}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
   async function delAll(table){ const r=await fetch(`${url}/rest/v1/${table}?id=gt.0`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
-  async function test(){ const r=await fetch(`${url}/rest/v1/sms_log?limit=1`,{headers:hdrs()});if(!r.ok)throw new Error('HTTP '+r.status);return true; }
+  
+async function update(table, id, patch) {
+  const r = await fetch(`${url}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: hdrs(),
+    body: JSON.stringify(patch)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+async function test(){ const r=await fetch(`${url}/rest/v1/sms_log?limit=1`,{headers:hdrs()});if(!r.ok)throw new Error('HTTP '+r.status);return true; }
   load();
   if (!url || !key) {
   url = 'https://jlhtcwsbigznojwfxmox.supabase.co';
   key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaHRjd3NiaWd6bm9qd2Z4bW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzOTkzNjcsImV4cCI6MjA4ODk3NTM2N30.u9hOH97ASyyVaLgBKHdrdBo1F8W1BIqwGrm06vcvasU';
   save(url, key);
 }
-  return{load,save,clear,ready,select,insert,del,delAll,test,getUrl:()=>url,getKey:()=>key};
+  return{load,save,clear,ready,select,insert,del,delAll,update,test,getUrl:()=>url,getKey:()=>key};
 })();
 
 
@@ -1378,7 +1387,9 @@ async function fetchIntents(){
 ══════════════════════════════════════════ */
 async function renderOverview(){
   const [sms,ur,sess]=await Promise.all([fetchSMS(),fetchUR(),fetchSessions()]);
-  updateBadges(sms.length,ur.length);
+  // Only count PENDING for SMS; Unresolved stays total since we delete on resolve
+const smsPending = sms.filter(r => (r.status ?? 'pending') === 'pending').length;
+updateBadges(smsPending, ur.length);
   renderSetupWarn();
 
   const now=Date.now();
@@ -1537,12 +1548,11 @@ async function renderAnalytics(){
 /* ══════════════════════════════════════════
    SMS TABLE
 ══════════════════════════════════════════ */
-const SMSTbl={
-  data:[],q:'',type:'',status:'',sortField:'ts',sortDir:'desc',
+const SMSTbl={ data:[], q:'', type:'', status:'',sortField:'ts',sortDir:'desc',
   fil(){
     let o=[...this.data];
     if(this.type)o=o.filter(x=>x.type===this.type);
-    if(this.status)o=o.filter(x=>(x.status||'pending')===this.status);
+ if(this.status)o=o.filter(x=>((x.status ?? 'pending')===this.status));
     if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.sender_name||'').toLowerCase().includes(q)||(x.phone||'').toLowerCase().includes(q)||(x.content||'').toLowerCase().includes(q));}
     return o.sort((a,b)=>{const va=a[this.sortField]??'',vb=b[this.sortField]??'';return this.sortField==='ts'?(this.sortDir==='asc'?va-vb:vb-va):(this.sortDir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)));});
   },
@@ -1555,19 +1565,21 @@ const SMSTbl={
     if(!rows.length){body.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="empty-icon">📭</span><p>${this.data.length?'No records match your filter.':'No SMS logs yet.'}</p></div></td></tr>`;return;}
     rows.forEach(x=>{
       const tr=document.createElement('tr');
-      const statusBadge=x.status==='resolved'?'<span class="badge badge-resolved">✓ resolved</span>':'<span class="badge badge-pending">pending</span>';
-      tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td><strong>${esc(x.sender_name||'—')}</strong></td><td style="white-space:nowrap">${esc(x.phone||'—')}</td><td>${badge(x.type)}</td><td class="clip" title="${esc(x.content)}">${esc(x.content||'—')}</td><td>${statusBadge}</td><td><div class="row-actions"></div></td>`;
+      const statusHtml = (x.status ?? 'pending') === 'resolved'
+  ? '<span class="badge badge-resolved">✓ Resolved</span>'
+  : '<span class="badge badge-pending">Pending</span>';
+
+tr.innerHTML = `
+  <td style="white-space:nowrap">${fmtDT(x.ts)}</td>
+  <td><strong>${esc(x.sender_name ?? '—')}</strong></td>
+  <td style="white-space:nowrap">${esc(x.phone ?? '—')}</td>
+  <td>${badge(x.type)}</td>
+  <td class="clip" title="${esc(x.content)}">${esc(x.content ?? '—')}</td>
+  <td>${statusHtml}</td>
+  <td style="width:100px;text-align:right"><div class="row-actions"></div></td>
+`;
      const res=document.createElement('button');res.className='btn btn-green btn-sm';res.title='Mark resolved';res.textContent='✓ Resolved';
-      res.addEventListener('click',async()=>{
-        if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
-        if(x.status==='resolved'){toast('Already marked as resolved');return;}
-        res.disabled=true;res.textContent='Saving…';
-        try{
-          await fetch(`${SB.getUrl()}/rest/v1/sms_log?id=eq.${x.id}`,{method:'PATCH',headers:{'apikey':SB.getKey(),'Authorization':'Bearer '+SB.getKey(),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({status:'resolved'})});
-          logActivity('✅','Marked SMS record as resolved');await refreshAll();toast('Marked as resolved ✓');
-        }catch(e){res.disabled=false;res.textContent='✓ Resolved';toast('❌ Error: '+e.message);}
-      });
-      if(x.status==='resolved'){res.disabled=true;res.style.background='#6b7280';res.textContent='✓ Done';}
+      res.addEventListener('click',async()=>{if(!SB.ready()){toast('⚠ Connect Supabase first');return;}await SB.del('sms_log',x.id);logActivity('✅','Marked SMS record as resolved');await refreshAll();toast('Marked as resolved ✓');});
       tr.querySelector('.row-actions').appendChild(res);
       const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
       del.addEventListener('click',()=>this.remove(x.id));
@@ -1587,7 +1599,7 @@ const SMSTbl={
   bind(){
     $('#sms-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
     $('#sms-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
-    $('#sms-status')?.addEventListener('change',e=>{this.status=e.target.value;this.render();});
+ $('#sms-status').addEventListener('change',e=>{this.status=e.target.value;this.render();});
     $('#sms-export').addEventListener('click',()=>this.exportCSV());
     $('#sms-clear').addEventListener('click',()=>this.clearAll());
     $$('#panel-2 th.sort').forEach(th=>th.addEventListener('click',async () => {const c=th.dataset.col;this.sortField===c?this.sortDir=this.sortDir==='asc'?'desc':'asc':(this.sortField=c,this.sortDir='desc');this.render();}));
@@ -1598,11 +1610,10 @@ const SMSTbl={
    UNRESOLVED TABLE — with age column
 ══════════════════════════════════════════ */
 const URTbl={
-  data:[],q:'',type:'',age:'',status:'',sortDir:'desc',
+  data:[],q:'',type:'',age:'',sortDir:'desc',
   fil(){
     let o=[...this.data];
     if(this.type)o=o.filter(x=>x.type===this.type);
-    if(this.status)o=o.filter(x=>(x.status||'pending')===this.status);
     if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.query||'').toLowerCase().includes(q));}
     if(this.age==='hot')o=o.filter(x=>daysAgo(x.ts)>=7);
     else if(this.age==='warm')o=o.filter(x=>daysAgo(x.ts)>=3&&daysAgo(x.ts)<7);
@@ -1623,16 +1634,7 @@ const URTbl={
       if(daysAgo(x.ts)>=7)tr.style.background='#fff5f5';
       tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td class="clip" title="${esc(x.query)}">${esc(x.query||'—')}</td><td>${badge(x.type)}</td><td>${ageBadge(x.ts)}</td><td><div class="row-actions"></div></td>`;
       const res=document.createElement('button');res.className='btn btn-green btn-sm';res.title='Mark resolved';res.textContent='✓ Resolved';
-      res.addEventListener('click',async()=>{
-        if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
-        if(x.status==='resolved'){toast('Already marked as resolved');return;}
-        res.disabled=true;res.textContent='Saving…';
-        try{
-          await fetch(`${SB.getUrl()}/rest/v1/unresolved?id=eq.${x.id}`,{method:'PATCH',headers:{'apikey':SB.getKey(),'Authorization':'Bearer '+SB.getKey(),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({status:'resolved'})});
-          logActivity('✅','Marked unresolved query as resolved');await refreshAll();toast('Marked as resolved ✓');
-        }catch(e){res.disabled=false;res.textContent='✓ Resolved';toast('❌ Error: '+e.message);}
-      });
-      if(x.status==='resolved'){res.disabled=true;res.style.background='#6b7280';res.textContent='✓ Done';}
+      res.addEventListener('click',async()=>{if(!SB.ready()){toast('⚠ Connect Supabase first');return;}await SB.del('unresolved',x.id);logActivity('✅','Marked unresolved query as resolved');await refreshAll();toast('Marked as resolved ✓');});
       tr.querySelector('.row-actions').appendChild(res);
       const del=document.createElement('button');del.className='btn btn-red btn-sm btn-icon';del.title='Delete';del.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
       del.addEventListener('click',()=>this.remove(x.id));
@@ -1653,7 +1655,6 @@ const URTbl={
     $('#ur-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
     $('#ur-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
     $('#ur-age').addEventListener('change',async e=>{this.age=e.target.value;this.render();});
-    $('#ur-status')?.addEventListener('change',e=>{this.status=e.target.value;this.render();});
     $('#ur-export').addEventListener('click',()=>this.exportCSV());
     $('#ur-clear').addEventListener('click',()=>this.clearAll());
   }
@@ -1667,7 +1668,7 @@ function bindManage(){
     const sender=val('#m-name'),phone=val('#m-phone'),type=$('#m-type').value,content=val('#m-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
     if(!SB.ready()){toast('⚠ Connect Supabase in Setup first');return;}
-    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
+    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content},status:'pending'});
     ['#m-name','#m-phone','#m-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
     await refreshAll();toast('SMS record added ✓');
   });
@@ -1694,7 +1695,7 @@ function bindModal(){
     const sender=val('#qm-name'),phone=val('#qm-phone'),type=$('#qm-type').value,content=val('#qm-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
     if(!SB.ready()){toast('⚠ Connect Supabase in Setup first');return;}
-    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
+    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content},status:'pending'});
     ['#qm-name','#qm-phone','#qm-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
     $('#modal-sms').classList.add('hidden');
     await refreshAll();toast('SMS record added ✓');
