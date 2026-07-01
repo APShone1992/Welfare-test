@@ -28,8 +28,8 @@ const SETTINGS = {
   minConfidence:      0.20,
   chipLimit:          8,
   chipClickCooldownMs:900,
-  smsNumber:          "07773652107",
-  smsMaxChars:        500,
+  emailTarget:        "adam.shone@Kelly.co.uk",
+  emailMaxChars:       1000,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,11 +49,11 @@ function getStoredEmpSession() {
 function storeEmpSession(emp, name, dept) {
   try { sessionStorage.setItem(EMP_SESSION_KEY, JSON.stringify({ emp, name, dept: dept || "" })); } catch {}
 }
-function getStoredPhone() {
-  try { return sessionStorage.getItem("ws_last_phone_" + (empNumber || "")) || null; } catch { return null; }
+function getStoredEmail() {
+  try { return sessionStorage.getItem("ws_last_email_" + (empNumber || "")) || null; } catch { return null; }
 }
-function storePhone(phone) {
-  try { if (empNumber && phone) sessionStorage.setItem("ws_last_phone_" + empNumber, phone); } catch {}
+function storeEmail(email) {
+  try { if (empNumber && email) sessionStorage.setItem("ws_last_email_" + empNumber, email); } catch {}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ const voiceBtn          = document.getElementById("voiceBtn");
 let isResponding     = false;
 let lastChipClickAt  = 0;
 let CHAT_LOG         = [];
-let smsCtx           = null;   // active pay/deduction SMS collection flow
+let emailCtx         = null;   // active pay/deduction email collection flow
 let distanceCtx      = null;   // active depot-distance flow
 let flowCtx          = null;   // active guided flow (workAllocation, equipment, NTF…)
 let lastPhoneNumber  = null;   // last phone number the bot mentioned (for context recall)
@@ -93,7 +93,7 @@ let categoryIndex    = new Map();
 // ─────────────────────────────────────────────────────────────────────────────
 const WS_SESSIONS_KEY  = "ws_sessions_v1";
 const WS_INTENTS_KEY   = "ws_intents_v1";
-const WS_SMS_LOG_KEY   = "ws_sms_log_v1";
+const WS_EMAIL_LOG_KEY = "ws_email_log_v1";
 const UNRESOLVED_KEY   = "ws_unresolved_v1";
 const WS_EMPLOYEES_KEY = "ws_employees_v1";
 
@@ -143,12 +143,12 @@ function logIntent(intent) {
   } catch {}
 }
 
-function logSMS(entry) {
+function logEmail(entry) {
   try {
-    const log = JSON.parse(localStorage.getItem(WS_SMS_LOG_KEY) || "[]");
+    const log = JSON.parse(localStorage.getItem(WS_EMAIL_LOG_KEY) || "[]");
     log.push({ ...entry, ts: Date.now(), date: new Date().toISOString().slice(0, 10), emp: empNumber || "" });
     if (log.length > 2000) log.splice(0, log.length - 2000);
-    localStorage.setItem(WS_SMS_LOG_KEY, JSON.stringify(log));
+    localStorage.setItem(WS_EMAIL_LOG_KEY, JSON.stringify(log));
   } catch {}
 }
 
@@ -275,7 +275,7 @@ function sanitizeHTML(html) {
     });
     if (el.tagName === "A") {
       const href = el.getAttribute("href") ?? "";
-      if (!/^(https?:\/\/|mailto:|tel:|sms:)/i.test(href)) el.removeAttribute("href");
+      if (!/^(https?:\/\/|mailto:|tel:)/i.test(href)) el.removeAttribute("href");
       el.setAttribute("rel", "noopener noreferrer");
       el.setAttribute("target", "_blank");
     }
@@ -569,7 +569,7 @@ const INTENT_PHRASES = [
   { intent:"bank_holiday",    patterns:["bank holiday","bank holidays","public holiday","open on bank holiday","open bank holiday"] },
   { intent:"available_now",   patterns:["available now","anyone available","is someone available","are you open now","anyone there","is anyone there","can i speak","speak to someone","talk to someone","open now"] },
   { intent:"location",        patterns:["where are you","your address","office address","where is the office","nuneaton","depot","closest depot","nearest depot","how far","directions","how to get","get there"] },
-  { intent:"sms_query",       patterns:["send a text","text you","text support","text query","text message","sms","message support"] },
+  { intent:"email_query",     patterns:["send an email","email you","email support","email query","email message","email me","message support","send a message"] },
 ];
 
 function detectIntent(text) {
@@ -716,7 +716,7 @@ function specialCases(text) {
 
   // Active flow takes priority — BUT if user clearly wants a new topic, reset
   if (flowCtx) {
-    const TOPIC_INTENTS = new Set(['pay_query','deduction_query','sms_query',
+    const TOPIC_INTENTS = new Set(['pay_query','deduction_query','email_query',
       'work_allocation','manager_dispute','equipment','equipment_stock','equipment_tooling',
       'equipment_van','street_works','smart_awards','id_cards','dept_contacts',
       'btor_ntf','cityfibre_ntf','contract','fleet','accident','parking','recruitment',
@@ -734,56 +734,57 @@ function specialCases(text) {
     }
   }
 
-  // ── Active SMS collection flow ──
-  if (smsCtx) {
-    if (q === "cancel" || q === "stop" || q === "restart") { smsCtx = null; return { html: "No problem — that's been cancelled." }; }
-    if (smsCtx.stage === "awaitingConfirm") {
+  // ── Active email collection flow ──
+  if (emailCtx) {
+    if (q === "cancel" || q === "stop" || q === "restart") { emailCtx = null; return { html: "No problem — that's been cancelled." }; }
+    if (emailCtx.stage === "awaitingConfirm") {
       if (q.includes("yes") || q.includes("sent") || q.includes("done")) {
-        smsCtx = null;
+        emailCtx = null;
         return { html: "Great — the team will be in touch. Is there anything else I can help with?", chips: ["Department Contacts","What are your opening times?","Is anyone available now?"] };
       }
       // They couldn't send — restart the flow
-      smsCtx = null;
-      return { html: `No problem. You can also call Welfare directly on ${WELFARE} and hold the line, or try sending the text manually to <b>${escapeHTML(SETTINGS.smsNumber)}</b>.`, chips: ["Try again","Department Contacts"] };
+      emailCtx = null;
+      return { html: `No problem. You can also call Welfare directly on ${WELFARE} and hold the line, or email <b>${escapeHTML(SETTINGS.emailTarget)}</b> directly.`, chips: ["Try again","Department Contacts"] };
     }
-    if (smsCtx.stage === "confirmPhone") {
-      // They're confirming whether to use saved phone
-      // Match "use <number>" chip — compare normalised digits only
-      const _savedDigits = (smsCtx.savedPhone || "").replace(/\D/g, "");
-      const _qDigits = text.replace(/\D/g, "");
-      if (q.startsWith("use ") && _savedDigits && _qDigits === _savedDigits) {
-        smsCtx.phone = smsCtx.savedPhone; storePhone(smsCtx.phone); smsCtx.stage = "needType";
+    if (emailCtx.stage === "confirmEmail") {
+      // They're confirming whether to use saved email
+      // Match "use <email>" chip — compare normalised addresses only
+      const _savedNorm = (emailCtx.savedEmail || "").trim().toLowerCase();
+      const _qNorm = text.trim().toLowerCase();
+      if (q.startsWith("use ") && _savedNorm && _qNorm === `use ${_savedNorm}`) {
+        emailCtx.email = emailCtx.savedEmail; storeEmail(emailCtx.email); emailCtx.stage = "needType";
         return { html: "Is this a <b>Pay</b> or <b>Deduction</b> query?", chips: ["Pay query","Deduction query"] };
       }
-      // They want a different number
-      smsCtx.stage = "needPhone"; smsCtx.savedPhone = null;
-      return { html: "No problem — what phone number would you like to use?" };
+      // They want a different address
+      emailCtx.stage = "needEmail"; emailCtx.savedEmail = null;
+      return { html: "No problem — what email address would you like to use?" };
     }
-    if (smsCtx.stage === "needPhone") {
-      // Basic phone validation
-      const digits = text.replace(/[^\d]/g, "");
-      if (digits.length < 8 || digits.length > 16) return { html: "That doesn't look like a valid phone number — please enter your number again (8–16 digits):" };
-      smsCtx.phone = text.trim(); storePhone(smsCtx.phone); smsCtx.stage = "needType";
+    if (emailCtx.stage === "needEmail") {
+      // Basic email validation
+      const addr = text.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) return { html: "That doesn't look like a valid email address — please enter your email again (e.g. name@example.com):" };
+      emailCtx.email = addr; storeEmail(emailCtx.email); emailCtx.stage = "needType";
       return { html: "Is this a <b>Pay</b> or <b>Deduction</b> query?", chips: ["Pay query","Deduction query"] };
     }
-    if (smsCtx.stage === "needType") { smsCtx.type = text.trim(); smsCtx.stage = "needDescription"; return { html: `Please briefly describe your query in 1–3 sentences: <small style="color:var(--text-muted,#8a94a8)">(max ${SETTINGS.smsMaxChars} characters)</small>` }; }
-    if (smsCtx.stage === "needDescription") {
-      const trimmedDesc = text.trim().slice(0, SETTINGS.smsMaxChars);
-      if (text.trim().length > SETTINGS.smsMaxChars) { return { html: `That's a bit long — please keep it under <b>${SETTINGS.smsMaxChars} characters</b>. You currently have <b>${text.trim().length}</b>. Please shorten it and send again.` }; }
-      smsCtx.description = trimmedDesc;
-      const body = encodeURIComponent(`Welfare Support Query\nEMP: ${empNumber||"N/A"}\nName: ${smsCtx.name}\nPhone: ${smsCtx.phone}\nType: ${smsCtx.type}\nQuery: ${smsCtx.description}`);
-      const href = `sms:${SETTINGS.smsNumber}?body=${body}`;
+    if (emailCtx.stage === "needType") { emailCtx.type = text.trim(); emailCtx.stage = "needDescription"; return { html: `Please briefly describe your query in 1–3 sentences: <small style="color:var(--text-muted,#8a94a8)">(max ${SETTINGS.emailMaxChars} characters)</small>` }; }
+    if (emailCtx.stage === "needDescription") {
+      const trimmedDesc = text.trim().slice(0, SETTINGS.emailMaxChars);
+      if (text.trim().length > SETTINGS.emailMaxChars) { return { html: `That's a bit long — please keep it under <b>${SETTINGS.emailMaxChars} characters</b>. You currently have <b>${text.trim().length}</b>. Please shorten it and send again.` }; }
+      emailCtx.description = trimmedDesc;
+      const subject = encodeURIComponent(`Welfare Support Query — ${emailCtx.type}`);
+      const body = encodeURIComponent(`Welfare Support Query\nEMP: ${empNumber||"N/A"}\nName: ${emailCtx.name}\nEmail: ${emailCtx.email}\nType: ${emailCtx.type}\nQuery: ${emailCtx.description}`);
+      const href = `mailto:${SETTINGS.emailTarget}?subject=${subject}&body=${body}`;
       const html = `<b>Ready to send</b><br>` +
         `EMP: <b>${escapeHTML(empNumber||"N/A")}</b><br>` +
-        `Name: <b>${escapeHTML(smsCtx.name)}</b><br>` +
-        `Phone: <b>${escapeHTML(smsCtx.phone)}</b><br>` +
-        `Type: <b>${escapeHTML(smsCtx.type)}</b><br>` +
-        `Query: <b>${escapeHTML(smsCtx.description)}</b><br><br>` +
-        `<a href="${escapeAttrUrl(href)}" target="_blank" rel="noopener">📱 Tap here to send your text to ${escapeHTML(SETTINGS.smsNumber)}</a><br>` +
-        `<small>Opens your messaging app with the message pre-filled and ready to send.</small>`;
-      logSMS({ name: smsCtx.name, phone: smsCtx.phone, type: smsCtx.type, description: smsCtx.description });
-      logIntent("sms_sent"); smsCtx = { stage: "awaitingConfirm" };
-      return { html, chips: ["Yes — sent ✓","No — try again"], _intent: "sms_sent" };
+        `Name: <b>${escapeHTML(emailCtx.name)}</b><br>` +
+        `Email: <b>${escapeHTML(emailCtx.email)}</b><br>` +
+        `Type: <b>${escapeHTML(emailCtx.type)}</b><br>` +
+        `Query: <b>${escapeHTML(emailCtx.description)}</b><br><br>` +
+        `<a href="${escapeAttrUrl(href)}" target="_blank" rel="noopener">📧 Tap here to send your email to ${escapeHTML(SETTINGS.emailTarget)}</a><br>` +
+        `<small>Opens your email app with the message pre-filled and ready to send.</small>`;
+      logEmail({ name: emailCtx.name, email: emailCtx.email, type: emailCtx.type, description: emailCtx.description });
+      logIntent("email_sent"); emailCtx = { stage: "awaitingConfirm" };
+      return { html, chips: ["Yes — sent ✓","No — try again"], _intent: "email_sent" };
     }
   }
 
@@ -798,7 +799,7 @@ function specialCases(text) {
   // ── Escalation — can't get through ──
   if (q.includes("cant get through") || q.includes("not get through") || q.includes("not answering") || q.includes("no answer") || q.includes("cant reach") || q.includes("wont answer") || q.includes("not picking up")) {
     return { html: `No problem — here are some alternative options:<br><br>` +
-      `📱 <b>Text instead:</b> Start a pay/deduction query above and I'll prepare a text for you.<br>` +
+      `📧 <b>Email instead:</b> Start a pay/deduction query above and I'll prepare an email for you.<br>` +
       `📧 <b>Email welfare:</b> Contact your Area Manager to escalate.<br>` +
       `🚨 <b>Urgent out-of-hours:</b><br>` +
       `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
@@ -824,26 +825,26 @@ function specialCases(text) {
   }
   if (intent === "bye") return { html: "Take care! 👋 Come back any time.", _intent: "bye" };
 
-  // ── Pay / deductions — start SMS flow ──
-  // Pre-fill name from EMP gate so they only need to confirm phone number
-  // "Try again" after failed SMS send
-  if ((q === "try again" || q.includes("try again")) && !smsCtx && !flowCtx) {
-    const savedPhone = getStoredPhone();
-    smsCtx = { stage: savedPhone ? "confirmPhone" : "needPhone", name: empName || "", savedPhone: savedPhone || null };
+  // ── Pay / deductions — start email flow ──
+  // Pre-fill name from EMP gate so they only need to confirm email address
+  // "Try again" after failed email send
+  if ((q === "try again" || q.includes("try again")) && !emailCtx && !flowCtx) {
+    const savedEmail = getStoredEmail();
+    emailCtx = { stage: savedEmail ? "confirmEmail" : "needEmail", name: empName || "", savedEmail: savedEmail || null };
     const firstName = empName ? `, <b>${escapeHTML(empName.split(" ")[0])}</b>` : "";
-    if (savedPhone) return { html: `Let\'s try again. Use <b>${escapeHTML(savedPhone)}</b>${firstName}?`, chips: [`Use ${savedPhone}`, "Use a different number"] };
-    return { html: "Let\'s try again. What phone number would you like to use?" };
+    if (savedEmail) return { html: `Let\'s try again. Use <b>${escapeHTML(savedEmail)}</b>${firstName}?`, chips: [`Use ${savedEmail}`, "Use a different address"] };
+    return { html: "Let\'s try again. What email address would you like to use?" };
   }
 
-  if (intent === "pay_query" || intent === "sms_query" || intent === "deduction_query") {
+  if (intent === "pay_query" || intent === "email_query" || intent === "deduction_query") {
     const isDeduction = intent === "deduction_query";
-    const savedPhone = getStoredPhone();
-    smsCtx = { stage: savedPhone ? "confirmPhone" : "needPhone", name: empName || "", savedPhone: savedPhone || null };
+    const savedEmail = getStoredEmail();
+    emailCtx = { stage: savedEmail ? "confirmEmail" : "needEmail", name: empName || "", savedEmail: savedEmail || null };
     const firstName = empName ? `, <b>${escapeHTML(empName.split(" ")[0])}</b>` : "";
-    if (savedPhone) {
-      return { html: `${isDeduction ? "I can help with that." : "I'll help you send a text to the pay team."}<br><br>Shall I use your previous number <b>${escapeHTML(savedPhone)}</b>${firstName}?`, chips: [`Use ${savedPhone}`, "Use a different number"], _intent: intent };
+    if (savedEmail) {
+      return { html: `${isDeduction ? "I can help with that." : "I'll help you send an email to the pay team."}<br><br>Shall I use your previous address <b>${escapeHTML(savedEmail)}</b>${firstName}?`, chips: [`Use ${savedEmail}`, "Use a different address"], _intent: intent };
     }
-    return { html: `${isDeduction ? "I can help with that." : "I'll help you send a text to the pay team."}<br><br>What's the best <b>phone number</b> to reach you on${firstName}?`, _intent: intent };
+    return { html: `${isDeduction ? "I can help with that." : "I'll help you send an email to the pay team."}<br><br>What's the best <b>email address</b> to reach you on${firstName}?`, _intent: intent };
   }
 
   // ── Guided flows ──
@@ -1041,7 +1042,7 @@ function sendChat() { if (isResponding) return; const t = input.value.trim(); if
 sendBtn.addEventListener("click", sendChat);
 
 clearBtn.addEventListener("click", () => {
-  chatWindow.innerHTML = ""; smsCtx = null; distanceCtx = null; flowCtx = null; CHAT_LOG = [];
+  chatWindow.innerHTML = ""; emailCtx = null; distanceCtx = null; flowCtx = null; CHAT_LOG = [];
   if (suggestionsEl) suggestionsEl.hidden = true;
   init();
 });
