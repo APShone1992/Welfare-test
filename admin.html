@@ -90,7 +90,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize}
 .badge-pay{background:#dbeafe;color:#1e40af}.badge-deduction{background:#fce7f3;color:#9d174d}
 .badge-unanswered{background:#fef3c7;color:#92400e}.badge-unhelpful{background:#fee2e2;color:#991b1b}
-.badge-sms{background:#ede9fe;color:#5b21b6}
+.badge-email{background:#ede9fe;color:#5b21b6}
 .badge-resolved{background:#dcfce7;color:#14532d}
 .badge-pending{background:#fef3c7;color:#92400e}
 .badge-age-hot{background:#fee2e2;color:#991b1b}
@@ -157,7 +157,7 @@ table.dt tbody tr:hover td{background:var(--surface-2)}
 .repeat-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .repeat-row:last-child{border-bottom:none}
 .repeat-name{flex:1;font-weight:600;font-size:13px}
-.repeat-phone{font-size:12px;color:var(--text-sec)}
+.repeat-email{font-size:12px;color:var(--text-sec)}
 .repeat-count{background:var(--brand-light);color:#fff;font-size:12px;font-weight:800;padding:2px 10px;border-radius:99px}
 .repeat-last{font-size:11px;color:var(--text-muted)}
 
@@ -418,7 +418,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="hdr-right">
     <button class="btn btn-sec btn-sm" id="refreshBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg> Refresh</button>
     <button class="btn btn-sec btn-sm" id="fsBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Full screen</button>
-    <button class="btn btn-green btn-sm" id="addSmsBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Add SMS</button>
+    <button class="btn btn-green btn-sm" id="addEmailBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Add Email</button>
     <a href="index.html" class="btn btn-sec btn-sm">&#8592; Chat</a>
     <button class="btn btn-sec btn-sm no-print" id="printBtn" title="Print / save as PDF"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
     <button class="dark-btn no-print" id="darkBtn" title="Toggle dark mode"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
@@ -430,7 +430,7 @@ body.dark .ws-item{background:var(--surface-3)}
 <nav class="tab-bar" role="tablist" aria-label="Admin sections">
   <button class="tab" role="tab" aria-selected="true"  id="tab-0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Overview</button>
   <button class="tab" role="tab" aria-selected="false" id="tab-1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Analytics</button>
-  <button class="tab" role="tab" aria-selected="false" id="tab-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> SMS Log <span class="tab-badge zero" id="badge-sms">0</span></button>
+  <button class="tab" role="tab" aria-selected="false" id="tab-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg> Email Log <span class="tab-badge zero" id="badge-email">0</span></button>
   <button class="tab" role="tab" aria-selected="false" id="tab-3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Unresolved <span class="tab-badge zero" id="badge-ur">0</span></button>
   <button class="tab" role="tab" aria-selected="false" id="tab-4"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Employees
   <button class="tab superadmin-tab" role="tab" aria-selected="false" id="tab-5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Manage</button>
@@ -457,7 +457,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="sgrid" id="ov-stats"></div>
 
   <div class="g2">
-    <div class="card"><div class="card-title">SMS breakdown</div><div id="ov-sms-chart"></div></div>
+    <div class="card"><div class="card-title">Email breakdown</div><div id="ov-email-chart"></div></div>
     <div class="card"><div class="card-title">Unresolved breakdown</div><div id="ov-ur-chart"></div></div>
   </div>
   <div class="card"><div class="card-title">Recent activity (last 20 events)</div><div id="ov-timeline"></div></div>
@@ -532,7 +532,7 @@ body.dark .ws-item{background:var(--surface-3)}
   </div>
 
   <div class="g2">
-    <div class="card"><div class="card-title">SMS &mdash; Pay vs Deduction</div><div id="an-sms-split"></div></div>
+    <div class="card"><div class="card-title">Email &mdash; Pay vs Deduction</div><div id="an-email-split"></div></div>
     <div class="card"><div class="card-title">Unresolved &mdash; type breakdown</div><div id="an-ur-split"></div></div>
   </div>
 
@@ -562,27 +562,27 @@ body.dark .ws-item{background:var(--surface-3)}
   </div>
 </div>
 
-<!-- ══════════════════ SMS LOG ══════════════════ -->
+<!-- ══════════════════ EMAIL LOG ══════════════════ -->
 <div id="panel-2" class="panel" role="tabpanel">
-  <div class="panel-title">SMS Log</div>
+  <div class="panel-title">Email Log</div>
   <div class="panel-desc">Every pay and deduction query — visible on all devices.</div>
   <div class="fbar">
-    <input class="finput finput-stretch" type="text" id="sms-q" placeholder="Search name, phone or query&hellip;" autocomplete="off"/>
-    <select class="finput" id="sms-t"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
-    <select class="finput" id="sms-status"><option value="">All statuses</option><option value="pending">Pending</option><option value="resolved">Resolved</option></select>
-    <button class="btn btn-green btn-sm" id="sms-export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
-    <button class="btn btn-red btn-sm" id="sms-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear all</button>
+    <input class="finput finput-stretch" type="text" id="email-q" placeholder="Search name, email or query&hellip;" autocomplete="off"/>
+    <select class="finput" id="email-t"><option value="">All types</option><option value="pay">Pay</option><option value="deduction">Deduction</option></select>
+    <select class="finput" id="email-status"><option value="">All statuses</option><option value="pending">Pending</option><option value="resolved">Resolved</option></select>
+    <button class="btn btn-green btn-sm" id="email-export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
+    <button class="btn btn-red btn-sm" id="email-clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clear all</button>
   </div>
-  <div id="sms-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px"></div>
+  <div id="email-cnt" style="font-size:12.5px;color:var(--text-muted);margin-bottom:10px"></div>
   <div class="tw"><table class="dt"><thead><tr>
     <th class="sort" data-col="ts">Date &amp; Time</th>
     <th class="sort" data-col="sender_name">Name</th>
-    <th>Phone</th>
+    <th>Email</th>
     <th class="sort" data-col="type">Type</th>
     <th>Query</th>
     <th>Status</th>
     <th style="width:100px;text-align:right">Actions</th>
-  </tr></thead><tbody id="sms-body"></tbody></table></div>
+  </tr></thead><tbody id="email-body"></tbody></table></div>
 </div>
 
 <!-- ══════════════════ UNRESOLVED ══════════════════ -->
@@ -652,12 +652,12 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="panel-desc">Add records manually. All changes sync to Supabase instantly.</div>
   <div class="g2">
     <div class="card">
-      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Add SMS record</div>
+      <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Add Email record</div>
       <div class="form-row"><label>Full name</label><input type="text" id="m-name" placeholder="e.g. John Doe"/></div>
-      <div class="form-row"><label>Phone number</label><input type="text" id="m-phone" placeholder="e.g. +447712345678"/></div>
+      <div class="form-row"><label>Email address</label><input type="text" id="m-email" placeholder="e.g. jane.doe@example.com"/></div>
       <div class="form-row"><label>Type</label><select id="m-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select></div>
       <div class="form-row"><label>Query</label><textarea id="m-content" placeholder="What did they ask?"></textarea></div>
-      <button class="btn btn-primary" id="m-add-sms"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Save SMS record</button>
+      <button class="btn btn-primary" id="m-add-email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Save Email record</button>
     </div>
     <div class="card">
       <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Add unresolved record</div>
@@ -668,14 +668,14 @@ body.dark .ws-item{background:var(--surface-3)}
   </div>
   <div class="g2">
     <div class="card" style="border-color:#fca5a5">
-      <div class="card-title" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all SMS logs</div>
-      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all SMS records from Supabase.</p>
-      <button class="btn btn-red" id="mg-clear-sms"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all SMS logs</button>
+      <div class="card-title" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all Email logs</div>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all Email records from Supabase.</p>
+      <button class="btn btn-red" id="mg-clear-email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all Email logs</button>
     </div>
     <div class="card" style="border-color:#fca5a5">
       <div class="card-title" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all unresolved logs</div>
       <p style="font-size:13px;color:var(--text-sec);margin-bottom:14px;line-height:1.6">Permanently removes all unresolved query records from Supabase.</p>
-      <button class="btn btn-red" id="mg-clear-ur"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all unresolvedolved logs</button>
+      <button class="btn btn-red" id="mg-clear-ur"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Delete all unresolved logs</button>
     </div>
   </div>
 </div>
@@ -804,7 +804,7 @@ body.dark .ws-item{background:var(--surface-3)}
   <div class="g2">
     <div class="card">
       <div class="card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Export all data</div>
-      <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px;line-height:1.6">Downloads all data as separate CSV files — SMS log, unresolved queries, employee list and activity log. Each file is named with today&apos;s date.</p>
+      <p style="font-size:13px;color:var(--text-sec);margin-bottom:16px;line-height:1.6">Downloads all data as separate CSV files — Email log, unresolved queries, employee list and activity log. Each file is named with today&apos;s date.</p>
       <button class="btn btn-primary" id="export-all-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export all as CSV files</button>
       <div class="export-progress" id="export-progress"><div class="export-progress-fill" id="export-progress-fill" style="width:0%"></div></div>
       <div class="setup-status" id="export-status"></div>
@@ -881,11 +881,14 @@ body.dark .ws-item{background:var(--surface-3)}
     <ol>
       <li>Go to <strong><a href="https://supabase.com" target="_blank" style="color:var(--brand-light)">supabase.com</a></strong> → sign in with GitHub → <strong>New project</strong></li>
       <li>Wait ~2 min, then open <strong>SQL Editor</strong> and run:
-        <code style="display:block;margin:8px 0;padding:10px;border-radius:6px;background:#fef3c7;white-space:pre-wrap;font-size:11.5px">create table sms_log (
+        <code style="display:block;margin:8px 0;padding:10px;border-radius:6px;background:#fef3c7;white-space:pre-wrap;font-size:11.5px">create table email_log (
   id bigint generated always as identity primary key,
   ts bigint not null, sender_name text default '',
-  phone text default '', type text default '', content text default ''
+  email text default '', type text default '', content text default ''
 );
+-- Migrating an existing install? Run this instead of "create table" above:
+-- alter table sms_log rename to email_log;
+-- alter table email_log rename column phone to email;
 create table unresolved (
   id bigint generated always as identity primary key,
   ts bigint not null, query text default '', type text default ''
@@ -895,16 +898,16 @@ create table sessions (
   ts bigint not null, date text default '', messages int default 0,
   emp text default '', name text default '', dept text default ''
 );
-alter table sms_log enable row level security;
+alter table email_log enable row level security;
 alter table unresolved enable row level security;
 -- If sessions table already exists, run these to add the missing columns:
 -- alter table sessions add column if not exists emp text default '';
 -- alter table sessions add column if not exists name text default '';
 -- alter table sessions add column if not exists dept text default '';
 alter table sessions enable row level security;
-create policy "pub read" on sms_log for select using (true);
-create policy "pub insert" on sms_log for insert with check (true);
-create policy "pub delete" on sms_log for delete using (true);
+create policy "pub read" on email_log for select using (true);
+create policy "pub insert" on email_log for insert with check (true);
+create policy "pub delete" on email_log for delete using (true);
 create policy "pub read" on unresolved for select using (true);
 create policy "pub insert" on unresolved for insert with check (true);
 create policy "pub delete" on unresolved for delete using (true);
@@ -938,13 +941,13 @@ create policy "pub delete" on kv_store for delete using (true);</code>
   </div>
 </div>
 
-<!-- ADD SMS MODAL -->
-<div class="modal-bg hidden" id="modal-sms">
+<!-- ADD EMAIL MODAL -->
+<div class="modal-bg hidden" id="modal-email">
   <div class="modal">
-    <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Quick-add SMS record</h3>
+    <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg> Quick-add Email record</h3>
     <p>Manually log a pay or deduction query from a member.</p>
     <div class="form-row"><label>Full name</label><input type="text" id="qm-name" placeholder="e.g. Jane Smith"/></div>
-    <div class="form-row"><label>Phone</label><input type="text" id="qm-phone" placeholder="e.g. +447712345678"/></div>
+    <div class="form-row"><label>Email</label><input type="text" id="qm-email" placeholder="e.g. jane.doe@example.com"/></div>
     <div class="form-row"><label>Type</label><select id="qm-type"><option value="pay">Pay</option><option value="deduction">Deduction</option></select></div>
     <div class="form-row"><label>Query</label><textarea id="qm-content" placeholder="What did they ask?"></textarea></div>
     <div class="modal-btns"><button class="btn btn-sec" id="qm-cancel">Cancel</button><button class="btn btn-primary" id="qm-save">Save</button></div>
@@ -983,7 +986,7 @@ create policy "pub delete" on kv_store for delete using (true);</code>
   <div class="gsearch-box">
     <div class="gsearch-input-wrap">
       <span style="font-size:16px;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" ><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-      <input type="text" id="gsearch-input" placeholder="Search employees, SMS, unresolved queries&hellip;" autocomplete="off"/>
+      <input type="text" id="gsearch-input" placeholder="Search employees, emails, unresolved queries&hellip;" autocomplete="off"/>
       <button class="gsearch-close" id="gsearch-close">&#10005;</button>
     </div>
     <div class="gsearch-results" id="gsearch-results">
@@ -1027,7 +1030,7 @@ const SB = (() => {
   async function insert(table,row){ const r=await fetch(`${url}/rest/v1/${table}`,{method:'POST',headers:hdrs({'Prefer':'return=minimal'}),body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text()); }
   async function del(table,id){ const r=await fetch(`${url}/rest/v1/${table}?id=eq.${id}`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
   async function delAll(table){ const r=await fetch(`${url}/rest/v1/${table}?id=gt.0`,{method:'DELETE',headers:hdrs()});if(!r.ok)throw new Error(await r.text()); }
-  async function test(){ const r=await fetch(`${url}/rest/v1/sms_log?limit=1`,{headers:hdrs()});if(!r.ok)throw new Error('HTTP '+r.status);return true; }
+  async function test(){ const r=await fetch(`${url}/rest/v1/email_log?limit=1`,{headers:hdrs()});if(!r.ok)throw new Error('HTTP '+r.status);return true; }
   load();
   if (!url || !key) {
   url = 'https://jlhtcwsbigznojwfxmox.supabase.co';
@@ -1133,7 +1136,7 @@ const isoDate=ts=>new Date(+ts).toISOString().slice(0,10);
 const daysBack=n=>Array.from({length:n},(_,i)=>{const d=new Date(Date.now()-(n-1-i)*86400000);return d.toISOString().slice(0,10);});
 
 function badge(t){
-  const m={pay:'badge-pay',deduction:'badge-deduction',unanswered:'badge-unanswered',unhelpful:'badge-unhelpful',sms:'badge-sms'};
+  const m={pay:'badge-pay',deduction:'badge-deduction',unanswered:'badge-unanswered',unhelpful:'badge-unhelpful',email:'badge-email'};
   return `<span class="badge ${m[t]||''}">${esc(t||'—')}</span>`;
 }
 function ageBadge(ts){
@@ -1327,7 +1330,7 @@ document.addEventListener('fullscreenchange',updFs);updFs();
 
 /* BADGES */
 function updateBadges(s,u){
-  const sb=$('#badge-sms'),ub=$('#badge-ur');
+  const sb=$('#badge-email'),ub=$('#badge-ur');
   sb.textContent=s;sb.className='tab-badge'+(s===0?' zero':'');
   ub.textContent=u;ub.className='tab-badge'+(u===0?' zero':'');
 }
@@ -1356,9 +1359,9 @@ function renderSetupWarn(){
 }
 
 /* DATA LAYER */
-async function fetchSMS(){
-  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_sms_log_v1')||'[]').map(x=>({id:x.ts,ts:x.ts,sender_name:x.name||'',phone:x.phone||'',type:x.type||'',content:x.description||''}));
-  return SB.select('sms_log','limit=2000');
+async function fetchEmail(){
+  if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_email_log_v1')||'[]').map(x=>({id:x.ts,ts:x.ts,sender_name:x.name||'',email:x.email||x.phone||'',type:x.type||'',content:x.description||''}));
+  return SB.select('email_log','limit=2000');
 }
 async function fetchUR(){
   if(!SB.ready()) return JSON.parse(localStorage.getItem('ws_unresolved_v1')||'[]').map(x=>({id:x.ts,ts:x.ts,query:x.text?.replace(' [marked unhelpful]','')||'',type:x.text?.includes('[marked unhelpful]')?'unhelpful':'unanswered'}));
@@ -1377,8 +1380,8 @@ async function fetchIntents(){
    OVERVIEW
 ══════════════════════════════════════════ */
 async function renderOverview(){
-  const [sms,ur,sess]=await Promise.all([fetchSMS(),fetchUR(),fetchSessions()]);
-  updateBadges(sms.length,ur.length);
+  const [emailData,ur,sess]=await Promise.all([fetchEmail(),fetchUR(),fetchSessions()]);
+  updateBadges(emailData.length,ur.length);
   renderSetupWarn();
 
   const now=Date.now();
@@ -1387,13 +1390,13 @@ async function renderOverview(){
   const prevWeekStart=weekStart-7*86400000;
 
   // Weekly summary
-  const thisWeekSMS=sms.filter(x=>x.ts>=weekStart).length;
-  const lastWeekSMS=sms.filter(x=>x.ts>=prevWeekStart&&x.ts<weekStart).length;
+  const thisWeekEmail=emailData.filter(x=>x.ts>=weekStart).length;
+  const lastWeekEmail=emailData.filter(x=>x.ts>=prevWeekStart&&x.ts<weekStart).length;
   const thisWeekUR=ur.filter(x=>x.ts>=weekStart).length;
   const lastWeekUR=ur.filter(x=>x.ts>=prevWeekStart&&x.ts<weekStart).length;
   const thisWeekSess=sess.filter(x=>x.ts>=weekStart).length;
   const lastWeekSess=sess.filter(x=>x.ts>=prevWeekStart&&x.ts<weekStart).length;
-  const thisTotal=sms.filter(x=>x.ts>=weekStart).length+sess.filter(x=>x.ts>=weekStart).length;
+  const thisTotal=emailData.filter(x=>x.ts>=weekStart).length+sess.filter(x=>x.ts>=weekStart).length;
   const resRate=()=>{
     const intents=JSON.parse(localStorage.getItem('ws_intents_v1')||'[]').length;
     const total=intents+ur.length;return total?Math.round(intents/total*100):null;
@@ -1411,41 +1414,41 @@ async function renderOverview(){
     return d>0?`<div class="ws-delta up">▲ ${d} vs last week (+${p}%)</div>`:d<0?`<div class="ws-delta dn">▼ ${Math.abs(d)} vs last week (-${p}%)</div>`:`<div class="ws-delta eq">same as last week</div>`;
   }
   $('#ov-week').innerHTML=[
-    [thisWeekSMS,'SMS queries',delta(thisWeekSMS,lastWeekSMS)],
+    [thisWeekEmail,'Email queries',delta(thisWeekEmail,lastWeekEmail)],
     [thisWeekSess,'Sessions',delta(thisWeekSess,lastWeekSess)],
     [thisWeekUR,'Unresolved',delta(thisWeekUR,lastWeekUR)],
     [rr!==null?rr+'%':'—','Resolution rate','<div class="ws-delta eq">answered vs unresolved</div>'],
   ].map(([v,l,d])=>`<div class="ws-item"><div class="ws-val">${v}</div><div class="ws-lbl">${l}</div>${d}</div>`).join('');
 
   // Stat cards
-  const uniquePeople=new Set(sms.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
-  const smsToday=sms.filter(x=>x.ts>=tt).length;
+  const uniquePeople=new Set(emailData.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
+  const emailToday=emailData.filter(x=>x.ts>=tt).length;
   const grid=$('#ov-stats');grid.innerHTML='';
-  [[sms.length,'Total SMS','all time','cp'],[ur.length,'Unresolved','need review',ur.length?'cr':'cg'],[uniquePeople,'Unique people','distinct senders','co'],[smsToday,'SMS today','since midnight','']].forEach(([n,l,s,c])=>{
+  [[emailData.length,'Total Email','all time','cp'],[ur.length,'Unresolved','need review',ur.length?'cr':'cg'],[uniquePeople,'Unique people','distinct senders','co'],[emailToday,'Email today','since midnight','']].forEach(([n,l,s,c])=>{
     const d=document.createElement('div');d.className='sc '+c;
     d.innerHTML=`<div class="lbl">${l}</div><div class="num">${n}</div><div class="sub">${s}</div>`;
     grid.appendChild(d);
   });
 
-  barChart($('#ov-sms-chart'),[{label:'Pay',val:sms.filter(x=>x.type==='pay').length,color:'var(--brand-light)'},{label:'Deduction',val:sms.filter(x=>x.type==='deduction').length,color:'var(--purple)'}]);
+  barChart($('#ov-email-chart'),[{label:'Pay',val:emailData.filter(x=>x.type==='pay').length,color:'var(--brand-light)'},{label:'Deduction',val:emailData.filter(x=>x.type==='deduction').length,color:'var(--purple)'}]);
   barChart($('#ov-ur-chart'),[{label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},{label:'Unhelpful',val:ur.filter(x=>x.type==='unhelpful').length,color:'var(--red)'}]);
 
   const tl=$('#ov-timeline');tl.innerHTML='';
-  const events=[...sms.map(x=>({ts:x.ts,type:'sms',label:`${x.sender_name||'Unknown'} — ${x.type||'?'} query`,color:'var(--brand-light)'})),...ur.map(x=>({ts:x.ts,type:'ur',label:`Unresolved: ${(x.query||'').slice(0,60)}`,color:'var(--orange)'}))].sort((a,b)=>b.ts-a.ts).slice(0,20);
+  const events=[...emailData.map(x=>({ts:x.ts,type:'email',label:`${x.sender_name||'Unknown'} — ${x.type||'?'} query`,color:'var(--brand-light)'})),...ur.map(x=>({ts:x.ts,type:'ur',label:`Unresolved: ${(x.query||'').slice(0,60)}`,color:'var(--orange)'}))].sort((a,b)=>b.ts-a.ts).slice(0,20);
   if(!events.length){tl.innerHTML='<div class="empty"><span class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span><p>No events yet.</p></div>';}
-  else events.forEach(e=>{tl.innerHTML+=`<div class="tl-item"><div class="tl-dot" style="background:${e.color}"></div><div class="tl-body"><div class="tl-main">${esc(e.label)}</div><div class="tl-time">${fmtDT(e.ts)}</div></div>${badge(e.type==='sms'?'sms':'unanswered')}</div>`;});
+  else events.forEach(e=>{tl.innerHTML+=`<div class="tl-item"><div class="tl-dot" style="background:${e.color}"></div><div class="tl-body"><div class="tl-main">${esc(e.label)}</div><div class="tl-time">${fmtDT(e.ts)}</div></div>${badge(e.type==='email'?'email':'unanswered')}</div>`;});
 }
 
 /* ══════════════════════════════════════════
    ANALYTICS
 ══════════════════════════════════════════ */
-const INTENT_LABELS={greeting:'Greeting',smalltalk:'Small talk',thanks:'Thanks',bye:'Goodbye',pay_query:'Pay query',deduction_query:'Deduction query',sms_sent:'SMS submitted',work_allocation:'Work allocation',manager_dispute:'Manager dispute',equipment:'Equipment',contract:'Contract',dept_contacts:'Dept contacts',btor_ntf:'BTOR NTF',cityfibre_ntf:'CF NTF',fleet:'Fleet',accident:'Accident',parking:'Parking',recruitment:'Recruitment',street_works:'Street works',smart_awards:'Smart awards',id_cards:'ID cards',opening_times:'Opening times',available_now:'Availability',location:'Location',contact_support:'Welfare contact'};
+const INTENT_LABELS={greeting:'Greeting',smalltalk:'Small talk',thanks:'Thanks',bye:'Goodbye',pay_query:'Pay query',deduction_query:'Deduction query',sms_sent:'Email submitted',work_allocation:'Work allocation',manager_dispute:'Manager dispute',equipment:'Equipment',contract:'Contract',dept_contacts:'Dept contacts',btor_ntf:'BTOR NTF',cityfibre_ntf:'CF NTF',fleet:'Fleet',accident:'Accident',parking:'Parking',recruitment:'Recruitment',street_works:'Street works',smart_awards:'Smart awards',id_cards:'ID cards',opening_times:'Opening times',available_now:'Availability',location:'Location',contact_support:'Welfare contact'};
 const intentLabel=k=>INTENT_LABELS[k]||k;
 
 async function renderAnalytics(){
-  const [sms,ur,sess,intents]=await Promise.all([fetchSMS(),fetchUR(),fetchSessions(),fetchIntents()]);
-  const payC=sms.filter(x=>x.type==='pay').length,dedC=sms.filter(x=>x.type==='deduction').length;
-  const uniquePeople=new Set(sms.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
+  const [emailData,ur,sess,intents]=await Promise.all([fetchEmail(),fetchUR(),fetchSessions(),fetchIntents()]);
+  const payC=emailData.filter(x=>x.type==='pay').length,dedC=emailData.filter(x=>x.type==='deduction').length;
+  const uniquePeople=new Set(emailData.map(x=>(x.sender_name||'').trim().toLowerCase()).filter(Boolean)).size;
   const totMsg=sess.reduce((a,s)=>a+(s.messages||0),0);
   const avgMsg=sess.length?(totMsg/sess.length).toFixed(1):'—';
 
@@ -1461,7 +1464,7 @@ async function renderAnalytics(){
 
   // Stat cards
   const grid=$('#an-stats');grid.innerHTML='';
-  [[sms.length,'Total SMS','cp'],[ur.length,'Unresolved',ur.length?'cr':'cg'],[uniquePeople,'Unique people','co'],[sess.length,'Sessions','']].forEach(([n,l,c])=>{
+  [[emailData.length,'Total Email','cp'],[ur.length,'Unresolved',ur.length?'cr':'cg'],[uniquePeople,'Unique people','co'],[sess.length,'Sessions','']].forEach(([n,l,c])=>{
     const d=document.createElement('div');d.className='sc '+c;d.innerHTML=`<div class="lbl">${l}</div><div class="num">${n}</div>`;grid.appendChild(d);
   });
 
@@ -1469,11 +1472,11 @@ async function renderAnalytics(){
   function renderFAQ(){
     const days=parseInt($('#an-faq-range').value)||0;
     const since=days?Date.now()-days*86400000:0;
-    // Build from intents + SMS types
+    // Build from intents + Email types
     const ic={};
     intents.filter(i=>!since||i.ts>=since).forEach(i=>ic[intentLabel(i.intent)]=(ic[intentLabel(i.intent)]||0)+1);
-    // Also count SMS types directly
-    sms.filter(x=>!since||x.ts>=since).forEach(x=>{
+    // Also count Email types directly
+    emailData.filter(x=>!since||x.ts>=since).forEach(x=>{
       const k=x.type==='pay'?'Pay query':x.type==='deduction'?'Deduction query':null;
       if(k)ic[k]=(ic[k]||0)+1;
     });
@@ -1486,43 +1489,43 @@ async function renderAnalytics(){
   function renderTrend(){
     const topic=$('#an-trend-topic').value;
     const days14=daysBack(14);
-    const vals=days14.map(d=>sms.filter(x=>x.type===topic&&isoDate(x.ts)===d).length);
+    const vals=days14.map(d=>emailData.filter(x=>x.type===topic&&isoDate(x.ts)===d).length);
     trendChart($('#an-trend-chart'),$('#an-trend-labels'),days14,[{values:vals,label:topic}]);
   }
   renderTrend();
   $('#an-trend-topic').addEventListener('change',renderTrend);
 
   // Heatmap
-  drawHeatmap(sess.length?sess:sms); // fallback to SMS timestamps if no sessions
+  drawHeatmap(sess.length?sess:emailData); // fallback to Email timestamps if no sessions
 
-  // SMS split
-  barChart($('#an-sms-split'),[{label:'Pay',val:payC,color:'var(--brand-light)'},{label:'Deduction',val:dedC,color:'var(--purple)'}]);
+  // Email split
+  barChart($('#an-email-split'),[{label:'Pay',val:payC,color:'var(--brand-light)'},{label:'Deduction',val:dedC,color:'var(--purple)'}]);
   barChart($('#an-ur-split'),[{label:'Unanswered',val:ur.filter(x=>x.type==='unanswered').length,color:'var(--orange)'},{label:'Unhelpful',val:ur.filter(x=>x.type==='unhelpful').length,color:'var(--red)'}]);
 
   // Repeat contacts
-  const phoneMap={};
-  sms.forEach(x=>{
-    const key=(x.phone||'').trim()||('name:'+((x.sender_name||'').trim().toLowerCase()));
+  const emailMap={};
+  emailData.forEach(x=>{
+    const key=(x.email||'').trim()||('name:'+((x.sender_name||'').trim().toLowerCase()));
     if(!key||key==='name:')return;
-    if(!phoneMap[key])phoneMap[key]={name:x.sender_name||'Unknown',phone:x.phone||'—',count:0,lastTs:0};
-    phoneMap[key].count++;
-    if(x.ts>phoneMap[key].lastTs)phoneMap[key].lastTs=x.ts;
+    if(!emailMap[key])emailMap[key]={name:x.sender_name||'Unknown',email:x.email||'—',count:0,lastTs:0};
+    emailMap[key].count++;
+    if(x.ts>emailMap[key].lastTs)emailMap[key].lastTs=x.ts;
   });
-  const repeats=Object.values(phoneMap).filter(x=>x.count>1).sort((a,b)=>b.count-a.count);
+  const repeats=Object.values(emailMap).filter(x=>x.count>1).sort((a,b)=>b.count-a.count);
   const repeatEl=$('#an-repeat-contacts');
   if(!repeats.length){repeatEl.innerHTML='<div class="empty" style="padding:20px 0"><p>No repeat contacts yet — everyone has only contacted once.</p></div>';}
   else repeatEl.innerHTML=repeats.slice(0,15).map(r=>`
     <div class="repeat-row">
       <div>
         <div class="repeat-name">${esc(r.name)}</div>
-        <div class="repeat-phone">${esc(r.phone)}</div>
+        <div class="repeat-email">${esc(r.email)}</div>
       </div>
       <div class="repeat-last">${fmtDate(r.lastTs)}</div>
       <div class="repeat-count">${r.count}×</div>
     </div>`).join('');
 
   // Top senders
-  const sm={};sms.forEach(x=>{const n=(x.sender_name||'Unknown').trim();sm[n]=(sm[n]||0)+1;});
+  const sm={};emailData.forEach(x=>{const n=(x.sender_name||'Unknown').trim();sm[n]=(sm[n]||0)+1;});
   barChart($('#an-top-senders'),Object.entries(sm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([l,v])=>({label:l,val:v,color:'var(--brand-light)'})));
 
   // Top unresolved
@@ -1530,41 +1533,41 @@ async function renderAnalytics(){
   barChart($('#an-top-queries'),Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([l,v])=>({label:l,val:v,color:'var(--orange)'})),{labelWidth:180});
 
   // All senders
-  const names=[...new Set(sms.map(x=>(x.sender_name||'').trim()).filter(Boolean))].sort();
+  const names=[...new Set(emailData.map(x=>(x.sender_name||'').trim()).filter(Boolean))].sort();
   $('#an-senders').innerHTML=names.length?names.map(n=>`<span style="display:inline-block;background:var(--surface-3);border:1px solid var(--border-mid);border-radius:99px;padding:4px 13px;font-size:12px;font-weight:600;margin:3px">${esc(n)}</span>`).join(''):'<div class="empty"><p>No senders yet</p></div>';
 }
 
 /* ══════════════════════════════════════════
-   SMS TABLE
+   EMAIL TABLE
 ══════════════════════════════════════════ */
-const SMSTbl={
+const EmailTbl={
   data:[],q:'',type:'',status:'',sortField:'ts',sortDir:'desc',
   fil(){
     let o=[...this.data];
     if(this.type)o=o.filter(x=>x.type===this.type);
     if(this.status)o=o.filter(x=>(x.status||'pending')===this.status);
-    if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.sender_name||'').toLowerCase().includes(q)||(x.phone||'').toLowerCase().includes(q)||(x.content||'').toLowerCase().includes(q));}
+    if(this.q){const q=this.q.toLowerCase();o=o.filter(x=>(x.sender_name||'').toLowerCase().includes(q)||(x.email||'').toLowerCase().includes(q)||(x.content||'').toLowerCase().includes(q));}
     return o.sort((a,b)=>{const va=a[this.sortField]??'',vb=b[this.sortField]??'';return this.sortField==='ts'?(this.sortDir==='asc'?va-vb:vb-va):(this.sortDir==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)));});
   },
-  async load(){this.data=await fetchSMS();this.render();},
+  async load(){this.data=await fetchEmail();this.render();},
   render(){
     const rows=this.fil();
-    $('#sms-cnt').textContent=plural(rows.length,'record')+(this.data.length!==rows.length?` (${this.data.length} total)`:'');
+    $('#email-cnt').textContent=plural(rows.length,'record')+(this.data.length!==rows.length?` (${this.data.length} total)`:'');
     $$('#panel-2 th.sort').forEach(th=>{th.classList.remove('asc','desc');if(th.dataset.col===this.sortField)th.classList.add(this.sortDir);});
-    const body=$('#sms-body');body.innerHTML='';
-    if(!rows.length){body.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="empty-icon">📭</span><p>${this.data.length?'No records match your filter.':'No SMS logs yet.'}</p></div></td></tr>`;return;}
+    const body=$('#email-body');body.innerHTML='';
+    if(!rows.length){body.innerHTML=`<tr><td colspan="6"><div class="empty"><span class="empty-icon">📭</span><p>${this.data.length?'No records match your filter.':'No Email logs yet.'}</p></div></td></tr>`;return;}
     rows.forEach(x=>{
       const tr=document.createElement('tr');
       const statusBadge=x.status==='resolved'?'<span class="badge badge-resolved">✓ resolved</span>':'<span class="badge badge-pending">pending</span>';
-      tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td><strong>${esc(x.sender_name||'—')}</strong></td><td style="white-space:nowrap">${esc(x.phone||'—')}</td><td>${badge(x.type)}</td><td class="clip" title="${esc(x.content)}">${esc(x.content||'—')}</td><td>${statusBadge}</td><td><div class="row-actions"></div></td>`;
+      tr.innerHTML=`<td style="white-space:nowrap">${fmtDT(x.ts)}</td><td><strong>${esc(x.sender_name||'—')}</strong></td><td style="white-space:nowrap">${esc(x.email||'—')}</td><td>${badge(x.type)}</td><td class="clip" title="${esc(x.content)}">${esc(x.content||'—')}</td><td>${statusBadge}</td><td><div class="row-actions"></div></td>`;
      const res=document.createElement('button');res.className='btn btn-green btn-sm';res.title='Mark resolved';res.textContent='✓ Resolved';
       res.addEventListener('click',async()=>{
         if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
         if(x.status==='resolved'){toast('Already marked as resolved');return;}
         res.disabled=true;res.textContent='Saving…';
         try{
-          await fetch(`${SB.getUrl()}/rest/v1/sms_log?id=eq.${x.id}`,{method:'PATCH',headers:{'apikey':SB.getKey(),'Authorization':'Bearer '+SB.getKey(),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({status:'resolved'})});
-          logActivity('✅','Marked SMS record as resolved');await refreshAll();toast('Marked as resolved ✓');
+          await fetch(`${SB.getUrl()}/rest/v1/email_log?id=eq.${x.id}`,{method:'PATCH',headers:{'apikey':SB.getKey(),'Authorization':'Bearer '+SB.getKey(),'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({status:'resolved'})});
+          logActivity('✅','Marked Email record as resolved');await refreshAll();toast('Marked as resolved ✓');
         }catch(e){res.disabled=false;res.textContent='✓ Resolved';toast('❌ Error: '+e.message);}
       });
       if(x.status==='resolved'){res.disabled=true;res.style.background='#6b7280';res.textContent='✓ Done';}
@@ -1576,20 +1579,20 @@ const SMSTbl={
   },
   async remove(id){
     if(!SB.ready()){toast('⚠ Connect Supabase in Setup tab to delete records');return;}
-    await SB.del('sms_log',id);logActivity('🗑️','Deleted SMS record');await refreshAll();toast('Record deleted');
+    await SB.del('email_log',id);logActivity('🗑️','Deleted Email record');await refreshAll();toast('Record deleted');
   },
   async clearAll(){
-    if(!await confirm2('Delete all SMS logs?','This will permanently remove all '+this.data.length+' records.'))return;
+    if(!await confirm2('Delete all Email logs?','This will permanently remove all '+this.data.length+' records.'))return;
     if(!SB.ready()){toast('⚠ Connect Supabase first');return;}
-    await SB.delAll('sms_log');logActivity('🗑️','Cleared all SMS logs');await refreshAll();toast('All SMS deleted');
+    await SB.delAll('email_log');logActivity('🗑️','Cleared all Email logs');await refreshAll();toast('All Email deleted');
   },
-  exportCSV(){dlCSV([['Date','Name','Phone','Type','Query'],...this.fil().map(x=>[fmtDT(x.ts),x.sender_name||'',x.phone||'',x.type||'',x.content||''])],`sms_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
+  exportCSV(){dlCSV([['Date','Name','Email','Type','Query'],...this.fil().map(x=>[fmtDT(x.ts),x.sender_name||'',x.email||'',x.type||'',x.content||''])],`email_${new Date().toISOString().slice(0,10)}.csv`);toast('CSV downloaded ✓');},
   bind(){
-    $('#sms-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
-    $('#sms-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
-    $('#sms-status')?.addEventListener('change',e=>{this.status=e.target.value;this.render();});
-    $('#sms-export').addEventListener('click',()=>this.exportCSV());
-    $('#sms-clear').addEventListener('click',()=>this.clearAll());
+    $('#email-q').addEventListener('input',debounce(e=>{this.q=e.target.value;this.render();}));
+    $('#email-t').addEventListener('change',e=>{this.type=e.target.value;this.render();});
+    $('#email-status')?.addEventListener('change',e=>{this.status=e.target.value;this.render();});
+    $('#email-export').addEventListener('click',()=>this.exportCSV());
+    $('#email-clear').addEventListener('click',()=>this.clearAll());
     $$('#panel-2 th.sort').forEach(th=>th.addEventListener('click',async () => {const c=th.dataset.col;this.sortField===c?this.sortDir=this.sortDir==='asc'?'desc':'asc':(this.sortField=c,this.sortDir='desc');this.render();}));
   }
 };
@@ -1663,13 +1666,13 @@ const URTbl={
    MANAGE PANEL
 ══════════════════════════════════════════ */
 function bindManage(){
-  $('#m-add-sms').addEventListener('click',async()=>{
-    const sender=val('#m-name'),phone=val('#m-phone'),type=$('#m-type').value,content=val('#m-content');
+  $('#m-add-email').addEventListener('click',async()=>{
+    const sender=val('#m-name'),email=val('#m-email'),type=$('#m-type').value,content=val('#m-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
     if(!SB.ready()){toast('⚠ Connect Supabase in Setup first');return;}
-    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
-    ['#m-name','#m-phone','#m-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
-    await refreshAll();toast('SMS record added ✓');
+    await SB.insert('email_log',{ts:Date.now(),sender_name:sender,email,type,content});
+    ['#m-name','#m-email','#m-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
+    await refreshAll();toast('Email record added ✓');
   });
   $('#m-add-ur').addEventListener('click',async()=>{
     const query=val('#m-ur-query'),type=$('#m-ur-type').value;
@@ -1679,7 +1682,7 @@ function bindManage(){
     $('#m-ur-query').value='';
     await refreshAll();toast('Unresolved record added ✓');
   });
-  $('#mg-clear-sms').addEventListener('click',()=>SMSTbl.clearAll());
+  $('#mg-clear-email').addEventListener('click',()=>EmailTbl.clearAll());
   $('#mg-clear-ur').addEventListener('click',()=>URTbl.clearAll());
 }
 
@@ -1687,17 +1690,17 @@ function bindManage(){
    QUICK-ADD MODAL
 ══════════════════════════════════════════ */
 function bindModal(){
-  $('#addSmsBtn').addEventListener('click',()=>$('#modal-sms').classList.remove('hidden'));
-  $('#qm-cancel').addEventListener('click',()=>$('#modal-sms').classList.add('hidden'));
-  $('#modal-sms').addEventListener('click',async e=>{if(e.target===$('#modal-sms'))$('#modal-sms').classList.add('hidden');});
+  $('#addEmailBtn').addEventListener('click',()=>$('#modal-email').classList.remove('hidden'));
+  $('#qm-cancel').addEventListener('click',()=>$('#modal-email').classList.add('hidden'));
+  $('#modal-email').addEventListener('click',async e=>{if(e.target===$('#modal-email'))$('#modal-email').classList.add('hidden');});
   $('#qm-save').addEventListener('click',async()=>{
-    const sender=val('#qm-name'),phone=val('#qm-phone'),type=$('#qm-type').value,content=val('#qm-content');
+    const sender=val('#qm-name'),email=val('#qm-email'),type=$('#qm-type').value,content=val('#qm-content');
     if(!sender||!content){toast('⚠ Name and query are required');return;}
     if(!SB.ready()){toast('⚠ Connect Supabase in Setup first');return;}
-    await SB.insert('sms_log',{ts:Date.now(),sender_name:sender,phone,type,content});
-    ['#qm-name','#qm-phone','#qm-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
-    $('#modal-sms').classList.add('hidden');
-    await refreshAll();toast('SMS record added ✓');
+    await SB.insert('email_log',{ts:Date.now(),sender_name:sender,email,type,content});
+    ['#qm-name','#qm-email','#qm-content'].forEach(id=>{const e=$(id);if(e)e.value='';});
+    $('#modal-email').classList.add('hidden');
+    await refreshAll();toast('Email record added ✓');
   });
 }
 
@@ -1708,6 +1711,17 @@ const SA_KEY='ws_sa_pin',SA_DEFAULT='3492';
 const getSaPin=()=>localStorage.getItem(SA_KEY)||SA_DEFAULT;
 const saveSaPin=p=>localStorage.setItem(SA_KEY,p);
 let saUnlocked=false,saBuffer='';
+
+function lockSuperadmin(){
+  saUnlocked=false;
+  const lockBtn=$('#lockBtn');
+  lockBtn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;lockBtn.classList.remove('unlocked');lockBtn.title='Superadmin access';
+  $$('.superadmin-tab').forEach(t=>{
+    t.classList.remove('unlocked');
+    if(t.getAttribute('aria-selected')==='true') $$('.tab-bar .tab')[0].click();
+  });
+  toast('🔒 Superadmin tabs locked');
+}
 
 function initSuperadminPin(){
   const modal=$('#sa-pin-modal'),errEl=$('#sa-pin-err'),lockBtn=$('#lockBtn');
@@ -1722,14 +1736,6 @@ function initSuperadminPin(){
       toast('🔓 Superadmin tabs unlocked');resetBuffer();
       loadFaqEditData().then(()=>renderFaqEditor());renderEmpManager();renderExportSummary();resetInactivityTimer();
     } else { shakeBox();errEl.textContent='Incorrect PIN';saBuffer='';updateDots();logFailedPinAttempt();logActivity('❌','Failed superadmin PIN attempt');renderSecurityPanel(); }
-  }
-  function lockSuperadmin(){
-    saUnlocked=false;lockBtn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;lockBtn.classList.remove('unlocked');lockBtn.title='Superadmin access';
-    $$('.superadmin-tab').forEach(t=>{
-      t.classList.remove('unlocked');
-      if(t.getAttribute('aria-selected')==='true') $$('.tab-bar .tab')[0].click();
-    });
-    toast('🔒 Superadmin tabs locked');
   }
   lockBtn.addEventListener('click',()=>{if(saUnlocked){lockSuperadmin();return;}resetBuffer();modal.classList.remove('hidden');});
   $$('.sa-key').forEach(k=>k.addEventListener('click',()=>{
@@ -2129,16 +2135,16 @@ async function refreshAll(){
   try{
     _notesCache = null; // clear so next render re-fetches
     await getNotes(); // pre-warm cache
-    await Promise.all([renderOverview(),renderAnalytics(),SMSTbl.load(),URTbl.load(),EmpTbl.load()]);
+    await Promise.all([renderOverview(),renderAnalytics(),EmailTbl.load(),URTbl.load(),EmpTbl.load()]);
     setSyncStatus('ok',SB.ready()?'✅ Supabase connected — all devices synced':'⚠ Local only — go to Setup tab');
     // Update tab notification badge
     updateTabBadge(URTbl.data);
     // Update global search cache
-    _searchCache.sms = SMSTbl.data;
+    _searchCache.email = EmailTbl.data;
     _searchCache.ur  = URTbl.data;
     _searchCache.emp = EmpTbl.data;
     // Render dept chart and training suggestions
-    renderDeptChart(SMSTbl.data);
+    renderDeptChart(EmailTbl.data);
     renderTrainingSuggestions(URTbl.data);
     await renderActivityLog();
     renderSecurityPanel();
@@ -2223,7 +2229,7 @@ function updateTabBadge(urData) {
 /* ══════════════════════════════════════════
    GLOBAL SEARCH
 ══════════════════════════════════════════ */
-let _searchCache = { sms: [], ur: [], emp: [] };
+let _searchCache = { email: [], ur: [], emp: [] };
 
 function openGlobalSearch() {
   $('#gsearch')?.classList.remove('hidden');
@@ -2240,9 +2246,9 @@ function runGlobalSearch(q) {
   if (!el) return;
   if (!q || q.length < 2) { el.innerHTML = '<div class="gsearch-empty">Start typing to search across everything&hellip;</div>'; return; }
   const ql = q.toLowerCase();
-  const smsHits = _searchCache.sms.filter(x =>
+  const emailHits = _searchCache.email.filter(x =>
     (x.sender_name||'').toLowerCase().includes(ql) ||
-    (x.phone||'').includes(ql) ||
+    (x.email||'').toLowerCase().includes(ql) ||
     (x.content||'').toLowerCase().includes(ql) ||
     (x.emp||'').includes(ql)
   ).slice(0, 5);
@@ -2255,7 +2261,7 @@ function runGlobalSearch(q) {
     (x.dept||'').toLowerCase().includes(ql)
   ).slice(0, 5);
 
-  if (!smsHits.length && !urHits.length && !empHits.length) {
+  if (!emailHits.length && !urHits.length && !empHits.length) {
     el.innerHTML = `<div class="gsearch-empty">No results for "<strong>${esc(q)}</strong>"</div>`;
     return;
   }
@@ -2268,15 +2274,15 @@ function runGlobalSearch(q) {
         <div class="gsearch-item-main"><strong>${esc(x.emp||'—')}</strong> — ${esc(x.name||'—')}
           <div class="gsearch-item-sub">${esc(x.dept||'No department')} · ${x.sessions||0} session${x.sessions!==1?'s':''}</div>
         </div>
-        <div class="gsearch-item-tag badge-sms" style="background:#ede9fe;color:#5b21b6">EMP</div>
+        <div class="gsearch-item-tag badge-email" style="background:#ede9fe;color:#5b21b6">EMP</div>
       </div>`;
     });
   }
-  if (smsHits.length) {
-    html += `<div class="gsearch-section">SMS Log</div>`;
-    smsHits.forEach(x => {
-      html += `<div class="gsearch-item" data-goto="sms">
-        <div class="gsearch-item-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+  if (emailHits.length) {
+    html += `<div class="gsearch-section">Email Log</div>`;
+    emailHits.forEach(x => {
+      html += `<div class="gsearch-item" data-goto="email">
+        <div class="gsearch-item-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg></div>
         <div class="gsearch-item-main">${esc(x.sender_name||'Unknown')}
           <div class="gsearch-item-sub">${esc((x.content||'').slice(0,80))}</div>
         </div>
@@ -2301,7 +2307,7 @@ function runGlobalSearch(q) {
   el.querySelectorAll('.gsearch-item').forEach(item => {
     item.addEventListener('click', () => {
       const goto = item.dataset.goto;
-      const tabMap = { sms: 2, ur: 3, emp: 4 };
+      const tabMap = { email: 2, ur: 3, emp: 4 };
       const idx = tabMap[goto];
       if (idx !== undefined) $$('.tab-bar [role=tab]')[idx]?.click();
       closeGlobalSearch();
@@ -2364,13 +2370,13 @@ function renderTrainingSuggestions(ur) {
 /* ══════════════════════════════════════════
    DEPT BREAKDOWN CHART
 ══════════════════════════════════════════ */
-function renderDeptChart(sms) {
+function renderDeptChart(emailData) { // param name 'emailData' kept internally, holds email records
   const el = $('#an-dept-chart');
   if (!el) return;
-  // Try to match SMS records to dept via employee list
+  // Try to match Email records to dept via employee list
   const empData = (() => { try { return JSON.parse(localStorage.getItem('ws_employees_v1') || '{}'); } catch { return {}; } })();
   const deptCounts = {};
-  sms.forEach(x => {
+  emailData.forEach(x => {
     const emp = empData[x.emp];
     const dept = (emp?.dept) || 'Unknown';
     deptCounts[dept] = (deptCounts[dept] || 0) + 1;
@@ -2640,21 +2646,6 @@ async function renderFaqEditor() {
       </div>`;
 
     item.querySelector('.faq-item-header').addEventListener('click', () => item.classList.toggle('open'));
-
-    item.querySelector('.faq-gen-btn')?.addEventListener('click', e => {
-      e.stopPropagation();
-      const q   = item.querySelector('.faq-q-input').value.trim();
-      const ans = item.querySelector('.faq-a-input').value.trim();
-      if (!q) { toast('Enter a question first'); return; }
-      const { synonyms, keywords } = autoGenerateSynonyms(q, ans);
-      const sInput = item.querySelector('.faq-s-input');
-      const kInput = item.querySelector('.faq-k-input');
-      const existingSyn = sInput.value.split(',').map(s=>s.trim()).filter(Boolean);
-      const existingKw  = kInput.value.split(',').map(s=>s.trim()).filter(Boolean);
-      sInput.value = [...new Set([...existingSyn, ...synonyms])].join(', ');
-      kInput.value = [...new Set([...existingKw,  ...keywords])].join(', ');
-      toast('Generated synonyms and keywords — review then save ✓');
-    });
 
     item.querySelector('.faq-gen-btn')?.addEventListener('click', e => {
       e.stopPropagation();
@@ -3005,10 +2996,10 @@ function btDetectIntent(text) {
 }
 
 function btMatchFAQ(text) {
-  if (!FAQS.length) return null;
+  if (!faqEditData.length) return null;
   const q = text.toLowerCase();
   let best = null, bestScore = 0;
-  for (const f of FAQS) {
+  for (const f of faqEditData) {
     const variants = [f.question, ...(f.synonyms||[])].filter(Boolean);
     for (const v of variants) {
       const vn = v.toLowerCase();
@@ -3046,7 +3037,7 @@ function btHandleMessage(text) {
     let response = '';
     if (faq) response = (faq.answer||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0, 200);
     else if (intent === 'greeting') response = 'Hey! 👋 How can I help you today?';
-    else if (intent === 'pay_query') response = "I'll help you send a text to the pay team. What's the best phone number to reach you on?";
+    else if (intent === 'pay_query') response = "I'll help you send an email to the pay team. What's the best email address to reach you on?";
     else if (intent === 'btor_ntf') response = 'Please select which area you are based in: Wales & Midlands, London & SE, Wessex, or North England & Scotland.';
     else if (intent === 'cityfibre_ntf') response = 'Please select which area you are based in: Scotland, Midlands, South, or North.';
     else if (intent === 'available_now') response = 'Checking opening hours… (in the real bot this checks live UK time)';
@@ -3077,15 +3068,15 @@ async function renderExportSummary() {
   const el = $('#export-summary');
   if (!el) return;
   try {
-    const [sms, ur, emp, sess] = await Promise.all([fetchSMS(), fetchUR(), fetchEmployees(), fetchSessions()]);
+    const [emailData, ur, emp, sess] = await Promise.all([fetchEmail(), fetchUR(), fetchEmployees(), fetchSessions()]);
     const act = await getActivityLog();
     el.innerHTML = `
-      <strong>SMS logs:</strong> ${sms.length} records<br>
+      <strong>Email logs:</strong> ${emailData.length} records<br>
       <strong>Unresolved queries:</strong> ${ur.length} records<br>
       <strong>Employees (seen):</strong> ${emp.length} employees<br>
       <strong>Sessions:</strong> ${sess.length} sessions<br>
       <strong>Activity log:</strong> ${act.length} entries<br>
-      <strong>FAQ entries:</strong> ${faqEditData.length || FAQS.length} entries`;
+      <strong>FAQ entries:</strong> ${faqEditData.length} entries`;
   } catch {}
 }
 
@@ -3103,13 +3094,13 @@ function bindExport() {
     const setStatus = msg => { if (statusEl) { statusEl.textContent = msg; statusEl.className = 'setup-status ok'; } };
 
     try {
-      setProgress(10); const sms = await fetchSMS();
+      setProgress(10); const emailData = await fetchEmail();
       setProgress(25); const ur  = await fetchUR();
       setProgress(40); const emp = await fetchEmployees();
       setProgress(55); const act = await getActivityLog();
       setProgress(70);
 
-      dlCSV([['Date','EMP','Name','Phone','Type','Query'],...sms.map(x=>[fmtDT(x.ts),x.emp||'',x.sender_name||'',x.phone||'',x.type||'',x.content||''])], `sms_log_${today}.csv`);
+      dlCSV([['Date','EMP','Name','Email','Type','Query'],...emailData.map(x=>[fmtDT(x.ts),x.emp||'',x.sender_name||'',x.email||'',x.type||'',x.content||''])], `email_log_${today}.csv`);
       await new Promise(r=>setTimeout(r,200));
       setProgress(80);
       dlCSV([['Date','EMP','Query','Type','Days Old'],...ur.map(x=>[fmtDT(x.ts),x.emp||'',x.query||'',x.type||'',Math.floor((Date.now()-x.ts)/86400000)])], `unresolved_${today}.csv`);
@@ -3144,7 +3135,7 @@ function bindExport() {
 ══════════════════════════════════════════ */
 (async function boot(){
   try {
-    SMSTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();bindEmpUpload();
+    EmailTbl.bind();URTbl.bind();EmpTbl.bind();bindManage();bindModal();initSetup();bindEmpUpload();
     initSuperadminPin();initChangePinSection();
     bindDarkMode();bindPrint();bindGlobalSearch();bindNoteModal();
     bindSecurity();bindFaqEditor();bindEmpManager();bindBotTester();bindExport();
