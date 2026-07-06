@@ -800,8 +800,7 @@ function specialCases(text) {
   if (q.includes("cant get through") || q.includes("not get through") || q.includes("not answering") || q.includes("no answer") || q.includes("cant reach") || q.includes("wont answer") || q.includes("not picking up")) {
     return { html: `No problem — here are some alternative options:<br><br>` +
       `📧 <b>Email instead:</b> Start a pay/deduction query above and I'll prepare an email for you.<br>` +
-      `📧 <b>Email welfare:</b> <a href="mailto:welfareandsupportteam@kelly.co.uk">welfareandsupportteam@kelly.co.uk</a><br> +
-      ` <b>Contact:</b> Contact your Area Manager to escalate.<br>` +
+      `📧 <b>Email welfare:</b> Contact your Area Manager to escalate.<br>` +
       `🚨 <b>Urgent out-of-hours:</b><br>` +
       `<b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br>` +
       `<b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`,
@@ -871,13 +870,13 @@ function specialCases(text) {
   if (intent === "recruitment")     return { html: `Please call <a href="tel:02037583058"><b>02037583058</b></a> for recruitment.`, _intent: "recruitment" };
   if (intent === "contact_support") return { html: `You can reach Welfare on ${WELFARE} — please hold the line when prompted.`, chips: ["Department Contacts","What are your opening times?"], _intent: "contact_support" };
 
-  if (intent === "opening_times") return { html: "We're open <b>Monday–Friday, 8:30am–5:00pm</b> (UK time), closed weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"], _intent: "opening_times" };
+  if (intent === "opening_times") return { html: "We're open <b>Monday–Friday, 8:30am–5:30pm</b> (UK time), closed weekends and bank holidays.", chips: ["Is anyone available now?","Are you open on bank holidays?"], _intent: "opening_times" };
   if (intent === "bank_holiday")  return { html: "❌ <b>We are not open on bank holidays.</b>", chips: ["What are your opening times?"], _intent: "opening_times" };
 
   if (intent === "available_now") {
-    if (isOpenNow()) return { html: `✅ Yes, we're <b>open right now</b> (Mon–Fri 8:30am–5.00pm).<br>Call Welfare on ${WELFARE} and hold the line.`, chips: ["Department Contacts"], _intent: "available_now" };
+    if (isOpenNow()) return { html: `✅ Yes, we're <b>open right now</b> (Mon–Fri 8:30am–5.30pm).<br>Call Welfare on ${WELFARE} and hold the line.`, chips: ["Department Contacts"], _intent: "available_now" };
     const bh = isBankHolidayToday();
-    return { html: `❌ We're currently <b>closed</b>${bh ? " (bank holiday)" : ""}.<br>Office hours: <b>Mon–Fri 8:30am–5.00pm</b>.<br><br>Urgent out-of-hours contacts:<br><b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br><b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`, chips: ["What are your opening times?","BTOR NTF Support","City Fibre NTF Support"], _intent: "available_now" };
+    return { html: `❌ We're currently <b>closed</b>${bh ? " (bank holiday)" : ""}.<br>Office hours: <b>Mon–Fri 8:30am–5.30pm</b>.<br><br>Urgent out-of-hours contacts:<br><b>Fleet (OOH):</b> <a href="tel:07940766377">07940766377</a><br><b>Accident / Injury:</b> <a href="tel:07940792355">07940792355</a>`, chips: ["What are your opening times?","BTOR NTF Support","City Fibre NTF Support"], _intent: "available_now" };
   }
 
   if (intent === "dept_contacts") return {
